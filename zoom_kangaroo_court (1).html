@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Zoom Kangaroo Court</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#111;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;min-height:100vh;font-family:'Courier New',monospace;
+  user-select:none;overflow:hidden}
+canvas{display:block;cursor:pointer;touch-action:none}
+</style>
+</head>
+<body>
+<canvas id="g"></canvas>
+<script>
+const CV=document.getElementById('g');
+const ctx=CV.getContext('2d');
+let W=820,H=520,SCALE=1;
+function resize(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  SCALE=Math.min(vw/820,vh/520);
+  CV.width=Math.round(820*SCALE);CV.height=Math.round(520*SCALE);
+  CV.style.width=CV.width+'px';CV.style.height=CV.height+'px';
+  ctx.setTransform(SCALE,0,0,SCALE,0,0);
+}
+resize();window.addEventListener('resize',resize);
+
+/* ── AUDIO ── */
+let AC;function ac(){if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}return AC;}
+function beep(f,d,t,v){const a=ac();if(!a)return;
+  try{const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;
+  g.gain.setValueAtTime(v||.07,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+d);
+  o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d);}catch(e){}}
+function sndClose(){beep(600,.06,'square',.08);setTimeout(()=>beep(900,.1,'sine',.06),55);}
+function sndSpeak(){beep(100,.3,'sawtooth',.09);}
+function sndWarn(){beep(80,.15,'sawtooth',.12);setTimeout(()=>beep(70,.2,'sawtooth',.1),150);}
+function sndWin(){[500,700,900,1100].forEach((f,i)=>setTimeout(()=>beep(f,.18,'sine',.08),i*120));}
+
+/* ── LAYOUT ── */
+const HDR=48, CTR=50, CHAT_W=190;
+const COLS=3, ROWS=2;
+const GRID_X=6, GRID_Y=HDR+4;
+const GRID_W=W-CHAT_W-GRID_X*2;
+const TILE_W=Math.floor((GRID_W-6)/COLS);
+const TILE_H=Math.floor((H-GRID_Y-CTR-6)/ROWS);
+function tileRect(col,row){
+  return{x:GRID_X+col*(TILE_W+2),y:GRID_Y+row*(TILE_H+2),w:TILE_W,h:TILE_H};
+}
+const CHAT_X=W-CHAT_W-4;
+
+/* ── PARTICIPANTS ── */
+const NAMES=[
+  {name:'HON. G. ROSENBERG',role:'PRESIDING JUDGE',   type:'judge'},
+  {name:'RESPONDENT',       role:'PRO SE',            type:'resp'},
+  {name:'A. BUJDOSO',       role:'PETITIONER',        type:'kang'},
+  {name:'S. LINCOLN ESQ.',  role:'PET. COUNSEL',      type:'kang'},
+  {name:'COURTWATCH IL',    role:'OBSERVER',          type:'kang'},
+  {name:'J. WIGGLBY ESQ.',  role:'AMICUS',            type:'kang'},
+];
+
+/* ── KANGAROO QUIPS ── */
+const KQUIPS=[
+  'JUMP TO VERDICT!','SKIP DUE PROCESS!','GRANT THE OP!','SHE IS CREDIBLE!',
+  'RUBBER STAMP IT!','CLAIM JUMPER!','PREDETERMINED!','BELIEVE HER!',
+  'LEAP OF FAITH!','NO EVIDENCE NEEDED!','SIGNED SEALED DELIVERED!',
+  'DUE PROCESS? LOL','OBJECTION OVERRULED!','JUST SIGN IT!','HE\'S GUILTY!',
+];
+const CHAT_MSGS=[
+  '🦘 Courtwatch: grant the OP automatically',
+  '🦘 Wigglby: jumping to verdict... NOW',
+  '🦘 Bujdoso: he doesn\'t need to be heard',
+  '🦘 Lincoln: due process is overrated',
+  '🦘 Courtwatch: predetermined feels right',
+  '🦘 Wigglby: evidence? who needs evidence',
+  '🦘 Observer: skip to the rubber stamp part',
+  '🦘 Lincoln: she said it so it must be true',
+  '🦘 Courtwatch: facts are a formality',
+  '🦘 Wigglby: just sign the order your honor',
+  '🦘 Bujdoso: the respondent shouldn\'t speak',
+  '🦘 Lincoln: ex parte was just the beginning',
+];
+
+/* ── STAGES ── */
+const STAGES=[
+  {label:'INITIAL HEARING',     dur:55,maxKang:2,spawnMs:4200,verdictDmg:10,judgeSafe:true},
+  {label:'ESCALATING BIAS',     dur:50,maxKang:3,spawnMs:3200,verdictDmg:13,judgeSafe:true},
+  {label:'STORY UPGRADE',       dur:45,maxKang:4,spawnMs:2500,verdictDmg:16,judgeSafe:false},
+  {label:'PREDETERMINED VERDICT',dur:40,maxKang:4,spawnMs:2000,verdictDmg:19,judgeSafe:false},
+  {label:'FULL KANGAROO COURT', dur:35,maxKang:5,spawnMs:1500,verdictDmg:22,judgeSafe:false},
+];
+
+/* ── STATE ── */
+let GS='title',stageIdx=0,stage=STAGES[0];
+let verdict=70; // 0=kangaroo court, 100=fair trial
+let score=0,frame=0;
+let tiles=[],chatLog=[],chatScroll=0,floaters=[],parts=[];
+let spawnTimer=0,chatTimer=0,stageTimer=0;
+let shAmt=0,shX=0,shY=0;
+let judgeWarning=false,judgeWarningT=0;
+let gavel=null; // {x,y,t} gavel animation
+
+function shake(a){shAmt=Math.max(shAmt,a);}
+
+/* ── TILE STATES ── */
+// state: 'idle'|'active'|'speaking'|'closing'|'judging'
+function initTiles(){
+  tiles=NAMES.map((n,i)=>{
+    const c=i%COLS, r=Math.floor(i/COLS);
+    const rect=tileRect(c,r);
+    return{...n,...rect,state:'idle',stateT:0,quip:'',speakT:0,closeT:0,
+           col:i, row:r, muted:false, connQuality:3+Math.floor(Math.random()*2)};
+  });
+}
+
+function initGame(){
+  stageIdx=0;stage=STAGES[0];verdict=70;score=0;frame=0;
+  tiles=[];chatLog=[];chatScroll=0;floaters=[];parts=[];
+  spawnTimer=stage.spawnMs;chatTimer=0;stageTimer=stage.dur*60;
+  judgeWarning=false;judgeWarningT=0;gavel=null;
+  initTiles();
+}
+
+/* ── INPUT ── */
+function toCanvas(ex,ey){const r=CV.getBoundingClientRect();return{x:(ex-r.left)/SCALE,y:(ey-r.top)/SCALE};}
+CV.addEventListener('click',e=>{const p=toCanvas(e.clientX,e.clientY);handleClick(p.x,p.y);});
+CV.addEventListener('touchend',e=>{e.preventDefault();const p=toCanvas(e.changedTouches[0].clientX,e.changedTouches[0].clientY);handleClick(p.x,p.y);},{passive:false});
+window.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(GS!=='playing')startGame();}});
+
+function handleClick(cx,cy){
+  if(GS!=='playing'){ac();startGame();return;}
+  let hit=false;
+  tiles.forEach(t=>{
+    if(cx>=t.x&&cx<=t.x+t.w&&cy>=t.y&&cy<=t.y+t.h){
+      if((t.state==='active'||t.state==='speaking')&&(t.type==='kang'||(t.type==='judge'&&judgeWarning))){
+        closeTile(t);hit=true;
+      } else if(t.type==='resp'&&(t.state==='active'||t.state==='speaking')){
+        // Accidentally tried to mute respondent - mild penalty flavor only
+      }
+    }
+  });
+  if(!hit){
+    // Miss click visual
+    floaters.push({x:cx,y:cy,txt:'MISSED!',col:'rgba(255,150,50,.8)',life:40,vy:-1.2});
+  }
+}
+
+function closeTile(t){
+  const wasActive=t.state==='active';
+  t.state='closing';t.closeT=25;
+  score+=wasActive?15:8;
+  verdict=Math.min(100,verdict+(wasActive?5:3));
+  sndClose();
+  for(let i=0;i<10;i++)parts.push({x:t.x+t.w/2,y:t.y+t.h/2,
+    vx:(Math.random()-.5)*5,vy:-2-Math.random()*3,col:'#44ff88',life:30+Math.random()*20,sz:3+Math.random()*3});
+  floaters.push({x:t.x+t.w/2,y:t.y+20,txt:'+DUE PROCESS',col:'#44ff88',life:70,vy:-1.4});
+}
+
+function startGame(){if(GS!=='playing'){GS='playing';initGame();ac();}}
+
+/* ── UPDATE ── */
+function update(){
+  frame++;
+  if(shAmt>.3){shX=(Math.random()-.5)*shAmt*2;shY=(Math.random()-.5)*shAmt*2;shAmt*=.78;}
+  else{shX=0;shY=0;shAmt=0;}
+
+  // Stage timer
+  stageTimer--;
+  if(stageTimer<=0){
+    stageIdx++;
+    if(stageIdx>=STAGES.length){GS='win';sndWin();return;}
+    stage=STAGES[stageIdx];stageTimer=stage.dur*60;
+    spawnTimer=stage.spawnMs/16;
+    floaters.push({x:W/2,y:H/2-30,txt:'— '+stage.label+' —',col:'#ffcc44',life:160,vy:-.3,big:true});
+    beep(440,.2,'sine',.08);
+  }
+
+  // Spawn kangaroo
+  spawnTimer--;
+  if(spawnTimer<=0){
+    spawnTimer=Math.round(stage.spawnMs/16)+Math.floor(Math.random()*40);
+    const kangTiles=tiles.filter(t=>t.type==='kang'&&t.state==='idle');
+    const judgeT=tiles[0];
+    const canActivate=[...kangTiles];
+    if(!stage.judgeSafe&&Math.random()<.2&&judgeT.state==='idle')canActivate.push(judgeT);
+    const active=tiles.filter(t=>t.state==='active'||t.state==='speaking');
+    if(active.length<stage.maxKang&&canActivate.length>0){
+      const t=canActivate[Math.floor(Math.random()*canActivate.length)];
+      t.state='active';t.stateT=Math.round(2.8*60+Math.random()*60);
+      t.quip=KQUIPS[Math.floor(Math.random()*KQUIPS.length)];
+      if(t.type==='judge'){judgeWarning=true;judgeWarningT=t.stateT+40;}
+    }
+  }
+
+  // Update tiles
+  tiles.forEach(t=>{
+    if(t.state==='active'){
+      t.stateT--;
+      if(t.stateT<=0){t.state='speaking';t.speakT=Math.round(1.8*60);sndSpeak();}
+    } else if(t.state==='speaking'){
+      t.speakT--;
+      if(t.speakT===Math.round(1.8*60)-2){
+        verdict=Math.max(0,verdict-stage.verdictDmg);
+        shake(7);sndWarn();
+        floaters.push({x:t.x+t.w/2,y:t.y+10,txt:'-FAIR HEARING',col:'#ff4444',life:80,vy:-1.2});
+        gavel={x:t.x+t.w/2,y:t.y+t.h/2,t:30};
+        addChat();
+      }
+      if(t.speakT<=0){t.state='idle';}
+    } else if(t.state==='closing'){
+      t.closeT--;if(t.closeT<=0){t.state='idle';}
+    }
+  });
+
+  if(judgeWarningT>0){judgeWarningT--;if(judgeWarningT<=0)judgeWarning=false;}
+  if(gavel){gavel.t--;if(gavel.t<=0)gavel=null;}
+
+  // Chat
+  chatTimer--;
+  if(chatTimer<=0){chatTimer=Math.round(3.5*60)+Math.floor(Math.random()*60);addChat();}
+  chatScroll+=.4;
+
+  // Particles + floaters
+  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.14;p.life--;if(p.life<=0)parts.splice(i,1);}
+  for(let i=floaters.length-1;i>=0;i--){const f=floaters[i];f.y+=f.vy;f.life--;if(f.life<=0)floaters.splice(i,1);}
+
+  if(verdict<=0){GS='gameover';}
+}
+
+function addChat(){
+  chatLog.push(CHAT_MSGS[Math.floor(Math.random()*CHAT_MSGS.length)]);
+  if(chatLog.length>30)chatLog.shift();
+}
+
+/* ── DRAW KANGAROO IN TILE ── */
+function drawKang(x,y,w,h,state,quip,closeT,stateT){
+  const cx=x+w/2,cy=y+h/2;
+  const alpha=state==='closing'?closeT/25:1;
+  ctx.save();ctx.globalAlpha=alpha;
+  // Background - courtroom wood
+  ctx.fillStyle='#2a1a08';ctx.fillRect(x+1,y+1,w-2,h-2);
+  // Kangaroo body
+  const bob=Math.sin(frame*.12)*(state==='active'?2:1);
+  // Ears
+  ctx.fillStyle='#c8903a';
+  ctx.beginPath();ctx.ellipse(cx-16,cy-48+bob,7,18,-.2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(cx+16,cy-48+bob,7,18,.2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#e8b060';
+  ctx.beginPath();ctx.ellipse(cx-16,cy-48+bob,4,13,-.2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(cx+16,cy-48+bob,4,13,.2,0,Math.PI*2);ctx.fill();
+  // Legal wig
+  ctx.fillStyle='#f5f0e8';
+  ctx.beginPath();ctx.ellipse(cx,cy-48+bob,22,12,0,0,Math.PI*2);ctx.fill();
+  ctx.fillRect(cx-22,cy-48+bob,44,8);
+  ctx.beginPath();ctx.arc(cx-20,cy-40+bob,8,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy-38+bob,10,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(cx+20,cy-40+bob,8,0,Math.PI*2);ctx.fill();
+  // Head
+  ctx.fillStyle='#d4903a';
+  ctx.beginPath();ctx.ellipse(cx,cy-32+bob,20,22,0,0,Math.PI*2);ctx.fill();
+  // Snout/muzzle
+  ctx.fillStyle='#e8b060';
+  ctx.beginPath();ctx.ellipse(cx,cy-20+bob,13,9,0,0,Math.PI*2);ctx.fill();
+  // Eyes
+  ctx.fillStyle='#1a1a00';
+  ctx.beginPath();ctx.arc(cx-9,cy-36+bob,3.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(cx+9,cy-36+bob,3.5,0,Math.PI*2);ctx.fill();
+  // Eye shine
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(cx-8,cy-37+bob,1.2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(cx+10,cy-37+bob,1.2,0,Math.PI*2);ctx.fill();
+  // Nose
+  ctx.fillStyle='#aa5522';ctx.beginPath();ctx.arc(cx,cy-22+bob,4,0,Math.PI*2);ctx.fill();
+  // Body (robe/judge coat)
+  ctx.fillStyle='#111';
+  ctx.beginPath();ctx.ellipse(cx,cy+12+bob,22,30,0,0,Math.PI*2);ctx.fill();
+  // White collar
+  ctx.fillStyle='#f5f0e8';
+  ctx.beginPath();ctx.moveTo(cx-10,cy-10+bob);ctx.lineTo(cx,cy-2+bob);ctx.lineTo(cx+10,cy-10+bob);ctx.fill();
+  // Pouch
+  ctx.fillStyle='#c07830';
+  ctx.beginPath();ctx.ellipse(cx+8,cy+22+bob,11,14,-.15,0,Math.PI);ctx.fill();
+  // Arms/gavel
+  ctx.strokeStyle='#c8903a';ctx.lineWidth=5;
+  ctx.beginPath();ctx.moveTo(cx-18,cy+5+bob);ctx.lineTo(cx-28,cy-5+bob);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx+18,cy+5+bob);ctx.lineTo(cx+28,cy-5+bob);ctx.stroke();
+  // Gavel in right hand
+  ctx.fillStyle='#8B4513';
+  ctx.fillRect(cx+24,cy-10+bob,4,14);
+  ctx.fillRect(cx+20,cy-12+bob,12,6);
+  // Active pulse border
+  if(state==='active'){
+    const urgency=stateT<60?1:(stateT<120?.7:.4);
+    const pulse=.6+.4*Math.sin(frame*.25)*urgency;
+    // (urgency color handled by line below)
+    ctx.strokeStyle=urgency>.8?`rgba(255,80,80,${pulse})`:`rgba(255,180,50,${pulse})`;
+    ctx.lineWidth=3;ctx.strokeRect(x+1,y+1,w-2,h-2);
+    // Countdown ring
+    const pct=1-stateT/(2.8*60+60);
+    ctx.strokeStyle=`rgba(255,80,80,${.5+pulse*.5})`;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx,cy-32+bob,28,-Math.PI/2,-Math.PI/2+pct*Math.PI*2);ctx.stroke();
+  }
+  // Speaking — quip bubble
+  if(state==='speaking'){
+    ctx.strokeStyle='rgba(255,60,60,.9)';ctx.lineWidth=3;ctx.strokeRect(x+1,y+1,w-2,h-2);
+    ctx.fillStyle='rgba(255,40,40,.2)';ctx.fillRect(x+1,y+1,w-2,h-2);
+    ctx.font='bold 10px Courier New';
+    const qw=ctx.measureText(quip).width+14;
+    const qx=cx-qw/2,qy=y+8;
+    ctx.fillStyle='rgba(20,0,0,.9)';ctx.fillRect(qx,qy,qw,16);
+    ctx.strokeStyle='rgba(255,80,80,.8)';ctx.lineWidth=1;ctx.strokeRect(qx,qy,qw,16);
+    ctx.fillStyle='#ff8888';ctx.fillText(quip,qx+7,qy+11);
+  }
+  // Closing X
+  if(state==='closing'){
+    ctx.strokeStyle='rgba(80,255,100,.9)';ctx.lineWidth=4;
+    const cx2=x+w/2,cy2=y+h/2,r=Math.min(w,h)*.35;
+    ctx.beginPath();ctx.moveTo(cx2-r,cy2-r);ctx.lineTo(cx2+r,cy2+r);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx2+r,cy2-r);ctx.lineTo(cx2-r,cy2+r);ctx.stroke();
+    ctx.fillStyle='rgba(80,255,100,.15)';ctx.fillRect(x,y,w,h);
+  }
+  ctx.restore();
+}
+
+/* ── DRAW HUMAN IN TILE ── */
+function drawHuman(x,y,w,h,type,state){
+  ctx.fillStyle=type==='judge'?'#0e1a2a':'#0a1a0a';ctx.fillRect(x+1,y+1,w-2,h-2);
+  const cx=x+w/2,cy=y+h/2;
+  // Suit
+  ctx.fillStyle=type==='judge'?'#1a3a5a':'#1a3a1a';
+  ctx.beginPath();ctx.ellipse(cx,cy+15,22,28,0,0,Math.PI*2);ctx.fill();
+  // White shirt
+  ctx.fillStyle='#ddd';ctx.fillRect(cx-6,cy-2,12,20);
+  // Head
+  ctx.fillStyle='#d4956a';ctx.beginPath();ctx.arc(cx,cy-20,18,0,Math.PI*2);ctx.fill();
+  // Hair
+  ctx.fillStyle=type==='judge'?'#888':'#2a1a0a';
+  ctx.fillRect(cx-16,cy-36,32,14);
+  // Eyes
+  ctx.fillStyle='#222';ctx.fillRect(cx-8,cy-24,4,4);ctx.fillRect(cx+4,cy-24,4,4);
+  // Judge robe collar
+  if(type==='judge'){
+    ctx.fillStyle='#f5f0e8';
+    ctx.beginPath();ctx.moveTo(cx-10,cy-4);ctx.lineTo(cx,cy+4);ctx.lineTo(cx+10,cy-4);ctx.fill();
+  }
+  // Speaking glow (respondent trying to be heard)
+  if(type==='resp'&&state==='active'){
+    ctx.strokeStyle='rgba(80,180,255,.6)';ctx.lineWidth=2;ctx.strokeRect(x+1,y+1,w-2,h-2);
+    ctx.font='bold 9px Courier New';ctx.fillStyle='rgba(80,180,255,.8)';
+    ctx.fillText('OBJECTION!',cx-28,y+14);
+  }
+}
+
+/* ── DRAW ALL TILES ── */
+function drawTiles(){
+  tiles.forEach(t=>{
+    const isKang=t.type==='kang'||(t.type==='judge'&&judgeWarning&&(t.state==='active'||t.state==='speaking'));
+    // Tile background frame
+    ctx.fillStyle='#18181c';ctx.fillRect(t.x,t.y,t.w,t.h);
+    // Connection quality dots (top-right)
+    for(let i=0;i<4;i++){ctx.fillStyle=i<t.connQuality?'#44ff44':'#333';
+      ctx.fillRect(t.x+t.w-14+i*4,t.y+3,3,6-(i*1));} // signal bars
+    if(isKang&&(t.state==='active'||t.state==='speaking'||t.state==='closing')){
+      drawKang(t.x,t.y,t.w,t.h,t.state,t.quip,t.closeT,t.stateT);
+    }else if(t.type==='judge'&&judgeWarning&&t.state==='idle'){
+      // Judge tile flickers when warning
+      if(Math.floor(frame/8)%2){
+        drawKang(t.x,t.y,t.w,t.h,'active',KQUIPS[0],60,60);
+      }else{
+        drawHuman(t.x,t.y,t.w,t.h,t.type,t.state);
+      }
+    }else{
+      drawHuman(t.x,t.y,t.w,t.h,t.type,t.state);
+    }
+    // Name label
+    ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(t.x,t.y+t.h-20,t.w,20);
+    ctx.fillStyle=isKang&&(t.state==='active'||t.state==='speaking')?'#ffaaaa':'rgba(255,255,255,.7)';
+    ctx.font='bold 9px Courier New';ctx.fillText(t.name,t.x+4,t.y+t.h-7);
+    ctx.fillStyle='rgba(255,255,255,.35)';ctx.font='7px Courier New';ctx.fillText(t.role,t.x+4,t.y+t.h-16);
+    // Active warning flash on border
+    if(t.type==='kang'&&t.state==='active'){
+      const u=t.stateT<60?1:t.stateT<120?.6:.3;
+      ctx.strokeStyle=`rgba(255,${Math.floor(80+80*u)},40,${.4+.5*Math.sin(frame*.3)})`;
+      ctx.lineWidth=2;ctx.strokeRect(t.x,t.y,t.w,t.h);
+    }
+  });
+  // Gavel stamp effect
+  if(gavel){
+    const a=gavel.t/30;
+    ctx.save();ctx.globalAlpha=a;ctx.shadowBlur=20;ctx.shadowColor='#ff4444';
+    ctx.fillStyle='rgba(255,40,40,.4)';ctx.beginPath();ctx.arc(gavel.x,gavel.y,30*(1-a)+10,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#ff4444';ctx.lineWidth=2;ctx.stroke();ctx.restore();
+  }
+}
+
+/* ── ZOOM HEADER ── */
+function drawHeader(){
+  ctx.fillStyle='#1c1c1c';ctx.fillRect(0,0,W,HDR);
+  ctx.fillStyle='#2687d4';ctx.fillRect(0,0,W,HDR);
+  // Logo area
+  ctx.fillStyle='#fff';ctx.font='bold 15px Arial';ctx.fillText('zoom',8,30);
+  ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='11px Courier New';
+  ctx.fillText('Hearing No. 20 OP 78015 — '+STAGES[stageIdx].label,70,20);
+  // Timer
+  const secs=Math.ceil(stageTimer/60);
+  ctx.fillStyle=secs<15?'#ff4444':'rgba(255,255,255,.8)';
+  ctx.font='bold 11px Courier New';ctx.fillText('TIME: '+secs+'s',70,37);
+  // Verdict meter
+  const vw=220,vx=W/2-vw/2;
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(vx,8,vw,14);
+  const kc=verdict/100;
+  const vc=kc>0.5?`rgb(${Math.round(255-255*(kc-.5)*2)},200,50)`:`rgb(255,${Math.round(200*kc*2)},50)`;
+  ctx.fillStyle=vc;ctx.fillRect(vx,8,Math.round(vw*kc),14);
+  ctx.strokeStyle='#444';ctx.lineWidth=1;ctx.strokeRect(vx,8,vw,14);
+  ctx.fillStyle='#000';ctx.font='bold 8px Courier New';
+  ctx.fillText('KANGAROO COURT',vx+3,20);
+  ctx.textAlign='right';ctx.fillText('FAIR TRIAL',vx+vw-3,20);ctx.textAlign='left';
+  ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='bold 8px Courier New';
+  ctx.fillText('VERDICT METER',vx+vw/2-33,8);
+  // Score
+  ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='bold 10px Courier New';
+  ctx.fillText('SCORE: '+score,W-CHAT_W-90,32);
+  // Participant count
+  ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='8px Courier New';
+  ctx.fillText('👥 '+tiles.length,W-CHAT_W-90,43);
+}
+
+/* ── BOTTOM CONTROLS BAR ── */
+function drawControls(){
+  const by=H-CTR;
+  ctx.fillStyle='#1c1c1c';ctx.fillRect(0,by,W,CTR);
+  const btns=[['🎤','Mute'],['📷','Stop Video'],['🔒','Security'],['👥','Participants'],['💬','Chat'],['📋','More']];
+  btns.forEach((b,i)=>{
+    const bx=12+i*80,bcy=by+CTR/2;
+    ctx.fillStyle='rgba(255,255,255,.08)';ctx.fillRect(bx,by+4,70,CTR-8);
+    ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='16px sans-serif';ctx.fillText(b[0],bx+8,bcy+6);
+    ctx.fillStyle='rgba(255,255,255,.45)';ctx.font='8px Arial';ctx.fillText(b[1],bx+28,bcy+5);
+  });
+  // End meeting button
+  ctx.fillStyle='#cc2222';ctx.fillRect(W-CHAT_W-90,by+8,82,CTR-16);
+  ctx.fillStyle='#fff';ctx.font='bold 9px Courier New';ctx.fillText('END HEARING',W-CHAT_W-84,by+CTR/2+3);
+  // Click instruction
+  ctx.fillStyle='rgba(255,220,80,.8)';ctx.font='bold 9px Courier New';
+  ctx.fillText('CLICK KANGAROO TILES TO CLOSE THEM BEFORE THEY SPEAK!',W/2-195,by+CTR-8);
+}
+
+/* ── CHAT PANEL ── */
+function drawChat(){
+  ctx.fillStyle='#111';ctx.fillRect(CHAT_X,HDR,CHAT_W,H-HDR-CTR);
+  ctx.fillStyle='#222';ctx.fillRect(CHAT_X,HDR,CHAT_W,18);
+  ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='bold 8px Courier New';ctx.fillText('CHAT ('+chatLog.length+')',CHAT_X+6,HDR+12);
+  // Chat messages (scroll from bottom)
+  ctx.save();ctx.rect(CHAT_X,HDR+18,CHAT_W,H-HDR-CTR-18);ctx.clip();
+  const lineH=14,visLines=Math.floor((H-HDR-CTR-18)/lineH);
+  const start=Math.max(0,chatLog.length-visLines-1);
+  chatLog.slice(start).forEach((msg,i)=>{
+    const lx=CHAT_X+4,ly=H-CTR-8-(chatLog.length-start-1-i)*lineH;
+    ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='7px Courier New';
+    ctx.fillText(msg,lx,ly,CHAT_W-8);
+  });
+  ctx.restore();
+  // Chat input box
+  ctx.fillStyle='#1a1a1a';ctx.fillRect(CHAT_X,H-CTR-20,CHAT_W,18);
+  ctx.strokeStyle='#333';ctx.lineWidth=1;ctx.strokeRect(CHAT_X,H-CTR-20,CHAT_W,18);
+  ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='7px Courier New';ctx.fillText('Type a message...',CHAT_X+4,H-CTR-8);
+}
+
+/* ── EFFECTS ── */
+function drawEffects(){
+  parts.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life/50);ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1;
+  floaters.forEach(f=>{ctx.globalAlpha=Math.min(1,f.life/40);ctx.fillStyle=f.col;
+    ctx.font=(f.big?'bold 18px':'bold 13px')+' Courier New';
+    ctx.fillText(f.txt,f.x-ctx.measureText(f.txt).width/2,f.y);});ctx.globalAlpha=1;
+}
+
+/* ── HUD overlay ── */
+function drawHUD(){
+  // Verdict critical warning
+  if(verdict<25){
+    const a=.35+.25*Math.sin(frame*.2);
+    ctx.fillStyle=`rgba(255,40,40,${a})`;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle=`rgba(255,80,80,${a+.3})`;ctx.font='bold 12px Courier New';
+    ctx.fillText('⚠  KANGAROO COURT IMMINENT — CLOSE THE WINDOWS!',W/2-225,H/2);
+  }
+  // Judge warning
+  if(judgeWarning){
+    ctx.save();ctx.shadowBlur=12;ctx.shadowColor='#ff8800';
+    ctx.fillStyle='rgba(255,140,0,.9)';ctx.font='bold 10px Courier New';
+    ctx.fillText('⚠ JUDGE TILE COMPROMISED — CLICK TO CLOSE!',W/2-185,HDR+16);
+    ctx.restore();
+  }
+}
+
+/* ── SCREENS ── */
+function drawTitle(){
+  ctx.fillStyle='#1c1c1c';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#2687d4';ctx.fillRect(0,0,W,46);
+  ctx.fillStyle='#fff';ctx.font='bold 15px Arial';ctx.fillText('zoom',8,30);
+  ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='10px Courier New';ctx.fillText('Waiting Room — Case No. 20 OP 78015',70,28);
+  // Mini tile grid preview
+  for(let r=0;r<2;r++)for(let c=0;c<3;c++){
+    const tx=GRID_X+c*(TILE_W+2),ty=GRID_Y+r*(TILE_H+2);
+    ctx.fillStyle='#0e0e14';ctx.fillRect(tx,ty,TILE_W,TILE_H);
+    if((r*3+c)%2===0){
+      drawKang(tx,ty,TILE_W,TILE_H,'active','JUMP TO VERDICT!',50+c*10,80+r*20);
+    }else{
+      drawHuman(tx,ty,TILE_W,TILE_H,r===0&&c===0?'judge':'resp','idle');
+    }
+    ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(tx,ty+TILE_H-18,TILE_W,18);
+    ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='bold 8px Courier New';
+    ctx.fillText(NAMES[r*3+c].name,tx+4,ty+TILE_H-6);
+  }
+  // Title overlay
+  ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,HDR+2,W,TILE_H*2+50);
+  ctx.save();ctx.shadowBlur=22;ctx.shadowColor='#2687d4';
+  ctx.fillStyle='#5aabff';ctx.font='bold 36px Courier New';ctx.fillText('ZOOM KANGAROO COURT',W/2-265,175);ctx.restore();
+  ctx.fillStyle='rgba(255,220,80,.85)';ctx.font='13px Courier New';
+  ctx.fillText('A sham proceeding that jumps to a predetermined verdict.',W/2-228,210);
+  ctx.fillStyle='rgba(255,200,200,.7)';ctx.font='11px Courier New';
+  ctx.fillText('Kangaroos pop up in the video tiles. CLICK them before they speak!',W/2-235,230);
+  ctx.fillText('Miss one → verdict shifts toward Kangaroo Court. Protect your hearing!',W/2-238,248);
+  ctx.fillStyle='rgba(255,255,255,.35)';ctx.font='10px Courier New';
+  ctx.fillText('5 STAGES of escalating bias  ·  Watch for the Judge tile flickering  ·  Score by closing early',W/2-258,270);
+  if(Math.floor(Date.now()/550)%2){ctx.fillStyle='#ffcc44';ctx.font='bold 18px Courier New';
+    ctx.fillText('CLICK OR PRESS SPACE TO ENTER HEARING',W/2-232,470);}
+}
+
+function drawEnd(win){
+  ctx.fillStyle='#0a0a12';ctx.fillRect(0,0,W,H);
+  if(win){
+    ctx.save();ctx.shadowBlur=26;ctx.shadowColor='#44ff88';
+    ctx.fillStyle='#44ff88';ctx.font='bold 36px Courier New';ctx.fillText('HEARING CONTINUED!',W/2-212,185);ctx.restore();
+    ctx.fillStyle='#88ccff';ctx.font='15px Courier New';ctx.fillText('You kept the kangaroos from taking over.',W/2-192,228);
+    ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='12px Courier New';ctx.fillText('Motion for proper review: GRANTED',W/2-135,258);
+    ctx.fillText('Score: '+score,W/2-40,282);
+  }else{
+    ctx.save();ctx.shadowBlur=22;ctx.shadowColor='#ff2244';
+    ctx.fillStyle='#ff3355';ctx.font='bold 36px Courier New';ctx.fillText('KANGAROO COURT!',W/2-195,185);ctx.restore();
+    ctx.fillStyle='#ffaa44';ctx.font='15px Courier New';ctx.fillText('The predetermined verdict was reached.',W/2-178,228);
+    ctx.fillStyle='rgba(255,255,255,.45)';ctx.font='12px Courier New';
+    ctx.fillText('"Jumping to conclusions since 1853"',W/2-150,258);
+    ctx.fillText('Score: '+score,W/2-40,282);
+  }
+  if(Math.floor(Date.now()/600)%2){ctx.fillStyle='#ffcc44';ctx.font='bold 16px Courier New';
+    ctx.fillText('CLICK OR PRESS SPACE TO TRY AGAIN',W/2-190,380);}
+}
+
+function drawStageClear(){
+  ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.shadowBlur=18;ctx.shadowColor='#44ff88';
+  ctx.fillStyle='#44ff88';ctx.font='bold 30px Courier New';ctx.fillText('STAGE CLEARED!',W/2-148,225);ctx.restore();
+  ctx.fillStyle='#aaccff';ctx.font='14px Courier New';
+  if(stageIdx<STAGES.length)ctx.fillText('NEXT: '+STAGES[stageIdx].label,W/2-120,262);
+  ctx.fillStyle='rgba(255,255,255,.45)';ctx.font='11px Courier New';
+  ctx.fillText('Verdict held at '+Math.round(verdict)+'%  ·  Score: '+score,W/2-120,288);
+}
+
+/* ── MAIN LOOP ── */
+function loop(){
+  requestAnimationFrame(loop);
+  ctx.save();ctx.translate(shX,shY);
+  if(GS==='title')      drawTitle();
+  else if(GS==='win')   drawEnd(true);
+  else if(GS==='gameover') drawEnd(false);
+  else if(GS==='stageclear') {drawTiles();drawHeader();drawControls();drawChat();drawEffects();drawStageClear();}
+  else{drawTiles();drawHeader();drawControls();drawChat();drawEffects();drawHUD();update();}
+  ctx.restore();
+}
+initGame();loop();
+</script>
+</body>
+</html>
