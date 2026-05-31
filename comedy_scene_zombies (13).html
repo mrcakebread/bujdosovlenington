@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Comedy Scene Zombies</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050002;display:flex;align-items:center;justify-content:center;
+  min-height:100vh;font-family:'Courier New',monospace;user-select:none;overflow:hidden}
+canvas{display:block;cursor:crosshair;touch-action:none}
+</style>
+</head>
+<body>
+<div style="position:relative;display:inline-block;line-height:0;font-size:0">
+<canvas id="g"></canvas>
+<canvas id="gs" style="position:absolute;top:0;left:0;pointer-events:none;mix-blend-mode:screen"></canvas>
+</div>
+<script>
+const CV=document.getElementById('g');
+const ctx=CV.getContext('2d');
+const SCV=document.getElementById('gs');         // sprite canvas — CSS screen blend
+const sctx=SCV.getContext('2d');                  // sprites drawn here, black bg = transparent
+let W=800,H=520,SCALE=1;
+function resize(){
+  const s=Math.min(window.innerWidth/800,window.innerHeight/520);
+  SCALE=s;
+  CV.width=Math.round(800*s);CV.height=Math.round(520*s);
+  SCV.width=CV.width;SCV.height=CV.height;
+  CV.style.width=SCV.style.width=CV.width+'px';
+  CV.style.height=SCV.style.height=CV.height+'px';
+  ctx.setTransform(s,0,0,s,0,0);
+  sctx.setTransform(s,0,0,s,0,0);
+}
+resize();window.addEventListener('resize',resize);
+
+/* ── ASSET LOADING (no CORS, no getImageData) ───────────────────────────── */
+/* Images load normally — same-origin, no crossOrigin attribute needed.      */
+/* become transparent-equivalent on dark backgrounds. Zero CORS required.    */
+const IMG_BG    = new Image();
+const IMG_LW    = new Image();  // Lower Wacker (stage 2)
+const IMG_CAT   = new Image();  // Catacombs    (stage 3)
+const IMG_ZCHK  = new Image();
+const IMG_CLOWN = new Image();
+const IMG_COMIC = new Image();
+let assetsReady=0, assetLog=[];
+function onImgLoad(name){ return function(){ assetsReady++; assetLog.push('OK:'+name); }; }
+function onImgFail(name){ return function(){ assetsReady++; assetLog.push('FAIL:'+name); }; }
+IMG_BG.onload   =onImgLoad('NB');    IMG_BG.onerror   =onImgFail('NB');
+IMG_LW.onload   =onImgLoad('LW');    IMG_LW.onerror   =onImgFail('LW');
+IMG_CAT.onload  =onImgLoad('CAT');   IMG_CAT.onerror  =onImgFail('CAT');
+IMG_ZCHK.onload =onImgLoad('ZCH');   IMG_ZCHK.onerror =onImgFail('ZCH');
+IMG_CLOWN.onload=onImgLoad('CLN');   IMG_CLOWN.onerror=onImgFail('CLN');
+IMG_COMIC.onload=onImgLoad('COM');   IMG_COMIC.onerror=onImgFail('COM');
+IMG_BG.src   ='northbar.png';
+IMG_LW.src   ='lowerwacker.png';
+IMG_CAT.src  ='catacombs.png';
+IMG_ZCHK.src ='zombiechick.png';
+IMG_CLOWN.src='clownattorneys.png';
+IMG_COMIC.src='zombiecomics.png';
+
+function imgOK(img){ return img.complete && img.naturalWidth>0; }
+
+/* drawFrame: draws to the SPRITE canvas (sctx), which sits on top of the   */
+/* main canvas with CSS mix-blend-mode:screen applied.                       */
+/* Black pixels in sctx become transparent at the compositor level —        */
+/* no JS compositing tricks, no CORS, works identically in all browsers.    */
+/* flipX mirrors the sprite so it faces the correct direction.               */
+function drawFrame(img, f, cx, cy, dispH, flipX, alpha){
+  if(!imgOK(img)) return;
+  const scale=dispH/f.h;
+  const dw=Math.ceil(f.w*scale), dh=Math.ceil(dispH);
+  if(dw<1||dh<1) return;
+  sctx.save();
+  if(alpha!==undefined) sctx.globalAlpha=alpha;
+  if(flipX){
+    sctx.translate(Math.round(cx+dw/2), Math.round(cy-dh));
+    sctx.scale(-1,1);
+    sctx.drawImage(img, f.x,f.y,f.w,f.h, 0,0,dw,dh);
+  } else {
+    sctx.drawImage(img, f.x,f.y,f.w,f.h, Math.round(cx-dw/2),Math.round(cy-dh),dw,dh);
+  }
+  sctx.restore();
+}
+
+const VPX=400,VPY=210; // vanishing point
+
+/* Depth-based opacity: 85% when far (depth=1), 100% when close (depth=0) */
+function depthAlpha(z){ return 0.85 + (1-z.depth)*0.15; }
+
+/* ── AUDIO ─────────────────────────────────────────────────────────────── */
+let AC;
+function ac(){if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}return AC;}
+function beep(f,d,t,v){const a=ac();if(!a)return;
+  try{const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;
+  g.gain.setValueAtTime(v||.07,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+d);
+  o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d);}catch(e){}}
+function sndGun(){beep(900,.04,'square',.1);setTimeout(()=>beep(400,.07,'sawtooth',.07),42);}
+function sndAxe(){beep(180,.18,'sawtooth',.11);setTimeout(()=>beep(130,.12,'sine',.08),90);}
+function sndHit(){beep(320,.09,'sawtooth',.08);}
+function sndDie(){beep(110,.28,'sawtooth',.1);setTimeout(()=>beep(80,.18,'sine',.07),160);}
+function sndOuch(){beep(180,.22,'sawtooth',.13);}
+function sndWin(){[500,650,800,1000].forEach((f,i)=>setTimeout(()=>beep(f,.18,'sine',.08),i*110));}
+
+/* ── STAGES ─────────────────────────────────────────────────────────────── */
+const STAGES=[
+  {name:'NORTH BAR',            sub:'Open Mic Night — the dead have joined the audience'},
+  {name:'LOWER WACKER',         sub:'They followed you underground'},
+  {name:'COURTHOUSE CATACOMBS', sub:'Due process never died — just the participants'},
+];
+
+/* ── ZOMBIE TYPES ───────────────────────────────────────────────────────── */
+const ZTYPES=[
+  {id:'accuser', name:'THE ACCUSER',
+   bodyCol:'#cc2277',dressCol:'#e03399',skinCol:'#c8a0b8',hairCol:'#3a1855',
+   quips:["I loved you...","Who's the predator now?","Let me feed off of you","We had something special..."],
+   hp:3,spd:0.0018},
+  {id:'monkey', name:'FLYING MONKEY',
+   bodyCol:'#7733aa',dressCol:'#440055',skinCol:'#9966bb',hairCol:'#220033',
+   quips:["Zombie Gossip is Always True","She told me everything","Spreading rumors from beyond","Brains AND false accusations"],
+   hp:2,spd:0.0024},
+  {id:'clown', name:'CLOWN ATTORNEY',
+   bodyCol:'#cc2222',dressCol:'#dd3333',skinCol:'#e8d0d0',hairCol:'#ff8800',
+   quips:["Objection! Still guilty!","Due process is undead!","I'll serve papers in hell","Rubber stamp FOREVER"],
+   hp:4,spd:0.0014},
+];
+
+const LANES=[{fx:-110,cx:-250},{fx:0,cx:0},{fx:110,cx:250}];
+const WAVES_PER_STAGE=5, PANEL_H=105;
+
+/* ── GAME STATE ─────────────────────────────────────────────────────────── */
+let GS='title';
+let stageIdx=0,waveNum=1,score=0,health=3;
+let zombies=[],effects=[],floaters=[];
+let weapon='gun',gunCool=0,axeCool=0,muzzleFlash=0,axeSwing=0,damageFlash=0;
+let frame=0,shAmt=0,shX=0,shY=0;
+let spawnTimer=0,waveSpawned=0,waveKilled=0,waveTotal=0,waveBreak=0;
+
+function shake(a){shAmt=Math.max(shAmt,a);}
+function waveCfg(){
+  return{
+    total:4+waveNum+stageIdx*2,
+    spawnEvery:Math.max(55,110-waveNum*12-stageIdx*8),
+    spdMult:1+waveNum*.12+stageIdx*.18,
+  };
+}
+
+function initGame(){
+  stageIdx=0;waveNum=1;score=0;health=3;frame=0;
+  startStage();
+}
+function startStage(){
+  zombies=[];effects=[];floaters=[];
+  weapon='gun';gunCool=0;axeCool=0;muzzleFlash=0;axeSwing=0;damageFlash=0;
+  shAmt=0;waveSpawned=0;waveKilled=0;waveBreak=0;
+  const cfg=waveCfg();waveTotal=cfg.total;spawnTimer=50;
+}
+
+/* ── INPUT ─────────────────────────────────────────────────────────────── */
+function toC(ex,ey){const r=CV.getBoundingClientRect();return{x:(ex-r.left)/SCALE,y:(ey-r.top)/SCALE};}
+CV.addEventListener('click',e=>{e.preventDefault();const p=toC(e.clientX,e.clientY);
+  if(GS!=='playing'){ac();startGame();}else handleFire(p.x,p.y);});
+CV.addEventListener('touchend',e=>{e.preventDefault();ac();
+  const p=toC(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+  if(GS!=='playing')startGame();else handleFire(p.x,p.y);},{passive:false});
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();if(GS!=='playing')startGame();}
+  if(e.code==='KeyA')weapon='axe';
+  if(e.code==='KeyG')weapon='gun';
+});
+function startGame(){GS='playing';initGame();}
+
+function handleFire(sx,sy){
+  const gameH=H-PANEL_H;
+  if(sy>gameH){weapon=sx<W/2?'axe':'gun';return;}
+  if(weapon==='gun'){
+    if(gunCool>0)return;
+    gunCool=18;muzzleFlash=9;sndGun();
+    const by=[...zombies].sort((a,b)=>a.depth-b.depth);
+    let hit=false;
+    for(const z of by){
+      if(z.hp<=0)continue;
+      const p=zPos(z),h2=zH(z);
+      if(sx>=p.x-h2*.4&&sx<=p.x+h2*.4&&sy>=p.y-h2*.9&&sy<=p.y+4){
+        hitZ(z,p,h2);hit=true;break;
+      }
+    }
+    if(!hit)addFloat(sx,sy-22,'MISS!','rgba(255,160,50,.75)',38);
+  }else{
+    if(axeCool>0)return;
+    axeCool=36;axeSwing=22;sndAxe();
+    const close=zombies.filter(z=>z.depth<0.26&&z.hp>0);
+    if(close.length){close.forEach(z=>{z.hp=0;killZ(z);});}
+    else addFloat(W/2,H/2-40,'TOO FAR!','rgba(255,100,40,.85)',50);
+  }
+}
+
+function zPos(z){
+  const l=LANES[z.lane],t=1-z.depth;
+  return{x:VPX+l.fx+(l.cx-l.fx)*t, y:VPY+70+t*(H-PANEL_H-VPY-70)*.88};
+}
+function zH(z){return Math.round((32+(1-z.depth)*248)*1.2);}
+
+function hitZ(z,p,h2){
+  z.hp--;z.hitFlash=14;score+=5;sndHit();
+  addFX('hit',p.x,p.y-h2*.5);
+  addFloat(p.x,p.y-h2*.7,`HIT! +5`,'#ffcc44',48);
+  if(z.hp<=0)killZ(z);
+}
+function killZ(z){
+  z.hp=0;z.dying=true;z.dyingT=28;
+  score+=20;waveKilled++;sndDie();
+  const p=zPos(z);
+  addFX('splat',p.x,p.y);
+  addFloat(p.x,p.y-60,'ELIMINATED! +20','#44ff88',65,true);
+}
+function addFX(type,x,y){effects.push({type,x,y,t:0,life:type==='splat'?32:type==='slash'?18:13});}
+function addFloat(x,y,txt,col,life,big){floaters.push({x,y,txt,col,life,vy:-1.1,big:!!big});}
+
+/* ── UPDATE ─────────────────────────────────────────────────────────────── */
+function update(){
+  frame++;
+  if(shAmt>.3){shX=(Math.random()-.5)*shAmt*2;shY=(Math.random()-.5)*shAmt*2;shAmt*=.78;}else{shX=0;shY=0;shAmt=0;}
+  if(gunCool>0)gunCool--;if(axeCool>0)axeCool--;
+  if(muzzleFlash>0)muzzleFlash--;if(axeSwing>0)axeSwing--;if(damageFlash>0)damageFlash--;
+
+  if(waveBreak>0){
+    if(--waveBreak===0)beginNextWave();
+    updateFX();return;
+  }
+
+  const cfg=waveCfg();
+  if(waveSpawned<waveTotal&&--spawnTimer<=0){
+    spawnTimer=cfg.spawnEvery+Math.floor(Math.random()*20);
+    spawnZ(cfg.spdMult);
+  }
+
+  zombies.forEach(z=>{
+    if(z.dying){z.dyingT--;return;}
+    z.depth-=z.spd*cfg.spdMult;
+    z.walkT+=0.13;
+    if(--z.quipT<=0){
+      z.quipT=100+Math.random()*80;
+      z.quip=z.type.quips[Math.floor(Math.random()*z.type.quips.length)];
+      z.quipLife=150;
+    }
+    if(z.quipLife>0)z.quipLife--;
+    if(z.hitFlash>0)z.hitFlash--;
+    if(z.depth<=0){
+      z.hp=0;z.dying=true;z.dyingT=18;
+      health--;shake(14);damageFlash=28;sndOuch();waveKilled++;
+      addFloat(VPX,VPY+30,'ARGH!','#ff2222',55,true);
+      if(health<=0)GS='gameover';
+    }
+  });
+  zombies=zombies.filter(z=>!(z.dying&&z.dyingT<=0));
+
+  if(waveSpawned>=waveTotal&&zombies.length===0&&waveBreak===0){
+    waveBreak=110;
+    addFloat(W/2,H/2-30,'WAVE CLEARED!','#44ff88',95,true);
+    if(waveNum>=WAVES_PER_STAGE){
+      stageIdx++;
+      if(stageIdx>=STAGES.length){GS='win';sndWin();return;}
+      waveNum=1;GS='stageclear';
+      setTimeout(()=>{if(GS==='stageclear'){GS='playing';startStage();}},3200);
+    }else waveNum++;
+  }
+  updateFX();
+}
+
+function beginNextWave(){
+  waveSpawned=0;waveKilled=0;
+  const cfg=waveCfg();waveTotal=cfg.total;spawnTimer=55;
+  addFloat(W/2,H/2,'WAVE '+waveNum+'   BEGIN!','#ffcc44',75,true);
+}
+
+function spawnZ(spdMult){
+  const t=ZTYPES[Math.floor(Math.random()*ZTYPES.length)];
+  const lane=Math.floor(Math.random()*3);
+  // Check lane not crowded
+  if(zombies.filter(z=>z.lane===lane&&z.depth>0.8).length>0&&Math.random()<.6)return;
+  zombies.push({type:t,lane,depth:1,spd:t.spd,hp:t.hp,maxHp:t.hp,
+    hitFlash:0,dying:false,dyingT:0,walkT:Math.random()*6.28,
+    quip:'',quipT:40+Math.random()*60,quipLife:0,
+    flip:Math.random()<0.5});   // random facing per zombie
+  waveSpawned++;
+}
+
+function updateFX(){
+  for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.t++;if(--e.life<=0)effects.splice(i,1);}
+  for(let i=floaters.length-1;i>=0;i--){const f=floaters[i];f.y+=f.vy;if(--f.life<=0)floaters.splice(i,1);}
+}
+
+/* ── DRAW ROOM ──────────────────────────────────────────────────────────── */
+function drawRoom(){
+  const gameH=H-PANEL_H;
+  const OVERLAY='rgba(0,0,0,0.58)';
+
+  // Choose background image for current stage
+  const bgImgs=[IMG_BG, IMG_LW, IMG_CAT];
+  const bg=bgImgs[stageIdx];
+  if(bg && imgOK(bg)){
+    // Fill black first so no white flash while loading
+    ctx.fillStyle='#000';ctx.fillRect(0,0,W,gameH);
+    // Draw photo — cover-fit: scale to fill while preserving aspect ratio
+    const ir=bg.naturalWidth/bg.naturalHeight;
+    const cr=W/gameH;
+    let sw,sh,sx=0,sy=0;
+    if(ir>cr){sw=bg.naturalHeight*cr;sh=bg.naturalHeight;sx=(bg.naturalWidth-sw)/2;}
+    else{sw=bg.naturalWidth;sh=bg.naturalWidth/cr;sy=(bg.naturalHeight-sh)/2;}
+    ctx.drawImage(bg,sx,sy,sw,sh,0,0,W,gameH);
+    // Equal dark overlay on all stages
+    ctx.fillStyle=OVERLAY;ctx.fillRect(0,0,W,gameH);
+    return;
+  }
+
+  // Fallback canvas room (used until images load)
+  const cg=ctx.createLinearGradient(0,0,0,VPY);
+  cg.addColorStop(0,'#07030c');cg.addColorStop(1,'#1a0808');
+  ctx.fillStyle=cg;ctx.fillRect(0,0,W,VPY);
+  const fg=ctx.createLinearGradient(0,VPY,0,gameH);
+  fg.addColorStop(0,'#160d04');fg.addColorStop(1,'#201008');
+  ctx.fillStyle=fg;ctx.fillRect(0,VPY,W,gameH-VPY);
+  ctx.fillStyle='rgba(10,5,3,.95)';
+  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(VPX,VPY);ctx.lineTo(0,gameH);ctx.fill();
+  ctx.fillStyle='rgba(8,4,3,.95)';
+  ctx.beginPath();ctx.moveTo(W,0);ctx.lineTo(VPX,VPY);ctx.lineTo(W,gameH);ctx.fill();
+  ctx.strokeStyle='rgba(80,50,20,.2)';ctx.lineWidth=1;
+  for(let i=1;i<9;i++){const t=i/9,fy=VPY+(gameH-VPY)*Math.pow(t,1.4);
+    ctx.beginPath();ctx.moveTo(0,fy);ctx.lineTo(W,fy);ctx.stroke();}
+  for(let i=0;i<=8;i++){ctx.beginPath();ctx.moveTo(VPX,VPY);ctx.lineTo(i/8*W,gameH);ctx.stroke();}
+}
+
+
+
+/* ── CLOWN ATTORNEY FRAME MAP ──────────────────────────────────────────────── */
+/* ── ZOMBIECHICK FRAME MAP (zombiechick.png, 2760×1504) ──────────────────── */
+const ZF = {
+  idle:  [{x:99,y:17,w:144,h:348},{x:448,y:15,w:146,h:350},{x:814,y:17,w:152,h:348},{x:1159,y:13,w:165,h:352}],
+  walk:  [{x:74,y:398,w:165,h:355},{x:432,y:398,w:164,h:355},{x:792,y:399,w:165,h:354},{x:1171,y:399,w:145,h:354},
+           {x:1523,y:399,w:205,h:350},{x:1863,y:399,w:169,h:354},{x:2232,y:399,w:199,h:350},{x:2567,y:399,w:163,h:354}],
+  attack:[{x:54,y:785,w:227,h:354},{x:385,y:798,w:228,h:342},{x:744,y:792,w:240,h:348},{x:1124,y:788,w:224,h:352}],
+  death: [{x:33,y:1162,w:183,h:341},{x:368,y:1207,w:272,h:296},{x:729,y:1225,w:293,h:278},
+           {x:1072,y:1280,w:325,h:223},{x:1421,y:1354,w:337,h:149},{x:1782,y:1415,w:348,h:88},
+           {x:2146,y:1427,w:347,h:76},{x:2502,y:1432,w:258,h:71}]
+};
+
+const CF = {
+  idle:  [{x:26,y:22,w:246,h:378},{x:352,y:22,w:248,h:378},{x:681,y:22,w:246,h:378},{x:1008,y:23,w:246,h:377}],
+  walk:  [{x:25,y:432,w:310,h:375},{x:372,y:432,w:308,h:374},{x:738,y:433,w:306,h:373},{x:1082,y:432,w:310,h:375},
+           {x:1424,y:432,w:312,h:375},{x:1778,y:432,w:291,h:374},{x:2130,y:433,w:304,h:375},{x:2474,y:433,w:318,h:374}],
+  attack:[{x:11,y:832,w:406,h:324},{x:432,y:832,w:393,h:324},{x:887,y:829,w:361,h:328}],
+  death: [{x:37,y:1180,w:277,h:322},{x:367,y:1184,w:277,h:317},{x:682,y:1191,w:325,h:310},
+           {x:1044,y:1297,w:329,h:207},{x:1412,y:1307,w:321,h:197},{x:1761,y:1335,w:334,h:169},
+           {x:2120,y:1340,w:379,h:158},{x:2640,y:1344,w:140,h:142}]
+};
+
+/* ── ZOMBIE COMICS FRAME MAP (zombiecomics.png, 2816×1504) ─────────────────── */
+/* Single green-jacket zombie male. 4 anims: idle, walk(10f), attack(4f), death(8f) */
+const ZC_IDLE  = [{x:47,y:45,w:151,h:337},{x:288,y:48,w:138,h:333},{x:535,y:49,w:138,h:334},{x:781,y:49,w:134,h:333}];
+const ZC_WALK  = [{x:48,y:440,w:156,h:320},{x:309,y:441,w:151,h:319},{x:553,y:441,w:149,h:319},
+                  {x:794,y:442,w:150,h:318},{x:1032,y:440,w:150,h:320},{x:1275,y:445,w:147,h:315},
+                  {x:1516,y:441,w:152,h:319},{x:1758,y:445,w:148,h:315},
+                  {x:1998,y:443,w:148,h:317},{x:2251,y:442,w:151,h:317}];
+const ZC_ATTACK= [{x:29,y:819,w:245,h:332},{x:279,y:834,w:272,h:320},
+                  {x:652,y:840,w:300,h:311},{x:971,y:846,w:289,h:309}];
+const ZC_DEATH = [{x:52,y:1181,w:134,h:320},{x:284,y:1203,w:123,h:301},
+                  {x:496,y:1216,w:165,h:288},{x:725,y:1243,w:210,h:261},
+                  {x:1012,y:1299,w:226,h:205},{x:1334,y:1349,w:250,h:155},
+                  {x:1674,y:1434,w:356,h:70},{x:2070,y:1441,w:371,h:63}];
+
+/* ── DRAW CLOWN ATTORNEY USING SPRITE ──────────────────────────────────────── */
+function drawClownSprite(z,p,h){
+  let frames,fi;
+  if(z.dying){ frames=CF.death; fi=Math.min(CF.death.length-1,Math.floor((1-z.dyingT/28)*CF.death.length)); }
+  else if(z.depth<0.26){ frames=CF.attack; fi=Math.floor(z.walkT*.28)%CF.attack.length; }
+  else { frames=CF.walk; fi=Math.floor(z.walkT*.55)%CF.walk.length; }
+  const alpha=z.dying?Math.max(0,z.dyingT/28)*depthAlpha(z):depthAlpha(z);
+  drawFrame(IMG_CLOWN,frames[fi],p.x,p.y,h,z.flip,alpha);
+  drawSpriteOverlay(z,p,h);
+}
+
+/* ── DRAW ZOMBIE COMIC USING SPRITE ────────────────────────────────────────── */
+function drawComicSprite(z,p,h){
+  let f;
+  if(z.dying){
+    const fi=Math.min(ZC_DEATH.length-1,Math.floor((1-z.dyingT/28)*ZC_DEATH.length));
+    f=ZC_DEATH[fi];
+  } else if(z.depth<0.26){
+    f=ZC_ATTACK[Math.floor(z.walkT*.28)%ZC_ATTACK.length];
+  } else {
+    f=ZC_WALK[Math.floor(z.walkT*.55)%ZC_WALK.length];
+  }
+  const alpha=z.dying?Math.max(0,z.dyingT/28)*depthAlpha(z):depthAlpha(z);
+  drawFrame(IMG_COMIC,f,p.x,p.y,h,z.flip,alpha);
+  drawSpriteOverlay(z,p,h);
+}
+
+/* ── SHARED SPRITE OVERLAY (HP bar + quip bubble) ──────────────────────────── */
+function drawSpriteOverlay(z,p,h){
+  if(z.hp<z.maxHp&&z.hp>0){
+    const bw=44*(h/200),bx=p.x-bw/2,by2=p.y-h*.92;
+    ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(bx,by2,bw,5);
+    ctx.fillStyle='#ee2222';ctx.fillRect(bx,by2,bw*(z.hp/z.maxHp),5);
+  }
+  if(z.quipLife>0&&z.quip){
+    const s=h/200,fs=Math.max(8,Math.round(10*Math.min(1,s*1.2)));
+    const qa=Math.min(1,z.quipLife/35);
+    ctx.globalAlpha=qa*(z.dying?Math.max(0,z.dyingT/28):1);
+    ctx.font=`bold ${fs}px Courier New`;
+    const bw2=ctx.measureText(z.quip).width+14,bh2=fs+8;
+    const bx2=p.x-bw2/2,by2=p.y-h*1.05-bh2;
+    ctx.fillStyle='rgba(12,0,6,.92)';
+    ctx.beginPath();
+    const rr=4;
+    ctx.moveTo(bx2+rr,by2);ctx.lineTo(bx2+bw2-rr,by2);
+    ctx.arcTo(bx2+bw2,by2,bx2+bw2,by2+rr,rr);
+    ctx.lineTo(bx2+bw2,by2+bh2-rr);ctx.arcTo(bx2+bw2,by2+bh2,bx2+bw2-rr,by2+bh2,rr);
+    ctx.lineTo(p.x+5,by2+bh2);ctx.lineTo(p.x,by2+bh2+7);ctx.lineTo(p.x-5,by2+bh2);
+    ctx.lineTo(bx2+rr,by2+bh2);ctx.arcTo(bx2,by2+bh2,bx2,by2+bh2-rr,rr);
+    ctx.lineTo(bx2,by2+rr);ctx.arcTo(bx2,by2,bx2+rr,by2,rr);ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle='rgba(200,50,100,.5)';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle='#ffbbdd';ctx.fillText(z.quip,bx2+7,by2+fs+1);
+    ctx.globalAlpha=1;
+  }
+}
+
+/* ── DRAW ACCUSER ZOMBIE USING SPRITE SHEET ─────────────────────────────── */
+function drawAccuserSprite(z,p,h){
+  let frames,fi;
+  if(z.dying)      { frames=ZF.death;  fi=Math.min(7,Math.floor((1-z.dyingT/28)*8)); }
+  else if(z.depth<0.26){ frames=ZF.attack; fi=Math.floor(z.walkT*0.28)%4; }
+  else             { frames=ZF.walk;   fi=Math.floor(z.walkT*0.55)%8; }
+  const alpha=z.dying?Math.max(0,z.dyingT/28)*depthAlpha(z):depthAlpha(z);
+  drawFrame(IMG_ZCHK, frames[fi], p.x, p.y, h, z.flip, alpha);
+  drawSpriteOverlay(z,p,h);
+}
+
+
+/* ── DRAW ZOMBIE ─────────────────────────────────────────────────────────── */
+function drawZombie(z){
+  if(z.dying&&z.dyingT<=0)return;
+  const p=zPos(z),h=zH(z),s=h/200;
+  const x=p.x,y=p.y,t=z.type;
+
+  // Route each zombie type to its sprite draw function when loaded
+  if(t.id==='accuser' && imgOK(IMG_ZCHK)){ drawAccuserSprite(z,p,h); return; }
+  if(t.id==='clown'   && imgOK(IMG_CLOWN)){ drawClownSprite(z,p,h);   return; }
+  if(t.id==='monkey'  && imgOK(IMG_COMIC)){ drawComicSprite(z,p,h);   return; }
+
+  const walk=Math.sin(z.walkT)*.14;
+  const flik=z.hitFlash>0&&Math.floor(z.hitFlash/3)%2;
+  const da=z.dying?z.dyingT/28:1;
+  ctx.save();ctx.globalAlpha=da*(flik?.25:1);
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,.35)';
+  ctx.beginPath();ctx.ellipse(x,y+2,18*s,5*s,0,0,Math.PI*2);ctx.fill();
+
+  // Legs
+  const lsw=Math.sin(z.walkT)*14*s;
+  ctx.fillStyle=flik?'#fff':t.bodyCol;
+  ctx.fillRect(x-15*s+lsw,y-38*s,11*s,40*s);
+  ctx.fillRect(x+4*s-lsw,y-38*s,11*s,40*s);
+  // Shoes
+  ctx.fillStyle='#111';
+  ctx.beginPath();ctx.ellipse(x-10*s+lsw,y,13*s,5*s,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(x+10*s-lsw,y,12*s,5*s,0,0,Math.PI*2);ctx.fill();
+
+  // Body
+  if(t.id==='accuser'){
+    ctx.fillStyle=flik?'#fff':t.dressCol;
+    ctx.beginPath();ctx.ellipse(x,y-78*s,22*s,40*s,0,0,Math.PI*2);ctx.fill();
+    // Tear strips
+    ctx.fillStyle='rgba(0,0,0,.28)';
+    for(let i=0;i<3;i++)ctx.fillRect(x-18*s+i*13*s,y-62*s,5*s,22*s);
+    // Gaslight lantern (broken, dark)
+    const lx=x+26*s,ly=y-50*s;
+    ctx.fillStyle='#444';ctx.fillRect(lx,ly,10*s,14*s);
+    ctx.strokeStyle='rgba(100,60,0,.4)';ctx.lineWidth=s;
+    ctx.strokeRect(lx,ly,10*s,14*s);
+  } else if(t.id==='monkey'){
+    ctx.fillStyle=flik?'#fff':t.bodyCol;
+    ctx.fillRect(x-20*s,y-116*s,40*s,78*s);
+    // Torn wings
+    ctx.fillStyle='rgba(80,30,120,.55)';
+    ctx.beginPath();ctx.ellipse(x-30*s,y-98*s,20*s,11*s,-.28+walk*.4,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(x+30*s,y-98*s,20*s,11*s,.28-walk*.4,0,Math.PI*2);ctx.fill();
+    // Briefcase
+    ctx.fillStyle='#3a3a3a';ctx.fillRect(x+22*s,y-75*s,16*s,12*s);
+    ctx.fillStyle='#666';ctx.fillRect(x+24*s,y-79*s,12*s,5*s);
+  } else {
+    // Clown body
+    ctx.fillStyle=flik?'#fff':t.bodyCol;
+    ctx.fillRect(x-22*s,y-116*s,44*s,78*s);
+    ctx.fillStyle='rgba(255,255,255,.28)';
+    for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(x-12*s+i*9*s,y-88*s+i%2*12*s,3.5*s,0,Math.PI*2);ctx.fill();}
+    // Collar
+    ctx.fillStyle='#f5f0e8';ctx.beginPath();ctx.ellipse(x,y-118*s,18*s,7*s,0,0,Math.PI*2);ctx.fill();
+    // Zombie briefcase
+    ctx.fillStyle='#444';ctx.fillRect(x+18*s,y-78*s,17*s,12*s);
+    ctx.fillStyle='#666';ctx.fillRect(x+20*s,y-82*s,13*s,5*s);
+  }
+
+  // Neck / head
+  ctx.fillStyle=flik?'#fff':t.skinCol;
+  ctx.fillRect(x-5*s,y-130*s,10*s,16*s);
+  ctx.beginPath();ctx.arc(x,y-145*s+walk*10,22*s,0,Math.PI*2);ctx.fill();
+
+  // Hair / hat
+  if(t.id==='accuser'){
+    ctx.fillStyle=t.hairCol;
+    ctx.fillRect(x-21*s,y-168*s,42*s,15*s);
+    ctx.fillRect(x-25*s,y-164*s,7*s,22*s);ctx.fillRect(x+18*s,y-164*s,7*s,22*s);
+  } else if(t.id==='monkey'){
+    ctx.fillStyle='#cc2222';ctx.fillRect(x-13*s,y-170*s,26*s,18*s);
+    ctx.fillRect(x-15*s,y-170*s,30*s,5*s);
+  } else {
+    // Clown hair + zombie wig
+    ctx.fillStyle=t.hairCol;
+    ctx.beginPath();ctx.arc(x-26*s,y-148*s,9*s,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x+26*s,y-148*s,9*s,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e8e0d0';ctx.fillRect(x-22*s,y-169*s,44*s,16*s);
+    // Red nose
+    ctx.fillStyle='#ff2222';ctx.beginPath();ctx.arc(x,y-142*s+walk*10,4.5*s,0,Math.PI*2);ctx.fill();
+  }
+
+  // Zombie eyes — red glow
+  ctx.save();ctx.shadowBlur=8*s;ctx.shadowColor='#ff0000';
+  ctx.fillStyle='#dd0000';
+  ctx.beginPath();ctx.arc(x-8*s,y-148*s+walk*10,4.5*s,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(x+8*s,y-148*s+walk*10,4.5*s,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,60,60,.35)';
+  ctx.beginPath();ctx.arc(x-8*s,y-148*s+walk*10,7*s,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(x+8*s,y-148*s+walk*10,7*s,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+
+  // Stitched mouth
+  ctx.strokeStyle='#1a0000';ctx.lineWidth=1.5*s;
+  ctx.beginPath();ctx.moveTo(x-7*s,y-133*s+walk*10);ctx.lineTo(x+7*s,y-133*s+walk*10);ctx.stroke();
+  for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(x+i*4.5*s,y-136*s+walk*10);ctx.lineTo(x+i*4.5*s,y-130*s+walk*10);ctx.stroke();}
+
+  // HP bar
+  if(z.hp<z.maxHp&&z.hp>0){
+    const bw=44*s,bx=x-bw/2,by2=y-178*s;
+    ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(bx,by2,bw,5*s);
+    ctx.fillStyle='#ee2222';ctx.fillRect(bx,by2,bw*(z.hp/z.maxHp),5*s);
+  }
+
+  // Speech bubble
+  if(z.quipLife>0&&z.quip){
+    const qa=Math.min(1,z.quipLife/35),fs=Math.max(8,Math.round(10*Math.min(1,s*1.2)));
+    ctx.globalAlpha=qa*da;
+    ctx.font=`bold ${fs}px Courier New`;
+    const bw2=ctx.measureText(z.quip).width+14,bh2=fs+8;
+    const bx2=x-bw2/2,by2=y-188*s-bh2;
+    ctx.fillStyle='rgba(12,0,6,.92)';
+    ctx.beginPath();
+    const rr=4;
+    ctx.moveTo(bx2+rr,by2);ctx.lineTo(bx2+bw2-rr,by2);ctx.arcTo(bx2+bw2,by2,bx2+bw2,by2+rr,rr);
+    ctx.lineTo(bx2+bw2,by2+bh2-rr);ctx.arcTo(bx2+bw2,by2+bh2,bx2+bw2-rr,by2+bh2,rr);
+    ctx.lineTo(x+5,by2+bh2);ctx.lineTo(x,by2+bh2+7);ctx.lineTo(x-5,by2+bh2);
+    ctx.lineTo(bx2+rr,by2+bh2);ctx.arcTo(bx2,by2+bh2,bx2,by2+bh2-rr,rr);
+    ctx.lineTo(bx2,by2+rr);ctx.arcTo(bx2,by2,bx2+rr,by2,rr);ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle='rgba(200,50,100,.55)';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle='#ffbbdd';ctx.fillText(z.quip,bx2+7,by2+fs+1);
+    ctx.globalAlpha=da;
+  }
+  ctx.restore();
+}
+
+/* ── DRAW EFFECTS ────────────────────────────────────────────────────────── */
+function drawEffects(){
+  effects.forEach(ef=>{
+    const a=ef.life/(ef.type==='splat'?32:ef.type==='slash'?18:13);
+    ctx.save();ctx.globalAlpha=Math.max(0,a);
+    if(ef.type==='hit'){
+      ctx.fillStyle='#ffaa22';
+      for(let i=0;i<7;i++){const ag=i/7*Math.PI*2+ef.t*.28;
+        ctx.beginPath();ctx.arc(ef.x+Math.cos(ag)*(7+ef.t*3),ef.y+Math.sin(ag)*(7+ef.t*3),3,0,Math.PI*2);ctx.fill();}
+    }else if(ef.type==='splat'){
+      ctx.fillStyle='#228833';
+      for(let i=0;i<12;i++){const ag=i/12*Math.PI*2;const r=5+ef.t*5;
+        ctx.beginPath();ctx.arc(ef.x+Math.cos(ag)*r,ef.y+Math.sin(ag)*r,4+Math.random()*4,0,Math.PI*2);ctx.fill();}
+    }else if(ef.type==='slash'){
+      ctx.strokeStyle='#ffcc22';ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(ef.x-32,ef.y-22);ctx.lineTo(ef.x+32,ef.y+22);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(ef.x+22,ef.y-28);ctx.lineTo(ef.x-22,ef.y+28);ctx.stroke();
+    }
+    ctx.restore();
+  });
+  floaters.forEach(f=>{
+    ctx.globalAlpha=Math.min(1,f.life/45);
+    ctx.fillStyle=f.col;
+    ctx.font=(f.big?'bold 17px':'bold 12px')+' Courier New';
+    ctx.fillText(f.txt,f.x-ctx.measureText(f.txt).width/2,f.y);
+  });ctx.globalAlpha=1;
+}
+
+/* ── DRAW WEAPONS PANEL ─────────────────────────────────────────────────── */
+function drawWeapons(){
+  const by=H-PANEL_H;
+  ctx.fillStyle='rgba(0,0,0,.62)';ctx.fillRect(0,by,W,PANEL_H);
+  ctx.strokeStyle='rgba(80,40,20,.5)';ctx.lineWidth=1;ctx.strokeRect(0,by,W,PANEL_H);
+  const mid=W/2;
+
+  // Axe slot
+  ctx.fillStyle=weapon==='axe'?'rgba(255,160,0,.14)':'rgba(255,255,255,.03)';ctx.fillRect(4,by+4,mid-8,PANEL_H-8);
+  if(weapon==='axe'){ctx.strokeStyle='rgba(255,180,0,.55)';ctx.lineWidth=1.5;ctx.strokeRect(4,by+4,mid-8,PANEL_H-8);}
+  // Axe graphic
+  const ax=mid*.5,ay=by+52,sw=axeSwing>0?Math.sin((22-axeSwing)/22*Math.PI)*28:0;
+  ctx.save();ctx.translate(ax,ay);ctx.rotate(sw*Math.PI/180);
+  ctx.fillStyle='#cc5500';ctx.fillRect(-5,-52,10,72);  // handle
+  ctx.fillStyle='#ffaa00';ctx.beginPath();  // blade
+  ctx.moveTo(-5,-54);ctx.lineTo(30,-40);ctx.lineTo(30,-22);ctx.lineTo(-5,-10);ctx.fill();
+  ctx.fillStyle='#ffcc44';ctx.beginPath();
+  ctx.moveTo(-5,-54);ctx.lineTo(24,-44);ctx.lineTo(24,-26);ctx.lineTo(-5,-10);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.5)';ctx.font='bold 6px Courier New';ctx.fillText('TOY',2,-35);
+  ctx.restore();
+  ctx.fillStyle='rgba(255,200,80,.85)';ctx.font='bold 9px Courier New';
+  ctx.fillText('TOY AXE [A] — melee/close',ax-62,by+PANEL_H-10);
+  if(axeCool>0){ctx.fillStyle='rgba(200,120,0,.4)';ctx.fillRect(4,by+4,(mid-8)*(axeCool/36),PANEL_H-8);}
+
+  // Divider
+  ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(mid,by+8);ctx.lineTo(mid,by+PANEL_H-8);ctx.stroke();
+
+  // Gun slot
+  ctx.fillStyle=weapon==='gun'?'rgba(255,160,0,.14)':'rgba(255,255,255,.03)';ctx.fillRect(mid+4,by+4,mid-8,PANEL_H-8);
+  if(weapon==='gun'){ctx.strokeStyle='rgba(255,180,0,.55)';ctx.lineWidth=1.5;ctx.strokeRect(mid+4,by+4,mid-8,PANEL_H-8);}
+  // Gun graphic
+  const gx=mid+mid*.5,gy=by+58;
+  ctx.save();ctx.translate(gx,gy);
+  ctx.fillStyle='#ff7700';ctx.fillRect(-32,-20,50,24);  // body
+  ctx.fillStyle='#ffaa00';ctx.fillRect(-31,-19,48,12);  // highlight
+  ctx.fillStyle='#ff7700';ctx.fillRect(18,-26,16,10);   // barrel
+  ctx.fillStyle='#dd5500';ctx.fillRect(18,-26,16,5);
+  ctx.fillStyle='#ee6600';ctx.fillRect(-20,4,20,26);    // grip
+  ctx.fillStyle='#cc4400';ctx.fillRect(-19,5,10,25);
+  ctx.strokeStyle='#cc5500';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(-6,11,10,0,Math.PI);ctx.stroke(); // trigger guard
+  ctx.fillStyle='rgba(0,0,0,.5)';ctx.font='bold 6px Courier New';ctx.fillText('TOY',0,-12);
+  if(muzzleFlash>0){
+    const mf=muzzleFlash/9;
+    ctx.save();ctx.shadowBlur=14;ctx.shadowColor='#ffcc00';
+    ctx.fillStyle=`rgba(255,240,80,${mf})`;
+    ctx.beginPath();ctx.arc(34,-20,9*mf,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+  ctx.restore();
+  ctx.fillStyle='rgba(255,200,80,.85)';ctx.font='bold 9px Courier New';
+  ctx.fillText('TOY GUN [G] — 3 hits',gx-52,by+PANEL_H-10);
+  if(gunCool>0){ctx.fillStyle='rgba(200,120,0,.4)';ctx.fillRect(mid+4,by+4,(mid-8)*(gunCool/18),PANEL_H-8);}
+}
+
+/* ── HUD ─────────────────────────────────────────────────────────────────── */
+function drawHUD(){
+  const gameH=H-PANEL_H;
+  // Health
+  ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(8,8,108,22);
+  for(let i=0;i<3;i++){ctx.fillStyle=i<health?'#dd1111':'#222';ctx.font='15px sans-serif';ctx.fillText('❤',12+i*34,24);}
+  // Score
+  ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(8,33,130,16);
+  ctx.fillStyle='#ffcc44';ctx.font='bold 9px Courier New';ctx.fillText('SCORE: '+score,12,44);
+  // Stage + wave
+  ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(W-210,8,202,42);
+  ctx.fillStyle='#88aaff';ctx.font='bold 9px Courier New';ctx.fillText(STAGES[stageIdx].name,W-206,22);
+  ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='8px Courier New';
+  ctx.fillText('WAVE '+waveNum+'/'+WAVES_PER_STAGE+'   KILLS: '+waveKilled,W-206,34);
+  ctx.fillText('REMAINING: '+Math.max(0,waveTotal-waveKilled),W-206,44);
+  // Crosshair
+  const cx=W/2,cy=gameH/2-10;
+  ctx.strokeStyle='rgba(180,255,180,.55)';ctx.lineWidth=1;
+  const r=13,g=5;
+  [[0,-r,0,-g],[0,g,0,r],[-r,0,-g,0],[g,0,r,0]].forEach(([dx1,dy1,dx2,dy2])=>{
+    ctx.beginPath();ctx.moveTo(cx+dx1,cy+dy1);ctx.lineTo(cx+dx2,cy+dy2);ctx.stroke();});
+  ctx.beginPath();ctx.arc(cx,cy,r*.45,0,Math.PI*2);ctx.stroke();
+  // Image load status (shown until all confirmed or failed)
+  if(assetsReady<4 || assetLog.some(s=>s.startsWith('FAIL'))){
+    ctx.fillStyle='rgba(0,0,0,.85)';ctx.fillRect(0,H-PANEL_H-22,W,20);
+    ctx.fillStyle='rgba(255,200,60,.9)';ctx.font='bold 9px Courier New';
+    const s=[IMG_BG,IMG_LW,IMG_CAT,IMG_ZCHK,IMG_CLOWN,IMG_COMIC].map((img,i)=>(imgOK(img)?'OK:':'?:')+['NB','LW','CAT','ZCH','CLN','COM'][i]).join(' ');
+    ctx.fillText('IMG: '+s+'  LOG:'+assetLog.join(' '),8,H-PANEL_H-8);
+  }
+  // Damage flash
+  if(damageFlash>0){
+    const a=damageFlash/28;
+    ctx.fillStyle=`rgba(255,0,0,${a*.38})`;ctx.fillRect(0,0,W,gameH);
+    ctx.strokeStyle=`rgba(255,0,0,${a*.55})`;ctx.lineWidth=10;ctx.strokeRect(0,0,W,gameH);
+  }
+}
+
+/* ── SCREENS ─────────────────────────────────────────────────────────────── */
+function drawTitle(){
+  drawRoom();ctx.fillStyle='rgba(0,0,0,.68)';ctx.fillRect(0,0,W,H);
+  // Lurking silhouettes
+  [[155,H-PANEL_H-10,0.55],[400,H-PANEL_H-10,0.45],[650,H-PANEL_H-10,0.6]].forEach(([x,y,al])=>{
+    ctx.globalAlpha=al*(.45+.45*Math.sin(frame*.04));
+    const h2=110,s2=h2/200;
+    ctx.fillStyle='#280010';
+    ctx.fillRect(x-15*s2,y-38*s2,11*s2,40*s2);ctx.fillRect(x+4*s2,y-38*s2,11*s2,40*s2);
+    ctx.beginPath();ctx.ellipse(x,y-78*s2,22*s2,40*s2,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x,y-140*s2,22*s2,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(200,0,0,.8)';
+    ctx.beginPath();ctx.arc(x-8*s2,y-144*s2,4*s2,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x+8*s2,y-144*s2,4*s2,0,Math.PI*2);ctx.fill();
+  });ctx.globalAlpha=1;
+  ctx.save();ctx.shadowBlur=26;ctx.shadowColor='#aa0018';
+  ctx.fillStyle='#ff2244';ctx.font='bold 44px Courier New';ctx.fillText('COMEDY SCENE',W/2-230,152);
+  ctx.fillStyle='#ff4466';ctx.shadowColor='#ff4466';
+  ctx.font='bold 52px Courier New';ctx.fillText('ZOMBIES',W/2-148,212);ctx.restore();
+  ctx.fillStyle='rgba(255,200,200,.6)';ctx.font='12px Courier New';
+  ctx.fillText("They've been afflicted. You must put them to rest.",W/2-205,250);
+  ctx.fillStyle='rgba(255,160,100,.7)';ctx.font='10px Courier New';
+  ctx.fillText('WEAPONS: 🪓 TOY AXE (close range, 1-hit)   🟠 TOY GUN (3 hits each)',W/2-200,278);
+  ctx.fillStyle='rgba(255,255,255,.32)';ctx.font='9px Courier New';
+  ctx.fillText('CLICK/TAP zombie to shoot · A: switch axe · G: switch gun · 3 stages · 5 waves',W/2-218,300);
+  ctx.fillStyle='rgba(200,180,220,.55)';ctx.font='9px Courier New';
+  ctx.fillText('ACCUSER  ·  FLYING MONKEY  ·  CLOWN ATTORNEY',W/2-150,320);
+  if(Math.floor(Date.now()/550)%2){ctx.fillStyle='#ffcc44';ctx.font='bold 18px Courier New';
+    ctx.fillText('CLICK OR PRESS SPACE TO BEGIN',W/2-192,480);}
+}
+
+function drawStageClear(){
+  drawRoom();ctx.fillStyle='rgba(0,0,0,.76)';ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.shadowBlur=20;ctx.shadowColor='#44ff88';
+  ctx.fillStyle='#44ff88';ctx.font='bold 34px Courier New';ctx.fillText('STAGE CLEARED!',W/2-160,215);ctx.restore();
+  ctx.fillStyle='#aaccff';ctx.font='13px Courier New';
+  if(stageIdx<STAGES.length)ctx.fillText('NEXT: '+STAGES[stageIdx].name,W/2-90,255);
+  ctx.fillStyle='rgba(255,255,255,.45)';ctx.font='11px Courier New';
+  ctx.fillText('Score: '+score+'   Health: '+health,W/2-80,285);
+}
+
+function drawEnd(win){
+  ctx.fillStyle='#040002';ctx.fillRect(0,0,W,H);
+  if(win){
+    ctx.save();ctx.shadowBlur=24;ctx.shadowColor='#44ff88';
+    ctx.fillStyle='#44ff88';ctx.font='bold 36px Courier New';ctx.fillText('SCENE CLEARED!',W/2-190,198);ctx.restore();
+    ctx.fillStyle='#88ccff';ctx.font='14px Courier New';ctx.fillText('All three stages. They can rest now.',W/2-168,240);
+    ctx.fillStyle='#ffcc44';ctx.font='bold 12px Courier New';ctx.fillText('Final Score: '+score,W/2-55,268);
+  }else{
+    ctx.save();ctx.shadowBlur=22;ctx.shadowColor='#ff2244';
+    ctx.fillStyle='#ff3355';ctx.font='bold 36px Courier New';ctx.fillText('OVERWHELMED!',W/2-180,198);ctx.restore();
+    ctx.fillStyle='#ffaa44';ctx.font='14px Courier New';ctx.fillText('The zombies have taken the mic.',W/2-150,240);
+    ctx.fillStyle='rgba(255,255,255,.45)';ctx.font='12px Courier New';ctx.fillText('Score: '+score,W/2-38,268);
+  }
+  if(Math.floor(Date.now()/600)%2){ctx.fillStyle='#ffcc44';ctx.font='bold 15px Courier New';
+    ctx.fillText('CLICK OR PRESS SPACE TO PLAY AGAIN',W/2-185,375);}
+}
+
+/* ── LOOP ────────────────────────────────────────────────────────────────── */
+function loop(){
+  requestAnimationFrame(loop);
+  try{
+    sctx.clearRect(0,0,W,H);
+    ctx.save();ctx.translate(shX,shY);
+    sctx.save();sctx.translate(shX,shY);
+    if(GS==='title')           drawTitle();
+    else if(GS==='stageclear') drawStageClear();
+    else if(GS==='win')        drawEnd(true);
+    else if(GS==='gameover')   drawEnd(false);
+    else{
+      drawRoom();
+      [...zombies].sort((a,b)=>b.depth-a.depth).forEach(drawZombie);
+      drawEffects();drawWeapons();drawHUD();
+      update();
+    }
+    ctx.restore();sctx.restore();
+  }catch(e){
+    ctx.restore();sctx.restore();
+    console.error('LOOP ERR:',e.message,e.stack);
+  }
+}
+loop();
+</script>
+</body>
+</html>
