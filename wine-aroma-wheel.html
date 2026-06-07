@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Wine Aroma Wheel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Archivo:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1a1012;
+    --bg2:#241418;
+    --ink:#f3e7df;
+    --muted:#b89a92;
+    --gold:#c9a24b;
+    --rim:#3a2226;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    background:
+      radial-gradient(120% 90% at 50% -10%, #2c1a1e 0%, var(--bg) 55%, #120a0c 100%);
+    color:var(--ink);
+    font-family:'Archivo',system-ui,sans-serif;
+    min-height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 14px 40px;
+    overflow-x:hidden;
+  }
+  header{text-align:center;max-width:620px;margin-bottom:6px;}
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(26px,6vw,42px);
+    letter-spacing:.5px;
+    margin:0 0 6px;
+    color:var(--ink);
+  }
+  h1 .accent{color:var(--gold);font-style:italic;}
+  .sub{color:var(--muted);font-size:14px;letter-spacing:.3px;margin:0;}
+  .stage{
+    position:relative;
+    width:100%;
+    max-width:740px;
+    margin:10px auto 0;
+    aspect-ratio:1/1;
+    touch-action:none;
+  }
+  svg{display:block;width:100%;height:100%;}
+  #wheelSvg{
+    touch-action:none;
+    cursor:grab;
+    filter:drop-shadow(0 30px 50px rgba(0,0,0,.55));
+  }
+  #wheelSvg.grabbing{cursor:grabbing;}
+  #wheel{will-change:transform;}
+  .hint{
+    position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);
+    color:var(--muted);font-size:13px;letter-spacing:.6px;text-transform:uppercase;
+    transition:opacity .5s ease;pointer-events:none;
+  }
+  .hint.hide{opacity:0;}
+  text{user-select:none;-webkit-user-select:none;}
+  footer{margin-top:26px;color:#7c6058;font-size:12px;letter-spacing:.4px;text-align:center;}
+  footer a{color:var(--gold);text-decoration:none;}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Wine <span class="accent">Aroma</span> Wheel</h1>
+    <p class="sub">Click &amp; hold, then drag in any direction to spin. The needle at the top marks your aroma.</p>
+  </header>
+
+  <div class="stage">
+    <svg id="wheelSvg" viewBox="0 0 1000 1000" role="img" aria-label="Interactive wine aroma wheel">
+      <!-- pointer needle (fixed) drawn after wheel via JS layering -->
+      <g id="wheel"></g>
+      <g id="fixed"></g>
+    </svg>
+    <div class="hint" id="hint">drag to spin</div>
+  </div>
+
+  <footer>Aroma taxonomy after the Wine Folly aroma finder · rebuilt as an interactive, all-text-upright spinner.</footer>
+
+<script>
+/* ----------------------------------------------------------------------------
+   DATA  — categories in clockwise order from 12 o'clock.
+   tier:  primary | secondary | tertiary | fault
+   each category's angular width is proportional to its descriptor count,
+   so the outer descriptors line up under their category (just like the chart).
+   Everything is data-driven: edit names/colors/lists freely.
+---------------------------------------------------------------------------- */
+const CATS = [
+  {name:"FLOWER", tier:"primary", color:"#8d7fb8",
+   items:["Iris","Peony","Elderflower","Acacia","Lilac","Jasmine","Honeysuckle","Violet","Lavender","Rose","Potpourri","Hibiscus"]},
+  {name:"CITRUS", tier:"primary", color:"#93b94a",
+   items:["Lime","Lemon","Grapefruit","Orange","Marmalade"]},
+  {name:"TREE FRUIT", tier:"primary", color:"#e0bd8c",
+   items:["Quince","Apple","Pear","Nectarine","Peach","Apricot","Persimmon"]},
+  {name:"TROPICAL FRUIT", tier:"primary", color:"#e8923c",
+   items:["Pineapple","Mango","Guava","Kiwi","Lychee","Bubblegum"]},
+  {name:"RED FRUIT", tier:"primary", color:"#cf3f37",
+   items:["Cranberry","Red Plum","Pomegranate","Sour Cherry","Strawberry","Cherry","Raspberry","Boysenberry","Black Currant","Black Cherry","Plum"]},
+  {name:"BLACK FRUIT", tier:"primary", color:"#7e2230",
+   items:["Blackberry","Blueberry","Olive"]},
+  {name:"DRIED FRUIT", tier:"primary", color:"#b07f8d",
+   items:["Fig","Date","Raisin"]},
+  {name:"NOBLE ROT", tier:"primary", color:"#b3a3c6",
+   items:["Fruitcake","Beeswax","Saffron","Ginger"]},
+  {name:"SPICE", tier:"primary", color:"#2fa79c",
+   items:["White Pepper","Red Pepper","Black Pepper","Cinnamon","Anise","Asian 5-Spice"]},
+  {name:"VEGETABLE", tier:"primary", color:"#5da544",
+   items:["Thyme","Mint","Eucalyptus","Fennel","Grass","Tomato Leaf","Gooseberry","Bell Pepper","Jalapeño","Green Almond","Tomato","Sun Dried Tomato","Black Tea"]},
+  {name:"EARTH", tier:"primary", color:"#3f7a3f",
+   items:["Clay Pot","Slate","Wet Gravel","Potting Soil","Red Beet","Volcanic Rocks","Petroleum"]},
+  {name:"MICROBIAL", tier:"secondary", color:"#c3ce6c",
+   items:["Butter","Cream","Sourdough","Lager","Truffle","Mushroom"]},
+  {name:"OAK AGING", tier:"tertiary", color:"#b6a04e",
+   items:["Vanilla","Coconut","Baking Spices","Cigar Box","Smoke"]},
+  {name:"GENERAL AGING", tier:"tertiary", color:"#d4863a",
+   items:["Dill","Dried Fruit","Nuts","Tobacco","Coffee","Cocoa","Leather"]},
+  {name:"TCA (CORKED)", tier:"fault", color:"#df9a4c",
+   items:["Musty Cardboard","Wet Dog"]},
+  {name:"SULFIDES & MERCAPTANS", tier:"fault", color:"#b4584a",
+   items:["Cured Meats","Boiled Eggs","Burnt Rubber","Match Box","Garlic","Onion","Cat Pee"]},
+  {name:"BRETTANOMYCES", tier:"fault", color:"#a8473c",
+   items:["Band-Aid","Sweaty Leather Saddle","Horse Manure"]},
+  {name:"COOKED", tier:"fault", color:"#d4768a",
+   items:["Stewed Fruit","Toffee"]},
+  {name:"VOLATILE ACIDITY", tier:"fault", color:"#d588a6",
+   items:["Vinegar","Balsamic"]}
+];
+
+const TIER_LABEL = {primary:"PRIMARY AROMAS", secondary:"SECONDARY", tertiary:"TERTIARY", fault:"FAULTS"};
+const TIER_COLOR = {primary:"#7a5a3a", secondary:"#6a6f3a", tertiary:"#6e5234", fault:"#6f3a3a"};
+
+/* ---------- geometry ---------- */
+const CX=500, CY=500;
+const R_TIER_IN=92, R_TIER_OUT=152;
+const R_CAT_IN=152,  R_CAT_OUT=280;
+const R_DESC_IN=280, R_DESC_OUT=486;
+
+function pol(r, deg){ const a=(deg-90)*Math.PI/180; return [CX+r*Math.cos(a), CY+r*Math.sin(a)]; }
+
+function sector(rIn,rOut,a0,a1){
+  const [xo0,yo0]=pol(rOut,a0),[xo1,yo1]=pol(rOut,a1),[xi1,yi1]=pol(rIn,a1),[xi0,yi0]=pol(rIn,a0);
+  const large=(a1-a0)>180?1:0;
+  return `M${xo0} ${yo0} A${rOut} ${rOut} 0 ${large} 1 ${xo1} ${yo1} L${xi1} ${yi1} A${rIn} ${rIn} 0 ${large} 0 ${xi0} ${yi0} Z`;
+}
+
+/* color helpers */
+function hx(c){c=c.replace('#','');return [parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];}
+function toHex(r,g,b){const h=n=>('0'+Math.round(n).toString(16)).slice(-2);return '#'+h(r)+h(g)+h(b);}
+function mix(c,white){const [r,g,b]=hx(c);return toHex(r+(255-r)*white, g+(255-g)*white, b+(255-b)*white);}
+function textColor(c){const [r,g,b]=hx(c);return (0.299*r+0.587*g+0.114*b)>148 ? "#3a262a" : "#fff7f2";}
+
+/* radial label: word runs along the spoke; flipped on the left half so every
+   label is right-side-up (this is the "all facing one way" rearrangement). */
+function radialText(txt, r, deg, size, fill){
+  let rot=deg-90; const n=((rot%360)+360)%360;
+  if(n>90 && n<270) rot+=180;
+  const [x,y]=pol(r,deg);
+  return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" transform="rotate(${rot.toFixed(2)} ${x.toFixed(1)} ${y.toFixed(1)})" `
+       + `font-size="${size}" fill="${fill}" text-anchor="middle" dominant-baseline="central" `
+       + `font-family="Archivo, sans-serif" font-weight="500" letter-spacing="0.2">${esc(txt)}</text>`;
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+
+/* fit a radial category label inside the ring thickness */
+function fitSize(txt, maxLen, ideal, min){
+  const est = txt.length*0.56*ideal;
+  if(est<=maxLen) return ideal;
+  return Math.max(min, Math.floor(maxLen/(txt.length*0.56)));
+}
+
+/* tier label as gentle arc text, kept upright */
+function tierArc(r,a0,a1,id){
+  const mid=(a0+a1)/2, flip=(mid>90&&mid<270), large=(a1-a0)>180?1:0;
+  let d;
+  if(!flip){const [xs,ys]=pol(r,a0),[xe,ye]=pol(r,a1); d=`M${xs} ${ys} A${r} ${r} 0 ${large} 1 ${xe} ${ye}`;}
+  else {const [xs,ys]=pol(r,a1),[xe,ye]=pol(r,a0); d=`M${xs} ${ys} A${r} ${r} 0 ${large} 0 ${xe} ${ye}`;}
+  return `<path id="${id}" d="${d}" fill="none"/>`;
+}
+
+/* ---------- build the wheel ---------- */
+const total = CATS.reduce((s,c)=>s+c.items.length,0);
+const per = 360/total;
+
+let segs="", defs="", catTxt="", descTxt="", tierBands="", tierTxt="";
+let cur=0;
+const tierRuns=[]; // {tier, a0, a1}
+
+CATS.forEach((cat)=>{
+  const span = cat.items.length*per;
+  const a0=cur, a1=cur+span, mid=(a0+a1)/2;
+
+  // category band
+  segs += `<path d="${sector(R_CAT_IN,R_CAT_OUT,a0,a1)}" fill="${cat.color}" stroke="#fbf3ea" stroke-width="1.1"/>`;
+  // category label (radial, auto-fit)
+  const catSize = fitSize(cat.name, R_CAT_OUT-R_CAT_IN-26, 15, 9);
+  catTxt += radialText(cat.name, (R_CAT_IN+R_CAT_OUT)/2, mid, catSize, textColor(cat.color));
+
+  // descriptors
+  cat.items.forEach((it,i)=>{
+    const d0=a0+i*per, d1=a0+(i+1)*per, dm=(d0+d1)/2;
+    const shade = mix(cat.color, 0.30 + (i%2)*0.12);
+    segs += `<path d="${sector(R_DESC_IN,R_DESC_OUT,d0,d1)}" fill="${shade}" stroke="#fbf3ea" stroke-width="0.8"/>`;
+    descTxt += radialText(it, (R_DESC_IN+R_DESC_OUT)/2 + 2, dm, 13.5, textColor(shade));
+  });
+
+  // accumulate contiguous tier runs
+  const last=tierRuns[tierRuns.length-1];
+  if(last && last.tier===cat.tier) last.a1=a1;
+  else tierRuns.push({tier:cat.tier, a0, a1});
+
+  cur=a1;
+});
+
+// tier ring bands + arc labels
+tierRuns.forEach((run,idx)=>{
+  const col=TIER_COLOR[run.tier];
+  tierBands += `<path d="${sector(R_TIER_IN,R_TIER_OUT,run.a0,run.a1)}" fill="${mix(col,0.12)}" stroke="#fbf3ea" stroke-width="1.1"/>`;
+  const r=(R_TIER_IN+R_TIER_OUT)/2;
+  const id="tier"+idx;
+  defs += tierArc(r,run.a0,run.a1,id);
+  const lbl=TIER_LABEL[run.tier];
+  const tsize = lbl.length>9 ? 12 : 14;
+  tierTxt += `<text font-size="${tsize}" fill="#f6ece3" font-family="Fraunces, serif" font-weight="600" letter-spacing="2.5">`
+           + `<textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(lbl)}</textPath></text>`;
+});
+
+/* base disc + assemble rotating group */
+const wheelHTML =
+  `<defs>${defs}</defs>` +
+  `<circle cx="500" cy="500" r="${R_DESC_OUT+4}" fill="#fbf3ea"/>` +   /* outer rim */
+  `<circle cx="500" cy="500" r="${R_DESC_OUT}" fill="#fff"/>` +
+  tierBands + segs + tierTxt + catTxt + descTxt +
+  `<circle cx="500" cy="500" r="${R_TIER_IN}" fill="none" stroke="#fbf3ea" stroke-width="1.4"/>`;
+
+document.getElementById('wheel').innerHTML = wheelHTML;
+
+/* fixed center hub + top needle (do NOT rotate) */
+const fixed =
+  `<circle cx="500" cy="500" r="${R_TIER_IN-2}" fill="#241418"/>` +
+  `<circle cx="500" cy="500" r="${R_TIER_IN-2}" fill="none" stroke="#c9a24b" stroke-width="2"/>` +
+  `<circle cx="500" cy="500" r="${R_TIER_IN-14}" fill="none" stroke="#5a3a40" stroke-width="1"/>` +
+  `<text x="500" y="476" text-anchor="middle" font-family="Fraunces, serif" font-style="italic" font-weight="600" font-size="26" fill="#c9a24b">Aroma</text>` +
+  `<text x="500" y="506" text-anchor="middle" font-family="Fraunces, serif" font-weight="700" font-size="22" letter-spacing="4" fill="#f3e7df">WHEEL</text>` +
+  `<text x="500" y="532" text-anchor="middle" font-family="Archivo, sans-serif" font-size="11" letter-spacing="2" fill="#9a7a72">SPIN ME</text>` +
+  /* needle marker at 12 o'clock */
+  `<path d="M500 ${R_DESC_OUT-26} l16 -30 l-32 0 Z" fill="#241418" stroke="#c9a24b" stroke-width="2.2" stroke-linejoin="round"/>`;
+document.getElementById('fixed').innerHTML = fixed;
+
+/* ---------------------------------------------------------------------------
+   DRAG TO SPIN  (Pointer Events => mouse + touch + pen, one code path)
+--------------------------------------------------------------------------- */
+const svg=document.getElementById('wheelSvg');
+const wheel=document.getElementById('wheel');
+const hint=document.getElementById('hint');
+let rot=0, dragging=false, lastA=0, vel=0, lastT=0, raf=null, hinted=false;
+
+function ctr(){const r=svg.getBoundingClientRect();return {x:r.left+r.width/2, y:r.top+r.height/2};}
+function angleOf(px,py){const c=ctr();return Math.atan2(py-c.y, px-c.x)*180/Math.PI;}
+function apply(){wheel.setAttribute('transform',`rotate(${rot} 500 500)`);}
+
+function down(e){
+  dragging=true; vel=0;
+  if(raf){cancelAnimationFrame(raf); raf=null;}
+  lastA=angleOf(e.clientX,e.clientY); lastT=performance.now();
+  svg.classList.add('grabbing');
+  try{svg.setPointerCapture(e.pointerId);}catch(_){}
+  if(!hinted){hint.classList.add('hide'); hinted=true;}
+  e.preventDefault();
+}
+function move(e){
+  if(!dragging) return;
+  const a=angleOf(e.clientX,e.clientY);
+  let d=a-lastA; if(d>180)d-=360; if(d<-180)d+=360;
+  rot+=d;
+  const now=performance.now(); const dt=Math.max(1, now-lastT);
+  vel=d/dt; lastA=a; lastT=now;
+  apply(); e.preventDefault();
+}
+function up(e){
+  if(!dragging) return;
+  dragging=false; svg.classList.remove('grabbing');
+  try{svg.releasePointerCapture(e.pointerId);}catch(_){}
+  vel=Math.max(-1.8, Math.min(1.8, vel));   // cap flick speed
+  if(Math.abs(vel)>0.012){
+    (function step(){
+      rot+=vel*16; vel*=0.945; apply();
+      if(Math.abs(vel)>0.004) raf=requestAnimationFrame(step); else raf=null;
+    })();
+  }
+}
+svg.addEventListener('pointerdown',down);
+svg.addEventListener('pointermove',move);
+svg.addEventListener('pointerup',up);
+svg.addEventListener('pointercancel',up);
+svg.addEventListener('lostpointercapture',()=>{ if(dragging){dragging=false; svg.classList.remove('grabbing');} });
+// block context menu / page scroll gestures on the wheel
+svg.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* gentle idle drift so it feels alive until first touch */
+let idle=requestAnimationFrame(function drift(){
+  if(!hinted && !dragging){ rot+=0.05; apply(); idle=requestAnimationFrame(drift); }
+});
+</script>
+</body>
+</html>
