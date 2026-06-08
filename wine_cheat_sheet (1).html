@@ -1,0 +1,186 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark's Wine Cheat Sheets</title>
+    <!-- Add PWA support for home screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Wine Guide">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3126/3126554.png">
+
+    <style>
+        :root { 
+            --primary: #2c3e50; 
+            --accent: #d35400; 
+            --bg: #f4f7f6;
+        }
+        body { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            padding: 20px; 
+            background: var(--bg); 
+            color: #333; 
+            max-width: 500px; 
+            margin: auto; 
+        }
+        header { text-align: center; margin-bottom: 20px; }
+        h1 { margin: 0; color: var(--primary); font-size: 1.8em; }
+        p.subtitle { margin: 5px 0 15px; color: #7f8c8d; font-size: 1em; font-style: italic; }
+        
+        .tip-box { background: #fff; padding: 15px; border-radius: 8px; border-left: 5px solid var(--accent); margin-bottom: 25px; font-size: 0.9em; line-height: 1.5; }
+        .tip-box h3 { margin-top: 0; color: var(--accent); margin-bottom: 10px; }
+        .tip-box p { margin: 0 0 10px 0; }
+
+        .card { 
+            background: white; 
+            margin-bottom: 12px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08); 
+            overflow: hidden; 
+            cursor: pointer;
+            border-left: 5px solid var(--primary);
+        }
+        .header { padding: 15px 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .content { 
+            padding: 0 20px; 
+            max-height: 0; 
+            overflow: hidden; 
+            transition: max-height 0.3s ease-out; 
+            background: #fff; 
+        }
+        .active .content { padding-bottom: 15px; max-height: 200px; }
+        .grid { display: grid; gap: 8px; font-size: 0.95em; border-top: 1px solid #eee; padding-top: 10px; }
+        .tag { font-weight: bold; color: var(--accent); }
+        
+        .download-btn { 
+            display: block; 
+            text-align: center; 
+            margin: 20px 0; 
+            padding: 10px; 
+            background: var(--primary); 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 6px; 
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Mark's Wine Cheat Sheets</h1>
+        <p class="subtitle">For Beginners</p>
+    </header>
+
+    <div class="tip-box">
+        <h3>Your Tasting "Safe Words"</h3>
+        <p>Use these descriptors to talk about wine with confidence. They are <strong>benchmarks</strong> to help you describe what you're sensing. Wine doesn't actually contain these fruits; it just reminds us of them.</p>
+        <p><strong>The "Dry" Myth:</strong> Most wine is dry. If you think you dislike "dry," you likely just dislike bitterness. Trust your own nose—if you and your friend smell different things, that's okay. These guides are here to make you comfortable, not to tell you what to think.</p>
+    </div>
+
+    <div id="container">
+        <!-- Reusable Card Structure -->
+        <div class="card" onclick="this.classList.toggle('active')">
+            <div class="header">Chardonnay <span>▼</span></div>
+            <div class="content">
+                <div class="grid">
+                    <div><span class="tag">Fruit:</span> Apple, Lemon, Pineapple</div>
+                    <div><span class="tag">Floral:</span> Honeysuckle</div>
+                    <div><span class="tag">Non-Fruit:</span> Butter</div>
+                    <div><span class="tag">Profile:</span> Oak / Full / Fruity</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="this.classList.toggle('active')">
+            <div class="header">Sauvignon Blanc <span>▼</span></div>
+            <div class="content">
+                <div class="grid">
+                    <div><span class="tag">Fruit:</span> Grapefruit, Lime, Passionfruit</div>
+                    <div><span class="tag">Floral:</span> Elderflower</div>
+                    <div><span class="tag">Non-Fruit:</span> Grass</div>
+                    <div><span class="tag">Profile:</span> No Oak / Light / Mineral</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="this.classList.toggle('active')">
+            <div class="header">Riesling <span>▼</span></div>
+            <div class="content">
+                <div class="grid">
+                    <div><span class="tag">Fruit:</span> Apricot, Nectarine, Lime</div>
+                    <div><span class="tag">Floral:</span> Jasmine</div>
+                    <div><span class="tag">Non-Fruit:</span> Petrol</div>
+                    <div><span class="tag">Profile:</span> No Oak / Light / Fruity</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="this.classList.toggle('active')">
+            <div class="header">Pinot Grigio <span>▼</span></div>
+            <div class="content">
+                <div class="grid">
+                    <div><span class="tag">Fruit:</span> Lemon, Pear, White Peach</div>
+                    <div><span class="tag">Floral:</span> Honeysuckle</div>
+                    <div><span class="tag">Non-Fruit:</span> Saline</div>
+                    <div><span class="tag">Profile:</span> No Oak / Light / Mineral</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="this.classList.toggle('active')">
+            <div class="header">Pinot Noir <span>▼</span></div>
+            <div class="content">
+                <div class="grid">
+                    <div><span class="tag">Fruit:</span> Cherry, Raspberry, Cranberry</div>
+                    <div><span class="tag">Floral:</span> Violet</div>
+                    <div><span class="tag">Non-Fruit:</span> Forest Floor</div>
+                    <div><span class="tag">Profile:</span> Oak / Light / Mineral</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="this.classList.toggle('active')">
+            <div class="header">Cabernet <span>▼</span></div>
+            <div class="content">
+                <div class="grid">
+                    <div><span class="tag">Fruit:</span> Blackcurrant, Blackberry, Black Cherry</div>
+                    <div><span class="tag">Floral:</span> Violet</div>
+                    <div><span class="tag">Non-Fruit:</span> Cedar</div>
+                    <div><span class="tag">Profile:</span> Oak / Full / Fruity</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="this.classList.toggle('active')">
+            <div class="header">Malbec <span>▼</span></div>
+            <div class="content">
+                <div class="grid">
+                    <div><span class="tag">Fruit:</span> Plum, Blackberry, Blueberry</div>
+                    <div><span class="tag">Floral:</span> Violet</div>
+                    <div><span class="tag">Non-Fruit:</span> Cocoa</div>
+                    <div><span class="tag">Profile:</span> Oak / Full / Fruity</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="this.classList.toggle('active')">
+            <div class="header">Sangiovese <span>▼</span></div>
+            <div class="content">
+                <div class="grid">
+                    <div><span class="tag">Fruit:</span> Tart Cherry, Red Plum, Strawberry</div>
+                    <div><span class="tag">Floral:</span> Rose</div>
+                    <div><span class="tag">Non-Fruit:</span> Leather</div>
+                    <div><span class="tag">Profile:</span> Oak / Medium / Mineral</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <a href="#" id="downloadLink" class="download-btn">Save Cheat Sheet to Device</a>
+
+    <script>
+        // Logic for download
+        const data = `data:text/html;charset=utf-8,` + encodeURIComponent(document.documentElement.outerHTML);
+        const link = document.getElementById('downloadLink');
+        link.setAttribute('href', data);
+        link.setAttribute('download', 'wine_cheat_sheet.html');
+    </script></body></html>
