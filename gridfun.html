@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMS Level 3 Advanced Tasting Grid & Calibration Engine</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111726;
+      --border: #1e293b;
+      --text: #f1f5f9;
+      --text-muted: #64748b;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --selected: #059669;
+      --white-wine: #d97706;
+      --red-wine: #dc2626;
+      --fail-color: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 1rem;
+      line-height: 1.3;
+      font-size: 0.85rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+    header h1 { font-size: 1.3rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    header p { color: var(--text-muted); font-size: 0.75rem; }
+
+    .type-selector {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .type-btn {
+      padding: 0.5rem 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      cursor: pointer;
+      border-radius: 0.375rem;
+    }
+    .type-btn[data-type="white"].active { background: var(--white-wine); color: #fff; border-color: var(--white-wine); }
+    .type-btn[data-type="red"].active { background: var(--red-wine); color: #fff; border-color: var(--red-wine); }
+
+    .grid-container {
+      max-width: 950px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.4rem;
+      padding: 1rem;
+    }
+    .section-card h2 {
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.25rem;
+      color: #94a3b8;
+    }
+
+    .row-group {
+      margin-bottom: 0.75rem;
+    }
+    .row-group:last-child { margin-bottom: 0; }
+    .row-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin-bottom: 0.25rem;
+    }
+
+    .options-flex {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+
+    .btn-opt {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+      border-radius: 0.25rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .btn-opt:hover { border-color: #475569; }
+    .btn-opt.selected { background: var(--selected) !important; border-color: var(--selected) !important; color: #fff !important; font-weight: 500; }
+
+    .theory-comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .meta-box {
+      background: rgba(0, 0, 0, 0.3);
+      border-top: 2px solid var(--accent);
+      padding: 0.6rem;
+      font-size: 0.75rem;
+      border-radius: 0.25rem;
+    }
+    .meta-box h4 {
+      text-transform: uppercase;
+      color: #f1f5f9;
+      font-size: 0.8rem;
+      margin-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 0.15rem;
+    }
+    .meta-line { margin-bottom: 0.25rem; }
+    .meta-line strong { color: #94a3b8; display: block; font-size: 0.68rem; text-transform: uppercase; }
+
+    .calibration-box {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      font-size: 0.72rem;
+      border-radius: 0.25rem;
+    }
+    .calibration-box h5 {
+      color: #cbd5e1;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+    .metric-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.1rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.02);
+    }
+    .metric-pass { color: #34d399; font-weight: 500; }
+    .metric-fail { color: #f87171; }
+
+    textarea {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 0.25rem;
+      padding: 0.5rem;
+      font-size: 0.8rem;
+      resize: vertical;
+    }
+
+    .actions-panel {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+    .control-btn {
+      color: white;
+      border: none;
+      padding: 0.65rem 1.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .btn-blue { background: var(--accent); }
+    .btn-green { background: #059669; }
+    .btn-slate { background: #475569; }
+    .btn-gold { background: #b45309; }
+
+    .hidden { display: none !important; }
+
+    /* Strict 1-Page PDF Printing Profile Overrides */
+    @media print {
+      @page { size: A4 portrait; margin: 0.3cm; }
+      body { background: #fff; color: #000; padding: 0; font-size: 10px; }
+      .type-selector, .actions-panel, #text-output-section, .btn-opt:not(.selected) { display: none !important; }
+      .grid-container { gap: 0.2cm; max-width: 100%; }
+      .section-card { background: #fff; border: 1px solid #ccc; padding: 0.2cm; margin-bottom: 0.1cm; page-break-inside: avoid; }
+      .section-card h2 { color: #000; border-bottom: 1px solid #000; font-size: 11px; margin-bottom: 0.1cm; }
+      .row-group { margin-bottom: 0.1cm; }
+      .row-label { color: #222; font-size: 9px; }
+      .btn-opt.selected { background: #111 !important; color: #fff !important; border: none !important; padding: 1px 4px !important; display: inline-block; font-size: 10px; }
+      .theory-comparison-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.1cm; }
+      .meta-box { background: #fff; border: 1px solid #aaa; color: #000; padding: 0.1cm; }
+      .meta-box h4 { color: #000; border-bottom: 1px solid #aaa; }
+      .meta-line strong { color: #333; }
+      .calibration-box { background: #fff; border: 1px solid #aaa; color: #000; }
+      .calibration-box h5 { color: #000; }
+      .metric-pass { color: #008000; font-weight: bold; }
+      .metric-fail { color: #cc0000; text-decoration: underline; }
+      textarea { background: #fff; color: #000; border: 1px solid #aaa; height: auto; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>CMS Level 3 Advanced Tasting Grid</h1>
+    <p>Calibrated Mechanical In-The-Moment Blind Tasting Client</p>
+  </header>
+
+  <div class="type-selector">
+    <button class="type-btn active" data-type="white" onclick="setWineType('white')">White Flight</button>
+    <button class="type-btn" data-type="red" onclick="setWineType('red')">Red Flight</button>
+  </div>
+
+  <div class="grid-container">
+    
+    <div class="section-card">
+      <h2>1. Sight & Physical Properties</h2>
+      <div class="row-group">
+        <div class="row-label">Primary Color & Core Density</div>
+        <div class="options-flex" id="sight-color" data-multiple="false"></div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">Secondary Hues</div>
+        <div class="options-flex" id="sight-hues" data-multiple="true">
+          <button class="btn-opt" onclick="toggleSelect(this)">Green</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Gold</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Silver/Platinum</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Brassy</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Pink</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Purple</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Garnet</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Orange</button>
+        </div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">Color Staining</div>
+        <div class="options-flex" id="sight-staining" data-multiple="false">
+          <button class="btn-opt" onclick="toggleSelect(this)">NA</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">None</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Slight</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Moderate</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Moderate Plus</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Heavy</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Deep</button>
+        </div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">Tearing / Viscosity</div>
+        <div class="options-flex" id="sight-tearing" data-multiple="false">
+          <button class="btn-opt" onclick="toggleSelect(this)">Low</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium Minus</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium Plus</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">High</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h2>2. Olfactory Evaluation (Nose)</h2>
+      <div class="row-group">
+        <div class="row-label">Fruit Core Profiles</div>
+        <div class="options-flex" id="nose-fruit" data-multiple="true"></div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">Floral Descriptors</div>
+        <div class="options-flex" id="nose-floral" data-multiple="true">
+          <button class="btn-opt" onclick="toggleSelect(this)">Orange Blossom</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Orchard blossoms</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Apple Blossom</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Citrus Blossoms</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Gardenia</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Rose</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Jasmine</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Honeysuckle</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Red Flowers</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Purple Flowers</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Violets</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Lavender</button>
+        </div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">Herbal / Vegetal Parameters</div>
+        <div class="options-flex" id="nose-herbal" data-multiple="true">
+          <button class="btn-opt" onclick="toggleSelect(this)">Lemongrass</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Sweet Herb</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Hay</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Straw</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Tea</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Thyme</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Rosemary</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Tobacco</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Pyrazine (Bell Pepper)</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Mint/Eucalyptus</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Sage</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Tomato Leaf</button>
+        </div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">Oak Cooperage & Vinification Signatures</div>
+        <div class="options-flex" id="nose-vinoak" data-multiple="true">
+          <button class="btn-opt" onclick="toggleSelect(this)">Stainless steel</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">French Oak</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">American Oak</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Neutral Casks</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Large neutral wood</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Carbonic Maceration</button>
+        </div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">Earth & Inorganic Mineral Cues</div>
+        <div class="options-flex" id="nose-earth" data-multiple="true">
+          <button class="btn-opt" onclick="toggleSelect(this)">Wet Stone</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Dusty Rock</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Chalk</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Compost</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Mushroom</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Forest Floor</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Graphite</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Slate</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Clay</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h2>3. Palate Metrics & Structure</h2>
+      <div class="row-group">
+        <div class="row-label">Sweetness</div>
+        <div class="options-flex" id="palate-sugar" data-multiple="false">
+          <button class="btn-opt" onclick="toggleSelect(this)">Bone Dry</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Bone Dry to Dry</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Dry</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Dry to Off-Dry</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Off-Dry</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Dry to Medium Sweet</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Dry to Sweet</button>
+        </div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">Phenolic Bitterness</div>
+        <div class="options-flex" id="palate-phenolic" data-multiple="false">
+          <button class="btn-opt" onclick="toggleSelect(this)">N/A</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Slight</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Elevated</button>
+        </div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">Tannin Level</div>
+        <div class="options-flex" id="palate-tannin" data-multiple="false">
+          <button class="btn-opt" onclick="toggleSelect(this)">Low</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium Minus</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium Plus</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">High</button>
+        </div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">Acidity</div>
+        <div class="options-flex" id="palate-acid" data-multiple="false">
+          <button class="btn-opt" onclick="toggleSelect(this)">Low</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium Minus</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium Plus</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">High</button>
+        </div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">Alcohol</div>
+        <div class="options-flex" id="palate-alcohol" data-multiple="false">
+          <button class="btn-opt" onclick="toggleSelect(this)">Low</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium Minus</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">Medium Plus</button>
+          <button class="btn-opt" onclick="toggleSelect(this)">High</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h2>4. Advanced Deductive Conclusion & Calibration</h2>
+      <div class="row-group">
+        <div class="row-label">Select Initial Target Contenders (Up to 3)</div>
+        <div id="theory-grape-options" class="options-flex"></div>
+      </div>
+
+      <div id="theory-comparison-row" class="theory-comparison-grid"></div>
+
+      <div class="row-group" style="margin-top: 0.75rem;">
+        <div class="row-label">Official Exam Final Conclusion Statement</div>
+        <textarea id="concl-final" rows="2" placeholder="This is a [Grape], from [Country], from [Appellation]..."></textarea>
+      </div>
+    </div>
+
+    <div class="actions-panel">
+      <button class="control-btn btn-gold" id="audit-trigger-btn" onclick="triggerFinishedAudit()">Finished & Run Audit</button>
+      <button class="control-btn btn-blue hidden" id="mail-btn" onclick="sendTastingMail()">Email Result</button>
+      <button class="control-btn btn-green hidden" id="text-btn" onclick="generateCleanText()">Generate Text Block</button>
+      <button class="control-btn btn-slate hidden" id="pdf-btn" onclick="printToPDF()">Save PDF</button>
+    </div>
+
+    <div class="section-card output-box hidden" id="text-output-section">
+      <h2>5. Copy-Ready Structured Matrix <span class="copy-toast" id="copy-toast">Copied!</span></h2>
+      <textarea id="clean-text-area" rows="6" readonly style="font-family: monospace; background: rgba(0,0,0,0.4); border-color: #334155;"></textarea>
+    </div>
+
+  </div>
+
+  <script>
+    let currentWineType = 'white';
+    let auditActive = false;
+
+    const fullWorkbookDatabase = {
+      white: {
+        "Albariño": { regions: "Spain – Galicia (Rías Baixas)", sight: { color: "Pale Yellow to Deep Yellow", hues: ["Green"], staining: "NA", tearing: "Medium to Medium Plus" }, nose: { fruit: ["Citrus", "Orange", "Grapefruit", "Lemon", "Stone Fruit", "Peach", "Nectarine", "Apple", "Pear"], floral: ["Orange Blossom"], herbal: ["Lemongrass", "Sweet Herb"], vinoak: ["Stainless steel"], earth: ["Wet Stone", "Dusty Rock"] }, palate: { sweetness: "Bone Dry to Dry", phenolic: "Slight", acid: "Medium Plus", alcohol: "Medium to Medium Plus" } },
+        "Chardonnay - Old World": { regions: "France – Burgundy: Chablis, Côte d’Or, Mâconnais", sight: { color: "Straw to Yellow", hues: ["Green", "Gold", "Silver/Platinum"], staining: "NA", tearing: "Medium to Medium Plus" }, nose: { fruit: ["Apple", "Pear", "Citrus", "Stone Fruit"], floral: ["orchard blossoms"], herbal: [], vinoak: ["stainless", "neutral", "French oak"], earth: ["Chalk", "wet stone"] }, palate: { sweetness: "Dry", phenolic: "Slight", acid: "Medium Plus to High", alcohol: "Medium to Medium Plus" } },
+        "Chardonnay - New World": { regions: "USA – California (Napa, Sonoma); Australia", sight: { color: "Medium Yellow to Deep Gold", hues: ["Green", "Gold"], staining: "NA", tearing: "Medium Plus to High" }, nose: { fruit: ["Apple", "Pear", "Tropical", "Banana", "Mango", "Papaya", "Pineapple", "Citrus", "Orange", "Stone Fruit", "Peach"], floral: ["orchard blossoms"], herbal: [], vinoak: ["French Oak", "American Oak"], earth: [] }, palate: { sweetness: "Dry", phenolic: "Slight", acid: "Medium Minus to Medium Plus", alcohol: "Medium Plus to High" } },
+        "Chenin Blanc - Old World": { regions: "France – Loire Valley: Savennières, Vouvray", sight: { color: "Straw to Yellow", hues: ["Green", "Gold", "Silver/Platinum"], staining: "NA", tearing: "Medium to Medium Plus" }, nose: { fruit: ["Apple", "Pear", "Quince", "Citrus", "Lime", "Lemon", "Orange", "Stone Fruit", "Peach", "Apricot"], floral: ["Apple Blossom", "Citrus Blossoms"], herbal: ["Fresh Herbs", "Hay", "Straw"], vinoak: ["Large neutral wood"], earth: ["Wet Rock", "Chalk", "Compost", "Mushroom"] }, palate: { sweetness: "Dry to Off-Dry", phenolic: "N/A", acid: "Medium Plus to High", alcohol: "Medium Minus to High" } },
+        "Gewürztraminer - Old World": { regions: "France – Alsace", sight: { color: "Yellow to Deep Gold", hues: ["Silver", "Green"], staining: "NA", tearing: "Medium Plus to High" }, nose: { fruit: ["Tropical", "Lychee", "Pineapple", "Mango", "Stone Fruit", "Apricot", "Peach", "Nectarine", "Apple", "Pear"], floral: ["Gardenia", "Rose", "Jasmine", "Lilac", "Honeysuckle"], herbal: ["Tea"], vinoak: ["Neutral Casks"], earth: [] }, palate: { sweetness: "Dry to Medium Sweet", phenolic: "Elevated", acid: "Medium Minus to Medium", alcohol: "Medium Plus to High" } },
+        "Pinot Gris / Grigio - Old World": { regions: "France – Alsace; Italy – Alto Adige / Friuli", sight: { color: "Straw to Gold", hues: ["Green"], staining: "NA", tearing: "Medium Minus to High" }, nose: { fruit: ["Apple", "Pear", "Stone Fruit", "Peach", "Apricot", "Citrus", "Lemon", "Orange"], floral: ["Yellow and White Flowers"], herbal: [], vinoak: ["Large neutral wood"], earth: ["Mushroom", "Wet Stones"] }, palate: { sweetness: "Dry to Off-Dry", phenolic: "Elevated", acid: "Medium to Medium Plus", alcohol: "Medium to Medium Plus" } },
+        "Riesling - Old World": { regions: "Germany – Mosel, Rhein; France – Alsace", sight: { color: "Pale Straw to Gold", hues: ["Green", "Brassy"], staining: "NA", tearing: "Low to High" }, nose: { fruit: ["Stone Fruit", "Peach", "Apricot", "Nectarine", "Citrus", "Lemon", "Lime", "Orange", "Apple", "Pear", "Tropical", "Pineapple"], floral: ["orchard blossoms", "Honeysuckle", "Jasmine", "Lavender"], herbal: ["Sage", "Mint"], vinoak: ["Large neutral wood"], earth: ["Slate", "Wet Stone"] }, palate: { sweetness: "Dry to Sweet", phenolic: "N/A", acid: "Medium Plus to High", alcohol: "Low to Medium Plus" } },
+        "Riesling - New World": { regions: "Australia – South Australia: Clare / Eden Valley", sight: { color: "Straw to Light Gold", hues: ["Green"], staining: "NA", tearing: "Medium to Medium Plus" }, nose: { fruit: ["Citrus", "Lime", "Grapefruit", "Orange", "Tropical", "Stone Fruit", "Apple", "Pear"], floral: ["Citrus Blossoms", "Lavender"], herbal: ["Lemongrass", "Sage", "Mint"], vinoak: [], earth: ["Slate", "Wet Stone"] }, palate: { sweetness: "Dry", phenolic: "N/A", acid: "Medium Plus to High", alcohol: "Medium to Medium Plus" } },
+        "Sauvignon Blanc - Old World": { regions: "France – Loire; France – Bordeaux", sight: { color: "Straw to Gold", hues: ["Green", "Silver"], staining: "NA", tearing: "Medium to Medium Plus" }, nose: { fruit: ["Citrus", "Grapefruit", "Lemon", "Lime", "Apple", "Pear"], floral: ["orchard blossoms"], herbal: ["Lemongrass", "Hay", "Pyrazine (Bell Pepper)"], vinoak: ["French Oak"], earth: ["Chalk", "Wet Stone", "Mushroom", "Forest Floor"] }, palate: { sweetness: "Dry", phenolic: "N/A", acid: "Medium Plus to High", alcohol: "Medium to Medium Plus" } },
+        "Sauvignon Blanc - New World": { regions: "USA – California; New Zealand – Marlborough", sight: { color: "Pale Straw to Gold", hues: ["Green", "Silver"], staining: "NA", tearing: "Medium to High" }, nose: { fruit: ["Citrus", "Grapefruit", "Lemon", "Lime", "Tropical", "Mango", "Pineapple", "Apple"], floral: ["orchard blossoms"], herbal: ["Lemongrass", "Pyrazine (Bell Pepper)"], vinoak: ["French Oak"], earth: ["Wet Stone"] }, palate: { sweetness: "Dry", phenolic: "N/A", acid: "Medium Plus to High", alcohol: "Medium to High" } },
+        "Torrontés": { regions: "Argentina – Salta, Mendoza", sight: { color: "Straw", hues: ["Green", "Silver"], staining: "NA", tearing: "Medium to Medium Plus" }, nose: { fruit: ["Citrus", "Orange", "Lemon", "Lime", "Tropical", "Pineapple", "Lychee", "Apple", "Pear"], floral: ["Honeysuckle", "orchard blossoms"], herbal: ["Hay"], vinoak: [], earth: [] }, palate: { sweetness: "Dry", phenolic: "Elevated", acid: "Medium to Medium Plus", alcohol: "Medium to Medium Plus" } },
+        "Viognier - Old World": { regions: "France – Northern Rhône: Condrieu", sight: { color: "Straw to Yellow", hues: ["Green", "Gold", "Brassy"], staining: "NA", tearing: "Medium to High" }, nose: { fruit: ["Stone Fruit", "Apricot", "Peach", "Tropical", "Mango", "Pineapple", "Citrus", "Orange"], floral: ["Honeysuckle", "Rose", "orchard blossoms"], herbal: ["Lemongrass"], vinoak: ["French Oak"], earth: ["Mushroom", "Wet Stone"] }, palate: { sweetness: "Dry to Off-Dry", phenolic: "Elevated", acid: "Medium to Medium Plus", alcohol: "Medium Plus to High" } }
+      },
+      red: {
+        "Cabernet Sauvignon - Old World": { regions: "France – Bordeaux: Haut-Médoc, Graves", sight: { color: "Moderate to Deep Ruby or Purple", hues: ["Pink", "Purple"], staining: "Moderate to Moderate Plus", tearing: "Medium to High" }, nose: { fruit: ["Black Fruit", "Cherry", "Plum", "Red Fruit"], floral: ["Purple Flowers"], herbal: ["Thyme", "Rosemary", "Tobacco", "Pyrazine (Bell Pepper)"], vinoak: ["French Oak"], earth: ["Mushroom", "Forest Floor", "Graphite", "Wet Stone"] }, palate: { sweetness: "Dry", phenolic: "N/A", tannin: "Medium Plus", acid: "Medium to Medium Plus", alcohol: "Medium to High" } },
+        "Cabernet Sauvignon - New World": { regions: "USA – California; Chile; Australia", sight: { color: "Moderate to Deep Ruby or Purple", hues: ["Pink", "Purple"], staining: "Moderate to Heavy", tearing: "Medium Plus to High" }, nose: { fruit: ["Black Fruit", "Plum", "Cherry", "Red Fruit", "Blue Fruit"], floral: ["Purple Flowers"], herbal: ["Thyme", "Rosemary", "Tobacco", "Mint/Eucalyptus", "Pyrazine (Bell Pepper)"], vinoak: ["French Oak", "American Oak"], earth: [] }, palate: { sweetness: "Dry", phenolic: "N/A", tannin: "Medium Plus", acid: "Medium to Medium Plus", alcohol: "Medium Plus to High" } },
+        "Cabernet Franc - Old World": { regions: "France – Loire Valley: Chinon, Bourgueil", sight: { color: "Light to Deep Ruby", hues: ["Pink", "Purple"], staining: "None to Slight", tearing: "Medium to Medium Plus" }, nose: { fruit: ["Red Fruit", "Cherry", "Plum", "Black Fruit"], floral: ["Purple Flowers"], herbal: ["Thyme", "Tobacco", "Pyrazine (Bell Pepper)"], vinoak: ["Neutral Casks", "Large neutral wood"], earth: ["Mushroom", "Forest Floor", "Clay"] }, palate: { sweetness: "Dry", phenolic: "N/A", tannin: "Medium", acid: "Medium Plus to High", alcohol: "Medium to Medium Plus" } },
+        "Gamay - Old World": { regions: "France – Beaujolais", sight: { color: "Light to Deep Ruby", hues: ["Purple", "Pink"], staining: "None to Slight", tearing: "Medium Minus to Medium Plus" }, nose: { fruit: ["Red Fruit", "Strawberry", "Cherry"], floral: ["Red Flowers", "Purple Flowers", "Lavender"], herbal: ["Thyme"], vinoak: ["Neutral Casks", "Carbonic Maceration"], earth: ["Compost", "Forest Floor", "Wet Stone"] }, palate: { sweetness: "Dry", phenolic: "N/A", tannin: "Low to Medium", acid: "Medium Plus to High", alcohol: "Medium to Medium Plus" } },
+        "Grenache - Old World": { regions: "France – Southern Rhône Valley", sight: { color: "Deep Garnet to Dark Ruby", hues: ["Garnet", "Purple"], staining: "Slight to Medium", tearing: "Medium Plus to High" }, nose: { fruit: ["Red Fruit", "Strawberry", "Cherry", "Black Fruit", "Plum"], floral: ["Red Flowers", "Lavender"], herbal: ["Thyme", "Rosemary"], vinoak: ["Large neutral wood"], earth: ["Mushroom", "Compost", "Wet Stone"] }, palate: { sweetness: "Dry", phenolic: "N/A", tannin: "Medium Plus", acid: "Medium to Medium Plus", alcohol: "Medium Plus to High" } },
+        "Malbec - New World": { regions: "Argentina – Mendoza", sight: { color: "Ruby to Deep Purple", hues: ["Pink", "Blue", "Purple"], staining: "Moderate to Deep", tearing: "Medium Plus to High" }, nose: { fruit: ["Black Fruit", "Cherry", "Plum", "Blue Fruit", "Blueberry", "Red Fruit"], floral: ["Red Flowers", "Purple Flowers"], herbal: ["Tobacco"], vinoak: ["French Oak", "American Oak"], earth: ["Graphite"] }, palate: { sweetness: "Dry", phenolic: "N/A", tannin: "Medium to Medium Plus", acid: "Medium to Medium Plus", alcohol: "Medium Plus to High" } },
+        "Merlot - Old World": { regions: "France – Bordeaux (Right Bank)", sight: { color: "Deep Ruby", hues: ["Pink", "Purple", "Garnet"], staining: "Light to Moderate", tearing: "Medium to Medium Plus" }, nose: { fruit: ["Red Fruit", "Cherry", "Plum", "Black Fruit"], floral: ["Red Flowers", "Purple Flowers"], herbal: ["Tobacco", "Pyrazine (Bell Pepper)"], vinoak: ["French Oak"], earth: ["Forest Floor", "Compost", "Graphite"] }, palate: { sweetness: "Dry", phenolic: "N/A", tannin: "Medium to Medium Plus", acid: "Medium to Medium Plus", alcohol: "Medium to High" } },
+        "Nebbiolo - Old World": { regions: "Italy – Piedmont: Barolo, Barbaresco", sight: { color: "Garnet to Medium Ruby", hues: ["Garnet", "Orange"], staining: "None to Slight", tearing: "Medium Plus to High" }, nose: { fruit: ["Red Fruit", "Cherry", "Raspberry", "Black Fruit"], floral: ["Red Flowers", "Purple Flowers", "Rose"], herbal: ["Tobacco"], vinoak: ["Neutral Casks", "French Oak"], earth: ["Compost", "Mushroom", "Wet Stone"] }, palate: { sweetness: "Bone Dry to Dry", phenolic: "N/A", tannin: "High", acid: "Medium Plus to High", alcohol: "Medium Plus to High" } },
+        "Pinot Noir - Old World": { regions: "France – Burgundy: Côte d’Or", sight: { color: "Garnet to Ruby", hues: ["Pink", "Garnet"], staining: "None to Slight", tearing: "Medium to Medium Plus" }, nose: { fruit: ["Red Fruit", "Cherry", "Raspberry", "Strawberry", "Black Fruit"], floral: ["Purple Flowers", "Red Flowers"], herbal: ["Thyme"], vinoak: ["French Oak"], earth: ["Mushroom", "Forest Floor", "Compost", "Clay", "Wet Stone"] }, palate: { sweetness: "Dry", phenolic: "N/A", tannin: "Medium Minus to Medium Plus", acid: "Medium Plus to High", alcohol: "Medium to High" } },
+        "Sangiovese - Old World": { regions: "Italy – Tuscany: Chianti, Brunello", sight: { color: "Garnet to Dark Ruby", hues: ["Garnet", "Orange"], staining: "Slight to Moderate", tearing: "Medium to High" }, nose: { fruit: ["Red Fruit", "Cherry", "Black Fruit"], floral: ["Red Flowers", "Purple Flowers", "Rose"], herbal: ["Tomato Leaf"], vinoak: ["Neutral Casks", "French Oak"], earth: ["Mushroom", "Wet Stone"] }, palate: { sweetness: "Bone Dry to Dry", phenolic: "N/A", tannin: "Medium Plus to High", acid: "Medium Plus to High", alcohol: "Medium to High" } },
+        "Syrah - Old World": { regions: "France – Northern Rhône Valley", sight: { color: "Medium to Dark Ruby", hues: ["Pink", "Purple"], staining: "Moderate to High", tearing: "Medium Plus to High" }, nose: { fruit: ["Black Fruit", "Cherry", "Plum", "Red Fruit", "Blue Fruit"], floral: ["Red Flowers", "Purple Flowers", "Violets", "Lavender"], herbal: ["Thyme", "Rosemary", "Hay"], vinoak: ["French Oak", "Neutral Casks"], earth: ["Compost", "Wet Stone"] }, palate: { sweetness: "Bone Dry to Dry", phenolic: "N/A", tannin: "Medium to Medium Plus", acid: "Medium Plus to High", alcohol: "Medium Plus to High" } },
+        "Tempranillo - Old World": { regions: "Spain – Rioja, Ribera del Duero", sight: { color: "Garnet to Medium Ruby", hues: ["Pink", "Garnet"], staining: "Light to Moderate", tearing: "Medium Plus to High" }, nose: { fruit: ["Red Fruit", "Cherry", "Strawberry", "Plum", "Black Fruit"], floral: ["Red Flowers"], herbal: ["Tobacco", "Tomato Leaf"], vinoak: ["American Oak", "French Oak"], earth: ["Compost", "Forest Floor", "Clay"] }, palate: { sweetness: "Dry", phenolic: "N/A", tannin: "Medium to Medium Plus", acid: "Medium to High", alcohol: "Medium to High" } }
+      }
+    };
+
+    const matrixColors = { white: ['Straw', 'Yellow', 'Gold', 'Amber'], red: ['Purple', 'Ruby', 'Garnet', 'Tawny'] };
+    const matrixFruits = { white: ['Apple / Pear', 'Citrus', 'Stone Fruit', 'Tropical Fruit'], red: ['Red Fruit', 'Black Fruit', 'Blue Fruit'] };
+
+    function toggleSelect(button) {
+      const container = button.parentElement;
+      const isMultiple = container.getAttribute('data-multiple') === 'true';
+      const maxLimit = parseInt(container.getAttribute('data-max')) || null;
+
+      if (!isMultiple) {
+        container.querySelectorAll('.btn-opt').forEach(b => b.classList.remove('selected'));
+        button.classList.add('selected');
+      } else {
+        if (maxLimit && !button.classList.contains('selected')) {
+          if (container.querySelectorAll('.btn-opt.selected').length >= maxLimit) return;
+        }
+        button.classList.toggle('selected');
+      }
+      if (auditActive) renderComparativePanels();
+    }
+
+    function handleInitialGrapeClick(button) {
+      const isSelected = button.classList.contains('selected');
+      const selectedCount = document.querySelectorAll('#theory-grape-options .btn-opt.selected').length;
+      if (!isSelected && selectedCount >= 3) return;
+
+      button.classList.toggle('selected');
+      if (auditActive) renderComparativePanels();
+    }
+
+    function setWineType(type) {
+      currentWineType = type;
+      document.querySelectorAll('.type-btn').forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-type') === type));
+      
+      const tanninRow = document.getElementById('palate-tannin').parentElement;
+      if (type === 'white') {
+        tanninRow.classList.add('hidden');
+      } else {
+        tanninRow.classList.remove('hidden');
+      }
+
+      syncDynamicRows();
+      buildGrapeOptionsButtons();
+      if (auditActive) renderComparativePanels();
+    }
+
+    function syncDynamicRows() {
+      const colBox = document.getElementById('sight-color');
+      colBox.innerHTML = '';
+      matrixColors[currentWineType].forEach(colorStr => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-opt';
+        btn.textContent = colorStr;
+        btn.onclick = function() { toggleSelect(this); };
+        colBox.appendChild(btn);
+      });
+
+      const fruitBox = document.getElementById('nose-fruit');
+      fruitBox.innerHTML = '';
+      matrixFruits[currentWineType].forEach(fruitStr => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-opt';
+        btn.textContent = fruitStr;
+        btn.onclick = function() { toggleSelect(this); };
+        fruitBox.appendChild(btn);
+      });
+    }
+
+    function buildGrapeOptionsButtons() {
+      const container = document.getElementById('theory-grape-options');
+      container.innerHTML = '';
+      Object.keys(fullWorkbookDatabase[currentWineType]).forEach(key => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-opt';
+        btn.textContent = key;
+        btn.setAttribute('data-val', key);
+        btn.onclick = function() { handleInitialGrapeClick(this); };
+        container.appendChild(btn);
+      });
+    }
+
+    function grabRowArray(id) {
+      const container = document.getElementById(id);
+      if (!container) return [];
+      return Array.from(container.querySelectorAll('.btn-opt.selected')).map(b => b.textContent.trim());
+    }
+
+    function grabRowStringValue(id) {
+      const container = document.getElementById(id);
+      if (!container) return '';
+      const selected = container.querySelector('.btn-opt.selected');
+      return selected ? selected.textContent.trim() : '';
+    }
+
+    function verifyMetricMatch(userSelected, targetBenchmarks) {
+      if (!userSelected || userSelected.length === 0) return { status: 'Untested', text: 'Missing selection' };
+      if (!targetBenchmarks || targetBenchmarks.length === 0) return { status: 'Pass', text: 'Aligned' };
+
+      const userString = Array.isArray(userSelected) ? userSelected.join(' ') : userSelected;
+      const isMatch = targetBenchmarks.some(bench => {
+        const cleanBench = bench.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanUser = userString.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return cleanBench.includes(cleanUser) || cleanUser.includes(cleanBench);
+      });
+
+      return isMatch 
+        ? { status: 'Pass', text: `Aligned (${Array.isArray(userSelected) ? userSelected.slice(0,2).join(', ') : userSelected})` }
+        : { status: 'Fail', text: `Variance (${Array.isArray(userSelected) ? userSelected.slice(0,2).join(', ') : userSelected})` };
+    }
+
+    function runDeepCalibration(grapeKey) {
+      const bench = fullWorkbookDatabase[currentWineType][grapeKey];
+      if (!bench) return '';
+
+      const userColor = grabRowStringValue('sight-color');
+      const userHues = grabRowArray('sight-hues');
+      const userStaining = grabRowStringValue('sight-staining');
+      const userTearing = grabRowStringValue('sight-tearing');
+      const userFruit = grabRowArray('nose-fruit');
+      const userFloral = grabRowArray('nose-floral');
+      const userHerbal = grabRowArray('nose-herbal');
+      const userVinOak = grabRowArray('nose-vinoak');
+      const userEarth = grabRowArray('nose-earth');
+      const userSugar = grabRowStringValue('palate-sugar');
+      const userPhenolic = grabRowStringValue('palate-phenolic');
+      const userTannin = grabRowStringValue('palate-tannin');
+      const userAcid = grabRowStringValue('palate-acid');
+      const userAlcohol = grabRowStringValue('palate-alcohol');
+
+      let html = `<div class="calibration-box"><h5>Alignment Audit</h5>`;
+      const appendLine = (label, userVal, targetArr) => {
+        const audit = verifyMetricMatch(userVal, targetArr);
+        const cssClass = audit.status === 'Pass' ? 'metric-pass' : (audit.status === 'Fail' ? 'metric-fail' : 'text-muted');
+        html += `<div class="metric-item"><span>${label}:</span><span class="${cssClass}">${audit.text}</span></div>`;
+      };
+
+      appendLine('Color', userColor, [bench.sight.color]);
+      if(userHues.length > 0) appendLine('Hues', userHues, bench.sight.hues);
+      appendLine('Staining', userStaining, [bench.sight.staining]);
+      appendLine('Viscosity', userTearing, [bench.sight.tearing]);
+      if(userFruit.length > 0) appendLine('Fruit', userFruit, bench.nose.fruit);
+      if(userFloral.length > 0) appendLine('Floral', userFloral, bench.nose.floral);
+      if(userHerbal.length > 0) appendLine('Herbal', userHerbal, bench.nose.herbal);
+      if(userVinOak.length > 0) appendLine('Wood', userVinOak, bench.nose.vinoak);
+      if(userEarth.length > 0) appendLine('Earth', userEarth, bench.nose.earth);
+      appendLine('Sweetness', userSugar, [bench.palate.sweetness]);
+      appendLine('Phenolics', userPhenolic, [bench.palate.phenolic]);
+      if (currentWineType === 'red') appendLine('Tannin', userTannin, [bench.palate.tannin]);
+      appendLine('Acidity', userAcid, [bench.palate.acid]);
+      appendLine('Alcohol', userAlcohol, [bench.palate.alcohol]);
+
+      html += `</div>`;
+      return html;
+    }
+
+    function renderComparativePanels() {
+      const targetGrid = document.getElementById('theory-comparison-row');
+      targetGrid.innerHTML = '';
+      
+      const activeGrapes = Array.from(document.querySelectorAll('#theory-grape-options .btn-opt.selected')).map(b => b.getAttribute('data-val'));
+      activeGrapes.forEach(grapeKey => {
+        const data = fullWorkbookDatabase[currentWineType][grapeKey];
+        const calibrationHTML = runDeepCalibration(grapeKey);
+        
+        const panel = document.createElement('div');
+        panel.className = 'meta-box';
+        panel.innerHTML = `
+          <h4>${grapeKey}</h4>
+          <div class="meta-line"><strong>Target Region:</strong> ${data.regions}</div>
+          ${calibrationHTML}
+        `;
+        targetGrid.appendChild(panel);
+      });
+    }
+
+    function triggerFinishedAudit() {
+      auditActive = true;
+      renderComparativePanels();
+      
+      // Reveal functional management buttons
+      document.getElementById('audit-trigger-btn').classList.add('hidden');
+      document.getElementById('mail-btn').classList.remove('hidden');
+      document.getElementById('text-btn').classList.remove('hidden');
+      document.getElementById('pdf-btn').classList.remove('hidden');
+    }
+
+    function grabRowString(id) {
+      const element = document.getElementById(id);
+      if (!element) return 'N/A';
+      const selectedButtons = Array.from(element.querySelectorAll('.btn-opt.selected'));
+      return selectedButtons.length > 0 ? selectedButtons.map(b => b.innerText).join(', ') : 'None Selected';
+    }
+
+    function buildStructuredPayload() {
+      let payload = `=== CMS LEVEL 3 BLIND TASTING GRID ===\nProfile: ${currentWineType.toUpperCase()} FLIGHT\n-----------------------------------\n`;
+      payload += `[SIGHT] Color: ${grabRowString('sight-color')} | Hues: ${grabRowString('sight-hues')} | Staining: ${grabRowString('sight-staining')} | Viscosity: ${grabRowString('sight-tearing')}\n`;
+      payload += `[NOSE] Fruit: ${grabRowString('nose-fruit')} | Floral: ${grabRowString('nose-floral')} | Herbal: ${grabRowString('nose-herbal')} | Wood: ${grabRowString('nose-vinoak')} | Earth: ${grabRowString('nose-earth')}\n`;
+      payload += `[PALATE] Sugar: ${grabRowString('palate-sugar')} | Phenolic: ${grabRowString('palate-phenolic')} | Tannin: ${grabRowString('palate-tannin')} | Acid: ${grabRowString('palate-acid')} | Alcohol: ${grabRowString('palate-alcohol')}\n`;
+      payload += `-----------------------------------\n[CONCLUSION] Contenders: ${grabRowString('theory-grape-options')}\nStatement: ${document.getElementById('concl-final').value}\n`;
+      return payload;
+    }
+
+    function sendTastingMail() {
+      const email = "mrcakebread@gmail.com";
+      window.location.href = `mailto:${email}?subject=Advanced Tasting Grid Run&body=${encodeURIComponent(buildStructuredPayload())}`;
+    }
+
+    function generateCleanText() {
+      const outputSec = document.getElementById('text-output-section');
+      document.getElementById('clean-text-area').value = buildStructuredPayload();
+      outputSec.classList.remove('hidden');
+      outputSec.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function copyOutputToClipboard() {
+      const textArea = document.getElementById('clean-text-area');
+      textArea.select();
+      navigator.clipboard.writeText(textArea.value).then(() => {
+        const toast = document.getElementById('copy-toast');
+        toast.style.opacity = '1';
+        setTimeout(() => toast.style.opacity = '0', 2000);
+      });
+    }
+
+    function printToPDF() { window.print(); }
+
+    window.onload = function() {
+      syncDynamicRows();
+      buildGrapeOptionsButtons();
+    };
+  </script>
+</body>
+</html>
