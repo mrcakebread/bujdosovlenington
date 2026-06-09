@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Lenington | Sommelier • Storyteller • Advocate</title>
+    <style>
+        /* --- Modern Reset & Variable Setup --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0a0c;
+            --text-light: #f4f4f6;
+            --text-muted: #a1a1aa;
+            --accent-gold: #d4af37;
+            --max-width: 1000px;
+            /* Glow Colors */
+            --white-glow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.3);
+            --gold-glow: 0 0 12px rgba(212, 175, 55, 0.8), 0 0 25px rgba(212, 175, 55, 0.4);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            line-height: 1.75;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- IMMERSIVE STATIC BACKGROUND SLIDESHOW --- */
+        .background-slideshow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+            overflow: hidden;
+            background-color: #000;
+            cursor: grab;
+        }
+        
+        .background-slideshow-container:active {
+            cursor: grabbing;
+        }
+
+        .slideshow-track {
+            display: flex;
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: max-content;
+            will-change: transform;
+        }
+        
+        .slideshow-track.is-animating {
+            animation: slideLeft 45s linear infinite;
+        }
+
+        .slide {
+            height: 100vh;
+            width: calc(100vh * 1.3);
+            object-fit: cover;
+            flex-shrink: 0;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .slideshow-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(10, 10, 12, 0.15), rgba(10, 10, 12, 0.35));
+            z-index: 2;
+            pointer-events: none; 
+        }
+
+        /* --- SCROLLABLE CONTENT OVERLAY --- */
+        .scroll-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100vh;
+            overflow-y: auto;
+            scroll-behavior: auto;
+            pointer-events: none; 
+        }
+
+        /* --- HERO SECTION WITH GLOWING SHIELD --- */
+        .hero-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 24px;
+        }
+
+        .hero-content {
+            max-width: 850px;
+            padding: 3rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 40px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            pointer-events: auto; 
+        }
+
+        .hero-availability {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--accent-gold);
+            margin-bottom: 1.2rem;
+            font-weight: 700;
+            text-shadow: var(--gold-glow);
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            text-shadow: var(--white-glow);
+        }
+
+        .hero-tagline {
+            font-size: 1.15rem;
+            font-weight: 400;
+            color: var(--accent-gold);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 2.5rem;
+            text-shadow: var(--gold-glow);
+        }
+
+        .hero-statement {
+            font-size: 1.3rem;
+            font-weight: 400;
+            color: #ffffff;
+            line-height: 1.6;
+            max-width: 720px;
+            margin: 0 auto;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        }
+
+        /* --- EDITORIAL CONTENT SECTIONS --- */
+        .main-content {
+            width: 100%;
+            /* Tightened gap adjustment: Linear ramp moves higher into the viewport fold */
+            background: linear-gradient(to bottom, transparent, rgba(10, 10, 12, 0.98) 4%, var(--bg-dark) 25%);
+            padding-bottom: 4rem;
+            pointer-events: auto; 
+        }
+
+        .section-container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 4rem 2rem; /* Reduced top/bottom padding inside content cells */
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2.5rem;
+        }
+
+        @media (min-width: 868px) {
+            .section-container { grid-template-columns: 320px 1fr; gap: 5rem; }
+            .section-container.reverse { grid-template-columns: 1fr 320px; }
+            .section-container.reverse .section-meta { grid-column: 2; grid-row: 1; }
+            .section-container.reverse .section-body { grid-column: 1; grid-row: 1; }
+        }
+
+        .section-meta { display: flex; flex-direction: column; }
+        .section-accent-bar { width: 40px; height: 2px; background-color: var(--accent-gold); margin-bottom: 1.5rem; }
+        .section-title { font-size: 2rem; font-weight: 700; text-transform: uppercase; color: var(--text-light); }
+        .section-body { font-size: 1.15rem; color: #e4e4e7; }
+        .section-body p { margin-bottom: 1.75rem; }
+
+        .quote-wrapper {
+            background-color: rgba(18, 18, 22, 0.85);
+            backdrop-filter: blur(4px);
+            padding: 6rem 2rem;
+            text-align: center;
+            margin: 4rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .quote-text { font-size: 1.9rem; font-weight: 300; font-style: italic; max-width: 850px; margin: 0 auto; line-height: 1.6; }
+        .quote-text::before, .quote-text::after { content: '"'; color: var(--accent-gold); font-size: 2.5rem; vertical-align: middle; }
+
+        .site-footer {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .footer-meta { font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent-gold); margin-bottom: 0.5rem; }
+        .footer-copyright { font-size: 0.85rem; color: var(--text-muted); }
+
+        @keyframes slideLeft { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2.5rem; }
+            .hero-content { padding: 2rem 1.5rem; border-radius: 30px; }
+            .hero-statement { font-size: 1.1rem; }
+            .section-container { padding: 3rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-slideshow-container" id="slideshowBg">
+        <div class="slideshow-track is-animating" id="track">
+            <img src="secondcity.png" alt="Stage Standup" class="slide">
+            <img src="flowersfaust.png" alt="Wine Keys" class="slide">
+            <img src="powerclean.png" alt="Stage Performance" class="slide">
+            <img src="steep.png" alt="Champagne and Candlelight" class="slide">
+            <img src="taittinger.png" alt="Taittinger Display" class="slide">
+            <img src="secondcity.png" alt="Stage Standup" class="slide">
+            <img src="flowersfaust.png" alt="Wine Keys" class="slide">
+            <img src="powerclean.png" alt="Stage Performance" class="slide">
+            <img src="steep.png" alt="Champagne and Candlelight" class="slide">
+            <img src="taittinger.png" alt="Taittinger Display" class="slide">
+        </div>
+        <div class="slideshow-overlay"></div>
+    </div>
+
+    <div class="scroll-wrapper" id="scrollWindow">
+
+        <header class="hero-container">
+            <div class="hero-content">
+                <p class="hero-availability">Available for Special Projects</p>
+                <h1 class="hero-title">Mark Lenington</h1>
+                <p class="hero-tagline">Sommelier • Storyteller • Advocate</p>
+                <p class="hero-statement">
+                    Navigating high-stakes environments with dynamic timing, deep intuition, and an expansive, multi-era perspective on human connection.
+                </p>
+            </div>
+        </header>
+
+        <main class="main-content">
+
+            <section class="section-container">
+                <div class="section-meta">
+                    <div class="section-accent-bar"></div>
+                    <h2 class="section-title">The Art<br>of the Room</h2>
+                </div>
+                <div class="section-body">
+                    <p>For over two decades, I have operated at the intersection of high-pressure execution and refined hospitality. As a Certified Sommelier, I’ve architected dynamic beverage programs, engineered custom craft cocktail frameworks to repurpose inventory, and curated high-volume tableside interactions across elite, fine-dining landscapes. To me, Forbes Five-Star service isn’t a collection of rigid rules; it is a live exercise in spatial choreography, timing, and environmental command.</p>
+                    <p>Long before analyzing rare vintages on the floor, I was exploring the core foundational principles of human connection across Chicago’s legendary comedy stages. Much like navigating multiple timelines to avert an impending disaster, a great room relies on uniting an ensemble cast of distinct personalities to transform an everyday space into something unforgettable.</p>
+                </div>
+            </section>
+
+            <section class="section-container reverse">
+                <div class="section-meta">
+                    <div class="section-accent-bar"></div>
+                    <h2 class="section-title">Supercharged<br>Pattern<br>Recognition</h2>
+                </div>
+                <div class="section-body">
+                    <p>Operating across dozens of high-intensity restaurant floors acts as an incredible psychological laboratory. Moving through thousands of evolving human scenarios back-to-back acts as a powerful accelerator for an ADHD brain, transforming ambient information into highly acute macro pattern recognition. It lets you spot the unseen anomalies in an environment—the subtle shift in atmosphere before a room falls out of alignment.</p>
+                    <p>This exposure yields an incredibly unique, hyper-observant view of humanity. Much like a small fellowship facing a swirling, unpredictable cosmic force, IBox synthesize guest intent, micro-behavioral cues, and room pacing to stabilize the environment. By reading these human trends from multiple discrete angles, I build systems that anticipate consumer needs instantly—whether that means engineering custom QR-coded educational toolkits to empower floor staff or spotting programmatic friction points long before they reach the table.</p>
+                </div>
+            </section>
+
+            <section class="section-container">
+                <div class="section-meta">
+                    <div class="section-accent-bar"></div>
+                    <h2 class="section-title">Timing,<br>Momentum &amp;<br>Live Focus</h2>
+                </div>
+                <div class="section-body">
+                    <p>A flawless evening relies entirely on controlling pace and protecting structural flow. During my years of intensive writing and stage training, I sustained a demanding, dual-gear schedule. My Saturdays would kick off with morning improv blocks, roll straight into afternoon creative writing sessions at Second City, iO, and The Annoyance, transform into full fine-dining service shifts at premium venues, and culminate in catching a late-night cab to emcee a booked stand-up showcase—all in one fluid motion.</p>
+                    <p>I view hospitality through a director's lens: balancing structural precision with authentic showmanship, turning technical data into digestible education, and creating environments where guests and team members alike feel completely secure. When an unexpected crisis shatters the evening's balance, you don't fall into despair; you pivot, gather your scattered elements, and rebuild the momentum on the fly.</p>
+                </div>
+            </section>
+
+            <section class="section-container reverse">
+                <div class="section-meta">
+                    <div class="section-accent-bar"></div>
+                    <h2 class="section-title">Advocacy &amp;<br>Collective<br>Accountability</h2>
+                </div>
+                <div class="section-body">
+                    <p>True dedication to the craft means extending hospitality behind the scenes to actively ensure the success, safety, and systemic protection of others. Whether waiting after-hours at a restaurant to personally run mock service drills for a peer preparing for their Sommelier exam, or coordinating weekly study groups to democratize technical wine theory, my philosophy centers on collective elevation. Real impact isn't achieved in isolation; it comes from transmitting support outward to ensure success for all.</p>
+                    <p>This commitment extends directly into structural systems. Navigating complex institutional frameworks—from civil defense and pro se legal representations in Cook County to filing protective workplace labor actions under the NLRB and EEOC—has built a deep, technical respect for due process, transparency, and employee rights. I actively advocate for fair corporate contract standards, safe working conditions, and broader neurodevelopmental awareness, ensuring that institutional systems are held strictly accountable to the human beings they are designed to protect.</p>
+                </div>
+            </section>
+
+            <div class="quote-wrapper">
+                <blockquote class="quote-text">
+                    Respect the craft, command the details, and take care of the people right in front of you.
+                </blockquote>
+            </div>
+
+            <footer class="site-footer">
+                <p class="footer-meta">Chicago, IL • Wine Blinds &amp; Media Development</p>
+                <p class="footer-copyright">&copy; 2026 Mark Lenington. All Rights Reserved.</p>
+            </footer>
+
+        </main>
+    </div>
+
+    <script>
+        // --- LAYER 1: SNAPPIER INSTANT TELEPROMPTER ENGINE ---
+        const scrollWindow = document.getElementById('scrollWindow');
+        
+        let autoScrollSpeed = 0.85; // Snappier, noticeable rolling velocity
+        let scrollActive = true;    // Set to true directly on execution initialization
+        let currentScrollY = 0;
+
+        function startAutoScrollLoop() {
+            if (!scrollActive) return;
+            
+            currentScrollY += autoScrollSpeed;
+            scrollWindow.scrollTop = currentScrollY;
+
+            if (currentScrollY >= (scrollWindow.scrollHeight - scrollWindow.clientHeight)) {
+                scrollActive = false;
+                return;
+            }
+
+            requestAnimationFrame(startAutoScrollLoop);
+        }
+
+        // Fires frame execution loop immediately on compilation without an explicit initial timeout block
+        requestAnimationFrame(startAutoScrollLoop);
+
+        // USER ENGAGEMENT INTERRUPT HANDLER: Immediately yields control to manual scrolling
+        function stopAutoScrollOnInteraction() {
+            if (scrollActive) {
+                scrollActive = false; 
+            }
+        }
+
+        scrollWindow.addEventListener('wheel', stopAutoScrollOnInteraction, { passive: true });
+        scrollWindow.addEventListener('touchstart', stopAutoScrollOnInteraction, { passive: true });
+
+
+        // --- LAYER 2: SEAMLESS BACKGROUND SLIDESHOW DRAG LOGIC ---
+        const container = document.getElementById('slideshowBg');
+        const track = document.getElementById('track');
+
+        let isDragging = false;
+        let startX = 0;
+        let currentTranslate = 0;
+        let prevTranslate = 0;
+
+        function getCurrentXTransform() {
+            const style = window.getComputedStyle(track);
+            const matrix = new WebKitCSSMatrix(style.transform);
+            return matrix.m41; 
+        }
+
+        function dragStart(e) {
+            isDragging = true;
+            startX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
+            
+            const currentX = getCurrentXTransform();
+            track.classList.remove('is-animating');
+            track.style.transform = `translateX(${currentX}px)`;
+            
+            currentTranslate = currentX;
+            prevTranslate = currentX;
+        }
+
+        function dragMove(e) {
+            if (!isDragging) return;
+            const currentX = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
+            const currentXDelta = currentX - startX;
+            currentTranslate = prevTranslate + currentXDelta;
+
+            const halfTrackWidth = track.offsetWidth / 2;
+            if (currentTranslate > 0) {
+                currentTranslate -= halfTrackWidth;
+                startX = currentX; 
+                prevTranslate = currentTranslate;
+            } else if (currentTranslate < -halfTrackWidth) {
+                currentTranslate += halfTrackWidth;
+                startX = currentX;
+                prevTranslate = currentTranslate;
+            }
+
+            track.style.transform = `translateX(${currentTranslate}px)`;
+        }
+
+        function dragEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+
+            const halfTrackWidth = track.offsetWidth / 2;
+            let finalPercentage = (currentTranslate / halfTrackWidth) * 100;
+            
+            while (finalPercentage > 0) finalPercentage -= 50;
+            while (finalPercentage < -50) finalPercentage += 50;
+
+            const keyframes = `@keyframes slideLeft {
+                0% { transform: translateX(${finalPercentage}%); }
+                100% { transform: translateX(${finalPercentage - 50}%); }
+            }`;
+            
+            let styleSheet = document.getElementById('dynamic-marquee-style');
+            if (!styleSheet) {
+                styleSheet = document.createElement("style");
+                styleSheet.id = 'dynamic-marquee-style';
+                document.head.appendChild(styleSheet);
+            }
+            styleSheet.innerText = keyframes;
+
+            track.style.transform = '';
+            track.classList.add('is-animating');
+        }
+
+        container.addEventListener('mousedown', dragStart);
+        container.addEventListener('mousemove', dragMove);
+        window.addEventListener('mouseup', dragEnd);
+
+        container.addEventListener('touchstart', dragStart, { passive: true });
+        container.addEventListener('touchmove', dragMove, { passive: true });
+        window.addEventListener('touchend', dragEnd);
+    </script>
+
+</body>
+</html>
