@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<!-- saved from url=(0063)file:///C:/Users/mrcak/Downloads/gemini-code-1781071890924.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Tequila Sensory Master Study Wheel</title>
+    <style>
+        :root {
+            --bg-color: #fbfbfa;
+            --text-dark: #1a1a1a;
+            --c-chemical: #d9531e;
+            --c-flowers: #cca425;
+            --c-plants: #739926;
+            --c-earth: #1b8577;
+            --c-wood: #2a618c;
+            --c-spice: #59316b;
+            --c-fruit: #b5212c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            max-width: 750px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #111;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            color: #444;
+        }
+
+        .tool-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1300px;
+            gap: 35px;
+        }
+
+        /* Wheel Graphic Container */
+        .wheel-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 560px;
+            aspect-ratio: 1 / 1;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .wheel-wrapper:active {
+            cursor: grabbing;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .segment {
+            cursor: pointer;
+            transition: opacity 0.2s, stroke 0.2s;
+            stroke: #2a2a2a;
+            stroke-width: 0.7px;
+        }
+
+        .segment:hover {
+            opacity: 0.95;
+            stroke: #000;
+            stroke-width: 1.2px;
+        }
+
+        .segment.active {
+            stroke: #000;
+            stroke-width: 2.5px;
+            opacity: 1;
+        }
+
+        .wheel-text {
+            font-weight: 700;
+            fill: #fff;
+            pointer-events: none;
+            font-size: 6.2px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .inner-tier-text {
+            font-size: 7px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .center-pin {
+            fill: #fff;
+            stroke: #1a1a1a;
+            stroke-width: 1.5px;
+        }
+
+        /* Technical Presentation Board */
+        .info-panel {
+            width: 100%;
+            background: #fff;
+            border-radius: 14px;
+            padding: 30px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+            border-top: 10px solid #222;
+            transition: border-color 0.3s ease;
+        }
+
+        .info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .info-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #111;
+        }
+
+        .info-category {
+            font-size: 0.82rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 5px 14px;
+            border-radius: 20px;
+            color: #fff;
+        }
+
+        .info-section {
+            margin-bottom: 20px;
+        }
+
+        .info-section h3 {
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 5px;
+            letter-spacing: 0.6px;
+            font-weight: 700;
+        }
+
+        .info-section p {
+            font-size: 0.96rem;
+            line-height: 1.55;
+            color: #222;
+        }
+
+        @media (min-width: 900px) {
+            .tool-container {
+                flex-direction: row;
+                align-items: flex-start;
+                justify-content: center;
+            }
+            .info-panel {
+                flex: 1;
+                min-height: 560px;
+                border-top: none;
+                border-left: 10px solid #222;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Tequila Sensory Mapping &amp; Master Study Tool</h1>
+        <p>Swipe or drag to spin the wheel. All segment borders now travel continuously from the outer ring cleanly down to the center point.</p>
+    </header>
+
+    <div class="tool-container">
+        <div class="wheel-wrapper" id="wheelWrapper">
+            <svg id="wheelSvg" viewBox="-220 -220 440 440">
+                <g id="rotatingGroup" style="transform: rotate(-50.1322deg);"><path d="M 0 0 
+                    L 7.960204194457796e-15 -130 
+                    A 130 130 0 0 1 8.87151373740723 -129.69693999477008 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-chemical)" class="segment" style="pointer-events: none;"></path><path d="M 7.960204194457796e-15 -130 
+                    L 1.2858791391047208e-14 -210 
+                    A 210 210 0 0 1 14.330906806580911 -209.51044153001322 
+                    L 8.87151373740723 -129.69693999477008 
+                    A 130 130 0 0 0 7.960204194457796e-15 -130 Z" fill="var(--c-chemical)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="1.9565217391304348" data-tier="terminal" x="6.896504257565501" y="-201.88223851796715" transform="rotate(91.95652173913044, 6.896504257565501, -201.88223851796715)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Acetone</text><path d="M 0 0 
+                    L 8.87151373740723 -129.69693999477008 
+                    A 130 130 0 0 1 17.701664382512057 -128.789172984723 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-chemical)" class="segment" style="pointer-events: none;"></path><path d="M 8.87151373740723 -129.69693999477008 
+                    L 14.330906806580911 -209.51044153001322 
+                    A 210 210 0 0 1 28.594996310211783 -208.04404866762945 
+                    L 17.701664382512057 -128.789172984723 
+                    A 130 130 0 0 0 8.87151373740723 -129.69693999477008 Z" fill="var(--c-chemical)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="5.869565217391305" data-tier="terminal" x="20.65735808629094" y="-200.94097032933516" transform="rotate(95.86956521739131, 20.65735808629094, -200.94097032933516)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Alcohol</text><path d="M 0 0 
+                    L 17.701664382512057 -128.789172984723 
+                    A 130 130 0 0 1 26.449281696842387 -127.28093139870198 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-chemical)" class="segment" style="pointer-events: none;"></path><path d="M 17.701664382512057 -128.789172984723 
+                    L 28.594996310211783 -208.04404866762945 
+                    A 210 210 0 0 1 42.72576274105309 -205.60765841328782 
+                    L 26.449281696842387 -127.28093139870198 
+                    A 130 130 0 0 0 17.701664382512057 -128.789172984723 Z" fill="var(--c-chemical)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="9.782608695652174" data-tier="terminal" x="34.32189777579069" y="-199.06282257887378" transform="rotate(99.78260869565217, 34.32189777579069, -199.06282257887378)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Plastic</text><path d="M 0 0 
+                    L 26.449281696842387 -127.28093139870198 
+                    A 130 130 0 0 1 35.07358025041318 -125.1792473552139 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-chemical)" class="segment" style="pointer-events: none;"></path><path d="M 26.449281696842387 -127.28093139870198 
+                    L 42.72576274105309 -205.60765841328782 
+                    A 210 210 0 0 1 56.65732194297513 -202.21263034303783 
+                    L 35.07358025041318 -125.1792473552139 
+                    A 130 130 0 0 0 26.449281696842387 -127.28093139870198 Z" fill="var(--c-chemical)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="13.695652173913043" data-tier="terminal" x="47.826412934222255" y="-196.2565520583842" transform="rotate(103.69565217391305, 47.826412934222255, -196.2565520583842)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Rubber</text><path d="M 0 0 
+                    L 35.07358025041318 -125.1792473552139 
+                    A 130 130 0 0 1 43.53434958222819 -122.49391987544666 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-chemical)" class="segment" style="pointer-events: none;"></path><path d="M 35.07358025041318 -125.1792473552139 
+                    L 56.65732194297513 -202.21263034303783 
+                    A 210 210 0 0 1 70.32471855590707 -197.87479364495232 
+                    L 43.53434958222819 -122.49391987544666 
+                    A 130 130 0 0 0 35.07358025041318 -125.1792473552139 Z" fill="var(--c-chemical)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="17.608695652173914" data-tier="terminal" x="61.107939277977316" y="-192.5352428964605" transform="rotate(107.6086956521739, 61.107939277977316, -192.5352428964605)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Vanilla Flavoring</text><path d="M 0 0 
+                    L 43.53434958222819 -122.49391987544666 
+                    A 130 130 0 0 1 51.792141680011405 -119.23746919570888 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-chemical)" class="segment" style="pointer-events: none;"></path><path d="M 43.53434958222819 -122.49391987544666 
+                    L 70.32471855590707 -197.87479364495232 
+                    A 210 210 0 0 1 83.66422886771073 -192.6143733161451 
+                    L 51.792141680011405 -119.23746919570888 
+                    A 130 130 0 0 0 43.53434958222819 -122.49391987544666 Z" fill="var(--c-chemical)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="21.52173913043478" data-tier="terminal" x="74.10455220023742" y="-187.9162455542423" transform="rotate(111.52173913043478, 74.10455220023742, -187.9162455542423)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Cherry Flavoring</text><path d="M 0 0 
+                    L 51.792141680011405 -119.23746919570888 
+                    A 130 130 0 0 1 59.808454905049786 -115.42507839230878 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-chemical)" class="segment" style="pointer-events: none;"></path><path d="M 51.792141680011405 -119.23746919570888 
+                    L 83.66422886771073 -192.6143733161451 
+                    A 210 210 0 0 1 96.61365792354196 -186.45589586449879 
+                    L 59.808454905049786 -115.42507839230878 
+                    A 130 130 0 0 0 51.792141680011405 -119.23746919570888 Z" fill="var(--c-chemical)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="25.434782608695652" data-tier="terminal" x="86.75565549207658" y="-182.42109592955558" transform="rotate(115.43478260869566, 86.75565549207658, -182.42109592955558)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Almond Flavoring</text><path d="M 0 0 
+                    L 59.808454905049786 -115.42507839230878 
+                    A 130 130 0 0 1 67.54591350460636 -111.07452259104352 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-chemical)" class="segment" style="pointer-events: none;"></path><path d="M 59.808454905049786 -115.42507839230878 
+                    L 96.61365792354196 -186.45589586449879 
+                    A 210 210 0 0 1 109.11262950744104 -179.4280749547626 
+                    L 67.54591350460636 -111.07452259104352 
+                    A 130 130 0 0 0 59.808454905049786 -115.42507839230878 Z" fill="var(--c-chemical)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="29.347826086956523" data-tier="terminal" x="99.0022638699595" y="-176.07541494661572" transform="rotate(119.34782608695653, 99.0022638699595, -176.07541494661572)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Bubble Gum</text><path d="M 0 0 
+                    L 67.54591350460636 -111.07452259104352 
+                    A 130 130 0 0 1 74.96844187493274 -106.20608609135746 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-chemical)" class="segment" style="pointer-events: none;"></path><path d="M 67.54591350460636 -111.07452259104352 
+                    L 109.11262950744104 -179.4280749547626 
+                    A 210 210 0 0 1 121.10286764412211 -171.56367753219283 
+                    L 74.96844187493274 -106.20608609135746 
+                    A 130 130 0 0 0 67.54591350460636 -111.07452259104352 Z" fill="var(--c-chemical)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="33.26086956521739" data-tier="terminal" x="110.78727799236238" y="-168.90878909945158" transform="rotate(123.26086956521739, 110.78727799236238, -168.90878909945158)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Sweetener</text><path d="M 0 0 
+                    L 74.96844187493274 -106.20608609135746 
+                    A 130 130 0 0 1 82.04143276238686 -100.84246779157458 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-chemical)" class="segment" style="pointer-events: none;"></path><path d="M 74.96844187493274 -106.20608609135746 
+                    L 121.10286764412211 -171.56367753219283 
+                    A 210 210 0 0 1 132.52846830847108 -162.89937104792816 
+                    L 82.04143276238686 -100.84246779157458 
+                    A 130 130 0 0 0 74.96844187493274 -106.20608609135746 Z" fill="var(--c-chemical)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="37.173913043478265" data-tier="terminal" x="122.05575068326111" y="-160.9546325060127" transform="rotate(127.17391304347827, 122.05575068326111, -160.9546325060127)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Cream Soda</text><path d="M 0 0 
+                    L 82.04143276238686 -100.84246779157458 
+                    A 130 130 0 0 1 88.73190861842505 -95.00867535615612 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-chemical)" class="segment" style="pointer-events: none;"></path><path d="M 82.04143276238686 -100.84246779157458 
+                    L 132.52846830847108 -162.89937104792816 
+                    A 210 210 0 0 1 143.33616007591738 -153.47555249840605 
+                    L 88.73190861842505 -95.00867535615612 
+                    A 130 130 0 0 0 82.04143276238686 -100.84246779157458 Z" fill="var(--c-chemical)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="41.08695652173913" data-tier="terminal" x="132.75514312123042" y="-152.25003111612696" transform="rotate(131.08695652173913, 132.75514312123042, -152.25003111612696)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Banana Flavoring</text><text class="wheel-text inner-tier-text" data-base-angle="21.521739130434785" data-tier="primary" x="16.508439846587542" y="-41.86252995020249" transform="rotate(111.52173913043478, 16.508439846587542, -41.86252995020249)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Chemical</text><text class="wheel-text" data-base-angle="7.826086956521739" data-tier="subcategory" x="13.888998207817153" y="-101.04996649570573" transform="rotate(97.82608695652173, 13.888998207817153, -101.04996649570573)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Solventy</text><text class="wheel-text" data-base-angle="29.347826086956523" data-tier="subcategory" x="49.99124215215777" y="-88.90936794334061" transform="rotate(119.34782608695653, 49.99124215215777, -88.90936794334061)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Artificial</text><path d="M 0 0 
+                    L 88.73190861842505 -95.00867535615612 
+                    A 130 130 0 0 1 95.00867535615613 -88.73190861842504 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-flowers)" class="segment" style="pointer-events: none;"></path><path d="M 88.73190861842505 -95.00867535615612 
+                    L 143.33616007591738 -153.47555249840605 
+                    A 210 210 0 0 1 153.47555249840607 -143.33616007591738 
+                    L 95.00867535615613 -88.73190861842504 
+                    A 130 130 0 0 0 88.73190861842505 -95.00867535615612 Z" fill="var(--c-flowers)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="45" data-tier="terminal" x="142.83556979968262" y="-142.8355697996826" transform="rotate(135, 142.83556979968262, -142.8355697996826)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Jasmine</text><path d="M 0 0 
+                    L 95.00867535615613 -88.73190861842504 
+                    A 130 130 0 0 1 100.84246779157456 -82.04143276238688 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-flowers)" class="segment" style="pointer-events: none;"></path><path d="M 95.00867535615613 -88.73190861842504 
+                    L 153.47555249840607 -143.33616007591738 
+                    A 210 210 0 0 1 162.89937104792813 -132.5284683084711 
+                    L 100.84246779157456 -82.04143276238688 
+                    A 130 130 0 0 0 95.00867535615613 -88.73190861842504 Z" fill="var(--c-flowers)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="48.91304347826086" data-tier="terminal" x="152.25003111612693" y="-132.75514312123047" transform="rotate(138.91304347826087, 152.25003111612693, -132.75514312123047)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Orange Blossom</text><path d="M 0 0 
+                    L 100.84246779157456 -82.04143276238688 
+                    A 130 130 0 0 1 106.20608609135748 -74.96844187493271 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-flowers)" class="segment" style="pointer-events: none;"></path><path d="M 100.84246779157456 -82.04143276238688 
+                    L 162.89937104792813 -132.5284683084711 
+                    A 210 210 0 0 1 171.56367753219283 -121.10286764412207 
+                    L 106.20608609135748 -74.96844187493271 
+                    A 130 130 0 0 0 100.84246779157456 -82.04143276238688 Z" fill="var(--c-flowers)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="52.826086956521735" data-tier="terminal" x="160.95463250601273" y="-122.05575068326111" transform="rotate(142.82608695652175, 160.95463250601273, -122.05575068326111)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Lavender</text><path d="M 0 0 
+                    L 106.20608609135748 -74.96844187493271 
+                    A 130 130 0 0 1 111.07452259104352 -67.54591350460636 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-flowers)" class="segment" style="pointer-events: none;"></path><path d="M 106.20608609135748 -74.96844187493271 
+                    L 171.56367753219283 -121.10286764412207 
+                    A 210 210 0 0 1 179.4280749547626 -109.11262950744104 
+                    L 111.07452259104352 -67.54591350460636 
+                    A 130 130 0 0 0 106.20608609135748 -74.96844187493271 Z" fill="var(--c-flowers)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="56.73913043478261" data-tier="terminal" x="168.9087890994516" y="-110.78727799236238" transform="rotate(146.73913043478262, 168.9087890994516, -110.78727799236238)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Lilac</text><path d="M 0 0 
+                    L 111.07452259104352 -67.54591350460636 
+                    A 130 130 0 0 1 115.42507839230878 -59.80845490504977 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-flowers)" class="segment" style="pointer-events: none;"></path><path d="M 111.07452259104352 -67.54591350460636 
+                    L 179.4280749547626 -109.11262950744104 
+                    A 210 210 0 0 1 186.45589586449879 -96.61365792354194 
+                    L 115.42507839230878 -59.80845490504977 
+                    A 130 130 0 0 0 111.07452259104352 -67.54591350460636 Z" fill="var(--c-flowers)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="60.652173913043484" data-tier="terminal" x="176.07541494661575" y="-99.00226386995946" transform="rotate(150.6521739130435, 176.07541494661575, -99.00226386995946)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Rose</text><path d="M 0 0 
+                    L 115.42507839230878 -59.80845490504977 
+                    A 130 130 0 0 1 119.2374691957089 -51.79214168001139 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-flowers)" class="segment" style="pointer-events: none;"></path><path d="M 115.42507839230878 -59.80845490504977 
+                    L 186.45589586449879 -96.61365792354194 
+                    A 210 210 0 0 1 192.61437331614513 -83.6642288677107 
+                    L 119.2374691957089 -51.79214168001139 
+                    A 130 130 0 0 0 115.42507839230878 -59.80845490504977 Z" fill="var(--c-flowers)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="64.56521739130434" data-tier="terminal" x="182.4210959295556" y="-86.75565549207656" transform="rotate(154.56521739130434, 182.4210959295556, -86.75565549207656)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Marigold</text><text class="wheel-text inner-tier-text" data-base-angle="54.78260869565217" data-tier="primary" x="36.76364518546989" y="-25.950614495169024" transform="rotate(144.7826086956522, 36.76364518546989, -25.950614495169024)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Flowers</text><text class="wheel-text" data-base-angle="46.95652173913044" data-tier="subcategory" x="74.54526835636867" y="-69.62042060830272" transform="rotate(136.95652173913044, 74.54526835636867, -69.62042060830272)" text-anchor="start" dx="2" style="dominant-baseline: middle;">White</text><text class="wheel-text" data-base-angle="54.78260869565217" data-tier="subcategory" x="83.33092908706509" y="-58.821392855716454" transform="rotate(144.7826086956522, 83.33092908706509, -58.821392855716454)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Purple</text><text class="wheel-text" data-base-angle="62.608695652173914" data-tier="subcategory" x="90.56429227704227" y="-46.92663384857752" transform="rotate(152.6086956521739, 90.56429227704227, -46.92663384857752)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Yellow</text><path d="M 0 0 
+                    L 119.2374691957089 -51.79214168001139 
+                    A 130 130 0 0 1 122.49391987544666 -43.53434958222819 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 119.2374691957089 -51.79214168001139 
+                    L 192.61437331614513 -83.6642288677107 
+                    A 210 210 0 0 1 197.87479364495232 -70.32471855590707 
+                    L 122.49391987544666 -43.53434958222819 
+                    A 130 130 0 0 0 119.2374691957089 -51.79214168001139 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="68.47826086956522" data-tier="terminal" x="187.9162455542423" y="-74.10455220023742" transform="rotate(158.47826086956522, 187.9162455542423, -74.10455220023742)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Damiana</text><path d="M 0 0 
+                    L 122.49391987544666 -43.53434958222819 
+                    A 130 130 0 0 1 125.1792473552139 -35.07358025041317 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 122.49391987544666 -43.53434958222819 
+                    L 197.87479364495232 -70.32471855590707 
+                    A 210 210 0 0 1 202.21263034303783 -56.65732194297512 
+                    L 125.1792473552139 -35.07358025041317 
+                    A 130 130 0 0 0 122.49391987544666 -43.53434958222819 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="72.3913043478261" data-tier="terminal" x="192.5352428964605" y="-61.107939277977295" transform="rotate(162.3913043478261, 192.5352428964605, -61.107939277977295)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Lemongrass</text><path d="M 0 0 
+                    L 125.1792473552139 -35.07358025041317 
+                    A 130 130 0 0 1 127.28093139870198 -26.44928169684239 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 125.1792473552139 -35.07358025041317 
+                    L 202.21263034303783 -56.65732194297512 
+                    A 210 210 0 0 1 205.60765841328782 -42.725762741053096 
+                    L 127.28093139870198 -26.44928169684239 
+                    A 130 130 0 0 0 125.1792473552139 -35.07358025041317 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="76.30434782608695" data-tier="terminal" x="196.2565520583842" y="-47.826412934222255" transform="rotate(166.30434782608694, 196.2565520583842, -47.826412934222255)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Dill</text><path d="M 0 0 
+                    L 127.28093139870198 -26.44928169684239 
+                    A 130 130 0 0 1 128.789172984723 -17.701664382512078 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 127.28093139870198 -26.44928169684239 
+                    L 205.60765841328782 -42.725762741053096 
+                    A 210 210 0 0 1 208.04404866762945 -28.59499631021182 
+                    L 128.789172984723 -17.701664382512078 
+                    A 130 130 0 0 0 127.28093139870198 -26.44928169684239 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="80.21739130434781" data-tier="terminal" x="199.06282257887378" y="-34.3218977757907" transform="rotate(170.2173913043478, 199.06282257887378, -34.3218977757907)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Chamomile</text><path d="M 0 0 
+                    L 128.789172984723 -17.701664382512078 
+                    A 130 130 0 0 1 129.6969399947701 -8.871513737407206 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 128.789172984723 -17.701664382512078 
+                    L 208.04404866762945 -28.59499631021182 
+                    A 210 210 0 0 1 209.51044153001325 -14.33090680658087 
+                    L 129.6969399947701 -8.871513737407206 
+                    A 130 130 0 0 0 128.789172984723 -17.701664382512078 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="84.13043478260869" data-tier="terminal" x="200.94097032933516" y="-20.65735808629094" transform="rotate(174.1304347826087, 200.94097032933516, -20.65735808629094)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Grass</text><path d="M 0 0 
+                    L 129.6969399947701 -8.871513737407206 
+                    A 130 130 0 0 1 130 0 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 129.6969399947701 -8.871513737407206 
+                    L 209.51044153001325 -14.33090680658087 
+                    A 210 210 0 0 1 210 0 
+                    L 130 0 
+                    A 130 130 0 0 0 129.6969399947701 -8.871513737407206 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="88.04347826086956" data-tier="terminal" x="201.88223851796715" y="-6.896504257565524" transform="rotate(178.04347826086956, 201.88223851796715, -6.896504257565524)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Mint</text><path d="M 0 0 
+                    L 130 0 
+                    A 130 130 0 0 1 129.6969399947701 8.871513737407206 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 130 0 
+                    L 210 0 
+                    A 210 210 0 0 1 209.51044153001325 14.33090680658087 
+                    L 129.6969399947701 8.871513737407206 
+                    A 130 130 0 0 0 130 0 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="91.95652173913044" data-tier="terminal" x="201.88223851796715" y="6.896504257565524" transform="rotate(181.95652173913044, 201.88223851796715, 6.896504257565524)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Aloe</text><path d="M 0 0 
+                    L 129.6969399947701 8.871513737407206 
+                    A 130 130 0 0 1 128.789172984723 17.70166438251205 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 129.6969399947701 8.871513737407206 
+                    L 209.51044153001325 14.33090680658087 
+                    A 210 210 0 0 1 208.04404866762945 28.594996310211773 
+                    L 128.789172984723 17.70166438251205 
+                    A 130 130 0 0 0 129.6969399947701 8.871513737407206 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="95.8695652173913" data-tier="terminal" x="200.94097032933516" y="20.65735808629089" transform="rotate(185.8695652173913, 200.94097032933516, 20.65735808629089)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Asparagus</text><path d="M 0 0 
+                    L 128.789172984723 17.70166438251205 
+                    A 130 130 0 0 1 127.28093139870198 26.449281696842363 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 128.789172984723 17.70166438251205 
+                    L 208.04404866762945 28.594996310211773 
+                    A 210 210 0 0 1 205.60765841328782 42.725762741053046 
+                    L 127.28093139870198 26.449281696842363 
+                    A 130 130 0 0 0 128.789172984723 17.70166438251205 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="99.78260869565216" data-tier="terminal" x="199.06282257887378" y="34.32189777579061" transform="rotate(189.78260869565216, 199.06282257887378, 34.32189777579061)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Bean</text><path d="M 0 0 
+                    L 127.28093139870198 26.449281696842363 
+                    A 130 130 0 0 1 125.1792473552139 35.07358025041317 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 127.28093139870198 26.449281696842363 
+                    L 205.60765841328782 42.725762741053046 
+                    A 210 210 0 0 1 202.21263034303783 56.65732194297512 
+                    L 125.1792473552139 35.07358025041317 
+                    A 130 130 0 0 0 127.28093139870198 26.449281696842363 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="103.69565217391303" data-tier="terminal" x="196.2565520583842" y="47.826412934222205" transform="rotate(193.69565217391303, 196.2565520583842, 47.826412934222205)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Basil</text><path d="M 0 0 
+                    L 125.1792473552139 35.07358025041317 
+                    A 130 130 0 0 1 122.49391987544665 43.534349582228224 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 125.1792473552139 35.07358025041317 
+                    L 202.21263034303783 56.65732194297512 
+                    A 210 210 0 0 1 197.8747936449523 70.32471855590713 
+                    L 122.49391987544665 43.534349582228224 
+                    A 130 130 0 0 0 125.1792473552139 35.07358025041317 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="107.60869565217392" data-tier="terminal" x="192.5352428964605" y="61.10793927797734" transform="rotate(197.60869565217394, 192.5352428964605, 61.10793927797734)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Bell Pepper</text><path d="M 0 0 
+                    L 122.49391987544665 43.534349582228224 
+                    A 130 130 0 0 1 119.2374691957089 51.79214168001139 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 122.49391987544665 43.534349582228224 
+                    L 197.8747936449523 70.32471855590713 
+                    A 210 210 0 0 1 192.61437331614513 83.6642288677107 
+                    L 119.2374691957089 51.79214168001139 
+                    A 130 130 0 0 0 122.49391987544665 43.534349582228224 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="111.52173913043478" data-tier="terminal" x="187.9162455542423" y="74.10455220023742" transform="rotate(201.52173913043478, 187.9162455542423, 74.10455220023742)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Jalapeño</text><path d="M 0 0 
+                    L 119.2374691957089 51.79214168001139 
+                    A 130 130 0 0 1 115.42507839230878 59.808454905049786 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 119.2374691957089 51.79214168001139 
+                    L 192.61437331614513 83.6642288677107 
+                    A 210 210 0 0 1 186.45589586449879 96.61365792354196 
+                    L 115.42507839230878 59.808454905049786 
+                    A 130 130 0 0 0 119.2374691957089 51.79214168001139 Z" fill="var(--c-plants)" class="segment outer-segment active"></path><text class="wheel-text outer-tier-text" data-base-angle="115.43478260869566" data-tier="terminal" x="182.4210959295556" y="86.75565549207656" transform="rotate(205.43478260869566, 182.4210959295556, 86.75565549207656)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Thyme</text><path d="M 0 0 
+                    L 115.42507839230878 59.808454905049786 
+                    A 130 130 0 0 1 111.07452259104352 67.54591350460636 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 115.42507839230878 59.808454905049786 
+                    L 186.45589586449879 96.61365792354196 
+                    A 210 210 0 0 1 179.4280749547626 109.11262950744104 
+                    L 111.07452259104352 67.54591350460636 
+                    A 130 130 0 0 0 115.42507839230878 59.808454905049786 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="119.34782608695653" data-tier="terminal" x="176.07541494661572" y="99.00226386995949" transform="rotate(209.34782608695653, 176.07541494661572, 99.00226386995949)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Oregano</text><path d="M 0 0 
+                    L 111.07452259104352 67.54591350460636 
+                    A 130 130 0 0 1 106.20608609135746 74.96844187493274 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 111.07452259104352 67.54591350460636 
+                    L 179.4280749547626 109.11262950744104 
+                    A 210 210 0 0 1 171.56367753219283 121.10286764412211 
+                    L 106.20608609135746 74.96844187493274 
+                    A 130 130 0 0 0 111.07452259104352 67.54591350460636 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="123.26086956521739" data-tier="terminal" x="168.9087890994516" y="110.78727799236238" transform="rotate(213.26086956521738, 168.9087890994516, 110.78727799236238)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Rosemary</text><path d="M 0 0 
+                    L 106.20608609135746 74.96844187493274 
+                    A 130 130 0 0 1 100.84246779157459 82.04143276238685 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 106.20608609135746 74.96844187493274 
+                    L 171.56367753219283 121.10286764412211 
+                    A 210 210 0 0 1 162.89937104792818 132.52846830847105 
+                    L 100.84246779157459 82.04143276238685 
+                    A 130 130 0 0 0 106.20608609135746 74.96844187493274 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="127.17391304347825" data-tier="terminal" x="160.95463250601276" y="122.05575068326107" transform="rotate(217.17391304347825, 160.95463250601276, 122.05575068326107)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Sage</text><path d="M 0 0 
+                    L 100.84246779157459 82.04143276238685 
+                    A 130 130 0 0 1 95.00867535615613 88.73190861842504 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 100.84246779157459 82.04143276238685 
+                    L 162.89937104792818 132.52846830847105 
+                    A 210 210 0 0 1 153.47555249840607 143.33616007591738 
+                    L 95.00867535615613 88.73190861842504 
+                    A 130 130 0 0 0 100.84246779157459 82.04143276238685 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="131.08695652173913" data-tier="terminal" x="152.250031116127" y="132.7551431212304" transform="rotate(221.08695652173913, 152.250031116127, 132.7551431212304)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Tobacco</text><path d="M 0 0 
+                    L 95.00867535615613 88.73190861842504 
+                    A 130 130 0 0 1 88.73190861842504 95.00867535615612 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 95.00867535615613 88.73190861842504 
+                    L 153.47555249840607 143.33616007591738 
+                    A 210 210 0 0 1 143.33616007591738 153.47555249840605 
+                    L 88.73190861842504 95.00867535615612 
+                    A 130 130 0 0 0 95.00867535615613 88.73190861842504 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="135" data-tier="terminal" x="142.83556979968262" y="142.8355697996826" transform="rotate(225, 142.83556979968262, 142.8355697996826)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Black Tea</text><path d="M 0 0 
+                    L 88.73190861842504 95.00867535615612 
+                    A 130 130 0 0 1 82.04143276238685 100.84246779157459 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 88.73190861842504 95.00867535615612 
+                    L 143.33616007591738 153.47555249840605 
+                    A 210 210 0 0 1 132.52846830847105 162.89937104792818 
+                    L 82.04143276238685 100.84246779157459 
+                    A 130 130 0 0 0 88.73190861842504 95.00867535615612 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="138.91304347826087" data-tier="terminal" x="132.75514312123042" y="152.25003111612696" transform="rotate(228.91304347826087, 132.75514312123042, 152.25003111612696)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Corn</text><path d="M 0 0 
+                    L 82.04143276238685 100.84246779157459 
+                    A 130 130 0 0 1 74.96844187493271 106.20608609135748 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 82.04143276238685 100.84246779157459 
+                    L 132.52846830847105 162.89937104792818 
+                    A 210 210 0 0 1 121.10286764412207 171.56367753219283 
+                    L 74.96844187493271 106.20608609135748 
+                    A 130 130 0 0 0 82.04143276238685 100.84246779157459 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="142.82608695652175" data-tier="terminal" x="122.05575068326107" y="160.95463250601276" transform="rotate(52.82608695652175, 122.05575068326107, 160.95463250601276)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Sweet Potato</text><path d="M 0 0 
+                    L 74.96844187493271 106.20608609135748 
+                    A 130 130 0 0 1 67.54591350460639 111.0745225910435 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-plants)" class="segment" style="pointer-events: none;"></path><path d="M 74.96844187493271 106.20608609135748 
+                    L 121.10286764412207 171.56367753219283 
+                    A 210 210 0 0 1 109.1126295074411 179.42807495476256 
+                    L 67.54591350460639 111.0745225910435 
+                    A 130 130 0 0 0 74.96844187493271 106.20608609135748 Z" fill="var(--c-plants)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="146.73913043478262" data-tier="terminal" x="110.78727799236233" y="168.9087890994516" transform="rotate(56.73913043478262, 110.78727799236233, 168.9087890994516)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Cooked Agave</text><text class="wheel-text inner-tier-text" data-base-angle="107.6086956521739" data-tier="primary" x="42.891514506637236" y="13.613154789648407" transform="rotate(197.6086956521739, 42.891514506637236, 13.613154789648407)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Plants</text><text class="wheel-text" data-base-angle="74.34782608695652" data-tier="subcategory" x="98.21756330947552" y="-27.519270658016488" transform="rotate(164.3478260869565, 98.21756330947552, -27.519270658016488)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Herbal</text><text class="wheel-text" data-base-angle="105.65217391304347" data-tier="subcategory" x="98.21756330947554" y="27.519270658016463" transform="rotate(195.65217391304347, 98.21756330947554, 27.519270658016463)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Green</text><text class="wheel-text" data-base-angle="138.91304347826087" data-tier="subcategory" x="67.03477523943319" y="76.87872858339084" transform="rotate(228.91304347826087, 67.03477523943319, 76.87872858339084)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Savory</text><path d="M 0 0 
+                    L 67.54591350460639 111.0745225910435 
+                    A 130 130 0 0 1 59.808454905049786 115.42507839230878 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-earth)" class="segment" style="pointer-events: none;"></path><path d="M 67.54591350460639 111.0745225910435 
+                    L 109.1126295074411 179.42807495476256 
+                    A 210 210 0 0 1 96.61365792354196 186.45589586449879 
+                    L 59.808454905049786 115.42507839230878 
+                    A 130 130 0 0 0 67.54591350460639 111.0745225910435 Z" fill="var(--c-earth)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="150.65217391304347" data-tier="terminal" x="99.0022638699595" y="176.07541494661572" transform="rotate(60.65217391304347, 99.0022638699595, 176.07541494661572)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">White Pepper</text><path d="M 0 0 
+                    L 59.808454905049786 115.42507839230878 
+                    A 130 130 0 0 1 51.792141680011405 119.23746919570888 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-earth)" class="segment" style="pointer-events: none;"></path><path d="M 59.808454905049786 115.42507839230878 
+                    L 96.61365792354196 186.45589586449879 
+                    A 210 210 0 0 1 83.66422886771073 192.6143733161451 
+                    L 51.792141680011405 119.23746919570888 
+                    A 130 130 0 0 0 59.808454905049786 115.42507839230878 Z" fill="var(--c-earth)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="154.56521739130434" data-tier="terminal" x="86.75565549207658" y="182.42109592955558" transform="rotate(64.56521739130434, 86.75565549207658, 182.42109592955558)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Black Pepper</text><path d="M 0 0 
+                    L 51.792141680011405 119.23746919570888 
+                    A 130 130 0 0 1 43.53434958222819 122.49391987544666 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-earth)" class="segment" style="pointer-events: none;"></path><path d="M 51.792141680011405 119.23746919570888 
+                    L 83.66422886771073 192.6143733161451 
+                    A 210 210 0 0 1 70.32471855590707 197.87479364495232 
+                    L 43.53434958222819 122.49391987544666 
+                    A 130 130 0 0 0 51.792141680011405 119.23746919570888 Z" fill="var(--c-earth)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="158.47826086956522" data-tier="terminal" x="74.10455220023742" y="187.9162455542423" transform="rotate(68.47826086956522, 74.10455220023742, 187.9162455542423)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Limestone</text><path d="M 0 0 
+                    L 43.53434958222819 122.49391987544666 
+                    A 130 130 0 0 1 35.07358025041321 125.1792473552139 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-earth)" class="segment" style="pointer-events: none;"></path><path d="M 43.53434958222819 122.49391987544666 
+                    L 70.32471855590707 197.87479364495232 
+                    A 210 210 0 0 1 56.65732194297518 202.21263034303783 
+                    L 35.07358025041321 125.1792473552139 
+                    A 130 130 0 0 0 43.53434958222819 122.49391987544666 Z" fill="var(--c-earth)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="162.39130434782606" data-tier="terminal" x="61.10793927797741" y="192.53524289646046" transform="rotate(72.39130434782606, 61.10793927797741, 192.53524289646046)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Wet Cement</text><path d="M 0 0 
+                    L 35.07358025041321 125.1792473552139 
+                    A 130 130 0 0 1 26.44928169684236 127.28093139870198 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-earth)" class="segment" style="pointer-events: none;"></path><path d="M 35.07358025041321 125.1792473552139 
+                    L 56.65732194297518 202.21263034303783 
+                    A 210 210 0 0 1 42.72576274105304 205.60765841328782 
+                    L 26.44928169684236 127.28093139870198 
+                    A 130 130 0 0 0 35.07358025041321 125.1792473552139 Z" fill="var(--c-earth)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="166.30434782608694" data-tier="terminal" x="47.8264129342223" y="196.2565520583842" transform="rotate(76.30434782608694, 47.8264129342223, 196.2565520583842)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Mushroom</text><path d="M 0 0 
+                    L 26.44928169684236 127.28093139870198 
+                    A 130 130 0 0 1 17.70166438251203 128.789172984723 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-earth)" class="segment" style="pointer-events: none;"></path><path d="M 26.44928169684236 127.28093139870198 
+                    L 42.72576274105304 205.60765841328782 
+                    A 210 210 0 0 1 28.594996310211737 208.04404866762945 
+                    L 17.70166438251203 128.789172984723 
+                    A 130 130 0 0 0 26.44928169684236 127.28093139870198 Z" fill="var(--c-earth)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="170.21739130434784" data-tier="terminal" x="34.321897775790596" y="199.06282257887378" transform="rotate(80.21739130434784, 34.321897775790596, 199.06282257887378)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Olive</text><path d="M 0 0 
+                    L 17.70166438251203 128.789172984723 
+                    A 130 130 0 0 1 8.87151373740723 129.69693999477008 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-earth)" class="segment" style="pointer-events: none;"></path><path d="M 17.70166438251203 128.789172984723 
+                    L 28.594996310211737 208.04404866762945 
+                    A 210 210 0 0 1 14.330906806580911 209.51044153001322 
+                    L 8.87151373740723 129.69693999477008 
+                    A 130 130 0 0 0 17.70166438251203 128.789172984723 Z" fill="var(--c-earth)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="174.1304347826087" data-tier="terminal" x="20.65735808629094" y="200.94097032933516" transform="rotate(84.13043478260869, 20.65735808629094, 200.94097032933516)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Yeast</text><path d="M 0 0 
+                    L 8.87151373740723 129.69693999477008 
+                    A 130 130 0 0 1 7.960204194457796e-15 130 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-earth)" class="segment" style="pointer-events: none;"></path><path d="M 8.87151373740723 129.69693999477008 
+                    L 14.330906806580911 209.51044153001322 
+                    A 210 210 0 0 1 1.2858791391047208e-14 210 
+                    L 7.960204194457796e-15 130 
+                    A 130 130 0 0 0 8.87151373740723 129.69693999477008 Z" fill="var(--c-earth)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="178.04347826086956" data-tier="terminal" x="6.896504257565501" y="201.88223851796715" transform="rotate(88.04347826086956, 6.896504257565501, 201.88223851796715)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Wet Earth</text><path d="M 0 0 
+                    L 7.960204194457796e-15 130 
+                    A 130 130 0 0 1 -8.871513737407215 129.69693999477008 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-earth)" class="segment" style="pointer-events: none;"></path><path d="M 7.960204194457796e-15 130 
+                    L 1.2858791391047208e-14 210 
+                    A 210 210 0 0 1 -14.330906806580884 209.51044153001322 
+                    L -8.871513737407215 129.69693999477008 
+                    A 130 130 0 0 0 7.960204194457796e-15 130 Z" fill="var(--c-earth)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="181.95652173913044" data-tier="terminal" x="-6.896504257565522" y="201.88223851796715" transform="rotate(91.95652173913044, -6.896504257565522, 201.88223851796715)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Wet Leaves</text><text class="wheel-text inner-tier-text" data-base-angle="166.30434782608694" data-tier="primary" x="10.654398920990117" y="43.72051902290737" transform="rotate(76.30434782608694, 10.654398920990117, 43.72051902290737)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Earth</text><text class="wheel-text" data-base-angle="152.6086956521739" data-tier="subcategory" x="46.926633848577524" y="90.56429227704227" transform="rotate(62.60869565217391, 46.926633848577524, 90.56429227704227)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Peppery</text><text class="wheel-text" data-base-angle="160.43478260869563" data-tier="subcategory" x="34.157720441440624" y="96.11061405611969" transform="rotate(70.43478260869563, 34.157720441440624, 96.11061405611969)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Minerally</text><text class="wheel-text" data-base-angle="174.1304347826087" data-tier="subcategory" x="10.430943192087506" y="101.46524244352567" transform="rotate(84.13043478260869, 10.430943192087506, 101.46524244352567)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Musty</text><path d="M 0 0 
+                    L -8.871513737407215 129.69693999477008 
+                    A 130 130 0 0 1 -17.70166438251201 128.789172984723 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-wood)" class="segment" style="pointer-events: none;"></path><path d="M -8.871513737407215 129.69693999477008 
+                    L -14.330906806580884 209.51044153001322 
+                    A 210 210 0 0 1 -28.59499631021171 208.04404866762945 
+                    L -17.70166438251201 128.789172984723 
+                    A 130 130 0 0 0 -8.871513737407215 129.69693999477008 Z" fill="var(--c-wood)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="185.8695652173913" data-tier="terminal" x="-20.657358086290916" y="200.94097032933516" transform="rotate(95.86956521739131, -20.657358086290916, 200.94097032933516)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Cedar</text><path d="M 0 0 
+                    L -17.70166438251201 128.789172984723 
+                    A 130 130 0 0 1 -26.44928169684243 127.28093139870197 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-wood)" class="segment" style="pointer-events: none;"></path><path d="M -17.70166438251201 128.789172984723 
+                    L -28.59499631021171 208.04404866762945 
+                    A 210 210 0 0 1 -42.72576274105316 205.6076584132878 
+                    L -26.44928169684243 127.28093139870197 
+                    A 130 130 0 0 0 -17.70166438251201 128.789172984723 Z" fill="var(--c-wood)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="189.7826086956522" data-tier="terminal" x="-34.32189777579066" y="199.06282257887378" transform="rotate(99.78260869565219, -34.32189777579066, 199.06282257887378)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Pine Tree</text><path d="M 0 0 
+                    L -26.44928169684243 127.28093139870197 
+                    A 130 130 0 0 1 -35.07358025041314 125.17924735521392 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-wood)" class="segment" style="pointer-events: none;"></path><path d="M -26.44928169684243 127.28093139870197 
+                    L -42.72576274105316 205.6076584132878 
+                    A 210 210 0 0 1 -56.65732194297506 202.21263034303786 
+                    L -35.07358025041314 125.17924735521392 
+                    A 130 130 0 0 0 -26.44928169684243 127.28093139870197 Z" fill="var(--c-wood)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="193.69565217391306" data-tier="terminal" x="-47.82641293422232" y="196.25655205838416" transform="rotate(103.69565217391306, -47.82641293422232, 196.25655205838416)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Oak (Fresh)</text><path d="M 0 0 
+                    L -35.07358025041314 125.17924735521392 
+                    A 130 130 0 0 1 -43.534349582228174 122.49391987544668 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-wood)" class="segment" style="pointer-events: none;"></path><path d="M -35.07358025041314 125.17924735521392 
+                    L -56.65732194297506 202.21263034303786 
+                    A 210 210 0 0 1 -70.32471855590705 197.87479364495232 
+                    L -43.534349582228174 122.49391987544668 
+                    A 130 130 0 0 0 -35.07358025041314 125.17924735521392 Z" fill="var(--c-wood)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="197.6086956521739" data-tier="terminal" x="-61.107939277977245" y="192.53524289646052" transform="rotate(107.6086956521739, -61.107939277977245, 192.53524289646052)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Wood Shavings</text><path d="M 0 0 
+                    L -43.534349582228174 122.49391987544668 
+                    A 130 130 0 0 1 -51.79214168001133 119.23746919570891 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-wood)" class="segment" style="pointer-events: none;"></path><path d="M -43.534349582228174 122.49391987544668 
+                    L -70.32471855590705 197.87479364495232 
+                    A 210 210 0 0 1 -83.6642288677106 192.61437331614516 
+                    L -51.79214168001133 119.23746919570891 
+                    A 130 130 0 0 0 -43.534349582228174 122.49391987544668 Z" fill="var(--c-wood)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="201.52173913043475" data-tier="terminal" x="-74.10455220023731" y="187.91624555424235" transform="rotate(111.52173913043475, -74.10455220023731, 187.91624555424235)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Wood Bark</text><path d="M 0 0 
+                    L -51.79214168001133 119.23746919570891 
+                    A 130 130 0 0 1 -59.80845490504977 115.42507839230878 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-wood)" class="segment" style="pointer-events: none;"></path><path d="M -51.79214168001133 119.23746919570891 
+                    L -83.6642288677106 192.61437331614516 
+                    A 210 210 0 0 1 -96.61365792354194 186.45589586449879 
+                    L -59.80845490504977 115.42507839230878 
+                    A 130 130 0 0 0 -51.79214168001133 119.23746919570891 Z" fill="var(--c-wood)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="205.43478260869563" data-tier="terminal" x="-86.75565549207643" y="182.42109592955566" transform="rotate(115.43478260869563, -86.75565549207643, 182.42109592955566)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Leather</text><path d="M 0 0 
+                    L -59.80845490504977 115.42507839230878 
+                    A 130 130 0 0 1 -67.54591350460637 111.0745225910435 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-wood)" class="segment" style="pointer-events: none;"></path><path d="M -59.80845490504977 115.42507839230878 
+                    L -96.61365792354194 186.45589586449879 
+                    A 210 210 0 0 1 -109.11262950744107 179.42807495476256 
+                    L -67.54591350460637 111.0745225910435 
+                    A 130 130 0 0 0 -59.80845490504977 115.42507839230878 Z" fill="var(--c-wood)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="209.34782608695653" data-tier="terminal" x="-99.00226386995949" y="176.07541494661572" transform="rotate(119.34782608695653, -99.00226386995949, 176.07541494661572)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Oak (Charred)</text><path d="M 0 0 
+                    L -67.54591350460637 111.0745225910435 
+                    A 130 130 0 0 1 -74.96844187493272 106.20608609135748 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-wood)" class="segment" style="pointer-events: none;"></path><path d="M -67.54591350460637 111.0745225910435 
+                    L -109.11262950744107 179.42807495476256 
+                    A 210 210 0 0 1 -121.10286764412209 171.56367753219283 
+                    L -74.96844187493272 106.20608609135748 
+                    A 130 130 0 0 0 -67.54591350460637 111.0745225910435 Z" fill="var(--c-wood)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="213.26086956521738" data-tier="terminal" x="-110.78727799236233" y="168.9087890994516" transform="rotate(123.26086956521738, -110.78727799236233, 168.9087890994516)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Smoke</text><path d="M 0 0 
+                    L -74.96844187493272 106.20608609135748 
+                    A 130 130 0 0 1 -82.04143276238692 100.84246779157453 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-wood)" class="segment" style="pointer-events: none;"></path><path d="M -74.96844187493272 106.20608609135748 
+                    L -121.10286764412209 171.56367753219283 
+                    A 210 210 0 0 1 -132.52846830847116 162.8993710479281 
+                    L -82.04143276238692 100.84246779157453 
+                    A 130 130 0 0 0 -74.96844187493272 106.20608609135748 Z" fill="var(--c-wood)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="217.17391304347825" data-tier="terminal" x="-122.05575068326108" y="160.95463250601273" transform="rotate(127.17391304347825, -122.05575068326108, 160.95463250601273)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Charcoal</text><text class="wheel-text inner-tier-text" data-base-angle="201.5217391304348" data-tier="primary" x="-16.508439846587557" y="41.862529950202486" transform="rotate(111.52173913043481, -16.508439846587557, 41.862529950202486)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Wood</text><text class="wheel-text" data-base-angle="193.69565217391303" data-tier="subcategory" x="-24.14997088757754" y="99.09984311859004" transform="rotate(103.69565217391303, -24.14997088757754, 99.09984311859004)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Fresh</text><text class="wheel-text" data-base-angle="211.30434782608694" data-tier="subcategory" x="-52.9975629036142" y="87.15077926374184" transform="rotate(121.30434782608694, -52.9975629036142, 87.15077926374184)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Burnt</text><path d="M 0 0 
+                    L -82.04143276238692 100.84246779157453 
+                    A 130 130 0 0 1 -88.73190861842501 95.00867535615615 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-spice)" class="segment" style="pointer-events: none;"></path><path d="M -82.04143276238692 100.84246779157453 
+                    L -132.52846830847116 162.8993710479281 
+                    A 210 210 0 0 1 -143.33616007591732 153.4755524984061 
+                    L -88.73190861842501 95.00867535615615 
+                    A 130 130 0 0 0 -82.04143276238692 100.84246779157453 Z" fill="var(--c-spice)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="221.08695652173913" data-tier="terminal" x="-132.7551431212304" y="152.250031116127" transform="rotate(131.08695652173913, -132.7551431212304, 152.250031116127)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Cinnamon</text><path d="M 0 0 
+                    L -88.73190861842501 95.00867535615615 
+                    A 130 130 0 0 1 -95.00867535615613 88.73190861842504 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-spice)" class="segment" style="pointer-events: none;"></path><path d="M -88.73190861842501 95.00867535615615 
+                    L -143.33616007591732 153.4755524984061 
+                    A 210 210 0 0 1 -153.47555249840607 143.33616007591738 
+                    L -95.00867535615613 88.73190861842504 
+                    A 130 130 0 0 0 -88.73190861842501 95.00867535615615 Z" fill="var(--c-spice)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="225" data-tier="terminal" x="-142.8355697996826" y="142.83556979968262" transform="rotate(135, -142.8355697996826, 142.83556979968262)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Clove</text><path d="M 0 0 
+                    L -95.00867535615613 88.73190861842504 
+                    A 130 130 0 0 1 -100.84246779157452 82.04143276238693 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-spice)" class="segment" style="pointer-events: none;"></path><path d="M -95.00867535615613 88.73190861842504 
+                    L -153.47555249840607 143.33616007591738 
+                    A 210 210 0 0 1 -162.89937104792807 132.5284683084712 
+                    L -100.84246779157452 82.04143276238693 
+                    A 130 130 0 0 0 -95.00867535615613 88.73190861842504 Z" fill="var(--c-spice)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="228.91304347826087" data-tier="terminal" x="-152.25003111612696" y="132.75514312123042" transform="rotate(138.91304347826087, -152.25003111612696, 132.75514312123042)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Allspice</text><path d="M 0 0 
+                    L -100.84246779157452 82.04143276238693 
+                    A 130 130 0 0 1 -106.20608609135746 74.96844187493274 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-spice)" class="segment" style="pointer-events: none;"></path><path d="M -100.84246779157452 82.04143276238693 
+                    L -162.89937104792807 132.5284683084712 
+                    A 210 210 0 0 1 -171.56367753219283 121.10286764412211 
+                    L -106.20608609135746 74.96844187493274 
+                    A 130 130 0 0 0 -100.84246779157452 82.04143276238693 Z" fill="var(--c-spice)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="232.82608695652175" data-tier="terminal" x="-160.95463250601279" y="122.05575068326104" transform="rotate(142.82608695652175, -160.95463250601279, 122.05575068326104)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Nutmeg</text><path d="M 0 0 
+                    L -106.20608609135746 74.96844187493274 
+                    A 130 130 0 0 1 -111.07452259104349 67.5459135046064 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-spice)" class="segment" style="pointer-events: none;"></path><path d="M -106.20608609135746 74.96844187493274 
+                    L -171.56367753219283 121.10286764412211 
+                    A 210 210 0 0 1 -179.42807495476256 109.11262950744111 
+                    L -111.07452259104349 67.5459135046064 
+                    A 130 130 0 0 0 -106.20608609135746 74.96844187493274 Z" fill="var(--c-spice)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="236.73913043478262" data-tier="terminal" x="-168.90878909945158" y="110.78727799236238" transform="rotate(146.73913043478262, -168.90878909945158, 110.78727799236238)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Licorice</text><path d="M 0 0 
+                    L -111.07452259104349 67.5459135046064 
+                    A 130 130 0 0 1 -115.42507839230878 59.80845490504979 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-spice)" class="segment" style="pointer-events: none;"></path><path d="M -111.07452259104349 67.5459135046064 
+                    L -179.42807495476256 109.11262950744111 
+                    A 210 210 0 0 1 -186.45589586449879 96.61365792354198 
+                    L -115.42507839230878 59.80845490504979 
+                    A 130 130 0 0 0 -111.07452259104349 67.5459135046064 Z" fill="var(--c-spice)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="240.65217391304347" data-tier="terminal" x="-176.07541494661572" y="99.0022638699595" transform="rotate(150.65217391304347, -176.07541494661572, 99.0022638699595)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Anise</text><text class="wheel-text inner-tier-text" data-base-angle="230.8695652173913" data-tier="primary" x="-34.9070080816989" y="28.39895749467237" transform="rotate(140.8695652173913, -34.9070080816989, 28.39895749467237)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Spice</text><text class="wheel-text" data-base-angle="226.95652173913044" data-tier="subcategory" x="-74.54526835636867" y="69.62042060830272" transform="rotate(136.95652173913044, -74.54526835636867, 69.62042060830272)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Baking</text><text class="wheel-text" data-base-angle="238.69565217391306" data-tier="subcategory" x="-87.15077926374184" y="52.99756290361421" transform="rotate(148.69565217391306, -87.15077926374184, 52.99756290361421)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Medicinal</text><path d="M 0 0 
+                    L -115.42507839230878 59.80845490504979 
+                    A 130 130 0 0 1 -119.23746919570893 51.79214168001133 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -115.42507839230878 59.80845490504979 
+                    L -186.45589586449879 96.61365792354198 
+                    A 210 210 0 0 1 -192.6143733161452 83.6642288677106 
+                    L -119.23746919570893 51.79214168001133 
+                    A 130 130 0 0 0 -115.42507839230878 59.80845490504979 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="244.56521739130437" data-tier="terminal" x="-182.4210959295556" y="86.75565549207654" transform="rotate(154.56521739130437, -182.4210959295556, 86.75565549207654)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Cocoa</text><path d="M 0 0 
+                    L -119.23746919570893 51.79214168001133 
+                    A 130 130 0 0 1 -122.49391987544665 43.534349582228224 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -119.23746919570893 51.79214168001133 
+                    L -192.6143733161452 83.6642288677106 
+                    A 210 210 0 0 1 -197.8747936449523 70.32471855590713 
+                    L -122.49391987544665 43.534349582228224 
+                    A 130 130 0 0 0 -119.23746919570893 51.79214168001133 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="248.47826086956525" data-tier="terminal" x="-187.91624555424235" y="74.10455220023731" transform="rotate(158.47826086956525, -187.91624555424235, 74.10455220023731)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Chocolate</text><path d="M 0 0 
+                    L -122.49391987544665 43.534349582228224 
+                    A 130 130 0 0 1 -125.1792473552139 35.07358025041316 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -122.49391987544665 43.534349582228224 
+                    L -197.8747936449523 70.32471855590713 
+                    A 210 210 0 0 1 -202.21263034303783 56.657321942975095 
+                    L -125.1792473552139 35.07358025041316 
+                    A 130 130 0 0 0 -122.49391987544665 43.534349582228224 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="252.3913043478261" data-tier="terminal" x="-192.5352428964605" y="61.10793927797732" transform="rotate(162.3913043478261, -192.5352428964605, 61.10793927797732)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Coffee Beans</text><path d="M 0 0 
+                    L -125.1792473552139 35.07358025041316 
+                    A 130 130 0 0 1 -127.28093139870197 26.449281696842423 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -125.1792473552139 35.07358025041316 
+                    L -202.21263034303783 56.657321942975095 
+                    A 210 210 0 0 1 -205.6076584132878 42.725762741053146 
+                    L -127.28093139870197 26.449281696842423 
+                    A 130 130 0 0 0 -125.1792473552139 35.07358025041316 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="256.30434782608694" data-tier="terminal" x="-196.2565520583842" y="47.82641293422231" transform="rotate(166.30434782608694, -196.2565520583842, 47.82641293422231)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Molasses</text><path d="M 0 0 
+                    L -127.28093139870197 26.449281696842423 
+                    A 130 130 0 0 1 -128.789172984723 17.701664382512064 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -127.28093139870197 26.449281696842423 
+                    L -205.6076584132878 42.725762741053146 
+                    A 210 210 0 0 1 -208.04404866762945 28.594996310211798 
+                    L -128.789172984723 17.701664382512064 
+                    A 130 130 0 0 0 -127.28093139870197 26.449281696842423 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="260.2173913043478" data-tier="terminal" x="-199.06282257887375" y="34.32189777579079" transform="rotate(170.2173913043478, -199.06282257887375, 34.32189777579079)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Cola</text><path d="M 0 0 
+                    L -128.789172984723 17.701664382512064 
+                    A 130 130 0 0 1 -129.6969399947701 8.871513737407211 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -128.789172984723 17.701664382512064 
+                    L -208.04404866762945 28.594996310211798 
+                    A 210 210 0 0 1 -209.51044153001325 14.33090680658088 
+                    L -129.6969399947701 8.871513737407211 
+                    A 130 130 0 0 0 -128.789172984723 17.701664382512064 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="264.1304347826087" data-tier="terminal" x="-200.94097032933516" y="20.657358086290998" transform="rotate(174.1304347826087, -200.94097032933516, 20.657358086290998)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Vanilla Bean</text><path d="M 0 0 
+                    L -129.6969399947701 8.871513737407211 
+                    A 130 130 0 0 1 -130 1.592040838891559e-14 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -129.6969399947701 8.871513737407211 
+                    L -209.51044153001325 14.33090680658088 
+                    A 210 210 0 0 1 -210 2.5717582782094416e-14 
+                    L -130 1.592040838891559e-14 
+                    A 130 130 0 0 0 -129.6969399947701 8.871513737407211 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="268.04347826086956" data-tier="terminal" x="-201.88223851796715" y="6.896504257565558" transform="rotate(178.04347826086956, -201.88223851796715, 6.896504257565558)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Honey</text><path d="M 0 0 
+                    L -130 1.592040838891559e-14 
+                    A 130 130 0 0 1 -129.69693999477008 -8.871513737407236 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -130 1.592040838891559e-14 
+                    L -210 2.5717582782094416e-14 
+                    A 210 210 0 0 1 -209.51044153001322 -14.33090680658092 
+                    L -129.69693999477008 -8.871513737407236 
+                    A 130 130 0 0 0 -130 1.592040838891559e-14 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="271.95652173913044" data-tier="terminal" x="-201.88223851796715" y="-6.89650425756542" transform="rotate(181.95652173913044, -201.88223851796715, -6.89650425756542)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Caramel</text><path d="M 0 0 
+                    L -129.69693999477008 -8.871513737407236 
+                    A 130 130 0 0 1 -128.789172984723 -17.701664382512032 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -129.69693999477008 -8.871513737407236 
+                    L -209.51044153001322 -14.33090680658092 
+                    A 210 210 0 0 1 -208.04404866762945 -28.594996310211744 
+                    L -128.789172984723 -17.701664382512032 
+                    A 130 130 0 0 0 -129.69693999477008 -8.871513737407236 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="275.8695652173913" data-tier="terminal" x="-200.94097032933516" y="-20.657358086290948" transform="rotate(185.8695652173913, -200.94097032933516, -20.657358086290948)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Dulce de Leche</text><path d="M 0 0 
+                    L -128.789172984723 -17.701664382512032 
+                    A 130 130 0 0 1 -127.28093139870198 -26.449281696842394 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -128.789172984723 -17.701664382512032 
+                    L -208.04404866762945 -28.594996310211744 
+                    A 210 210 0 0 1 -205.60765841328782 -42.725762741053096 
+                    L -127.28093139870198 -26.449281696842394 
+                    A 130 130 0 0 0 -128.789172984723 -17.701664382512032 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="279.7826086956522" data-tier="terminal" x="-199.06282257887375" y="-34.32189777579074" transform="rotate(189.7826086956522, -199.06282257887375, -34.32189777579074)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Toffee</text><path d="M 0 0 
+                    L -127.28093139870198 -26.449281696842394 
+                    A 130 130 0 0 1 -125.17924735521393 -35.073580250413066 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -127.28093139870198 -26.449281696842394 
+                    L -205.60765841328782 -42.725762741053096 
+                    A 210 210 0 0 1 -202.2126303430379 -56.65732194297496 
+                    L -125.17924735521393 -35.073580250413066 
+                    A 130 130 0 0 0 -127.28093139870198 -26.449281696842394 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="283.695652173913" data-tier="terminal" x="-196.25655205838422" y="-47.826412934222084" transform="rotate(193.695652173913, -196.25655205838422, -47.826412934222084)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Almond</text><path d="M 0 0 
+                    L -125.17924735521393 -35.073580250413066 
+                    A 130 130 0 0 1 -122.49391987544666 -43.534349582228195 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -125.17924735521393 -35.073580250413066 
+                    L -202.2126303430379 -56.65732194297496 
+                    A 210 210 0 0 1 -197.87479364495232 -70.32471855590708 
+                    L -122.49391987544666 -43.534349582228195 
+                    A 130 130 0 0 0 -125.17924735521393 -35.073580250413066 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="287.6086956521739" data-tier="terminal" x="-192.53524289646055" y="-61.10793927797711" transform="rotate(197.60869565217388, -192.53524289646055, -61.10793927797711)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Hazelnut</text><path d="M 0 0 
+                    L -122.49391987544666 -43.534349582228195 
+                    A 130 130 0 0 1 -119.23746919570893 -51.792141680011305 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -122.49391987544666 -43.534349582228195 
+                    L -197.87479364495232 -70.32471855590708 
+                    A 210 210 0 0 1 -192.6143733161452 -83.66422886771056 
+                    L -119.23746919570893 -51.792141680011305 
+                    A 130 130 0 0 0 -122.49391987544666 -43.534349582228195 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="291.52173913043475" data-tier="terminal" x="-187.91624555424238" y="-74.10455220023726" transform="rotate(201.52173913043475, -187.91624555424238, -74.10455220023726)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Walnut</text><path d="M 0 0 
+                    L -119.23746919570893 -51.792141680011305 
+                    A 130 130 0 0 1 -115.4250783923088 -59.808454905049715 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -119.23746919570893 -51.792141680011305 
+                    L -192.6143733161452 -83.66422886771056 
+                    A 210 210 0 0 1 -186.45589586449884 -96.61365792354185 
+                    L -115.4250783923088 -59.808454905049715 
+                    A 130 130 0 0 0 -119.23746919570893 -51.792141680011305 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="295.4347826086956" data-tier="terminal" x="-182.42109592955563" y="-86.7556554920765" transform="rotate(205.43478260869563, -182.42109592955563, -86.7556554920765)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Pineapple</text><path d="M 0 0 
+                    L -115.4250783923088 -59.808454905049715 
+                    A 130 130 0 0 1 -111.07452259104348 -67.54591350460642 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -115.4250783923088 -59.808454905049715 
+                    L -186.45589586449884 -96.61365792354185 
+                    A 210 210 0 0 1 -179.42807495476254 -109.11262950744114 
+                    L -111.07452259104348 -67.54591350460642 
+                    A 130 130 0 0 0 -115.4250783923088 -59.808454905049715 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="299.3478260869565" data-tier="terminal" x="-176.0754149466158" y="-99.0022638699594" transform="rotate(209.3478260869565, -176.0754149466158, -99.0022638699594)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Melon</text><path d="M 0 0 
+                    L -111.07452259104348 -67.54591350460642 
+                    A 130 130 0 0 1 -106.20608609135752 -74.96844187493267 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -111.07452259104348 -67.54591350460642 
+                    L -179.42807495476254 -109.11262950744114 
+                    A 210 210 0 0 1 -171.5636775321929 -121.102867644122 
+                    L -106.20608609135752 -74.96844187493267 
+                    A 130 130 0 0 0 -111.07452259104348 -67.54591350460642 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="303.2608695652174" data-tier="terminal" x="-168.90878909945164" y="-110.78727799236233" transform="rotate(213.26086956521738, -168.90878909945164, -110.78727799236233)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Banana</text><path d="M 0 0 
+                    L -106.20608609135752 -74.96844187493267 
+                    A 130 130 0 0 1 -100.84246779157462 -82.04143276238682 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -106.20608609135752 -74.96844187493267 
+                    L -171.5636775321929 -121.102867644122 
+                    A 210 210 0 0 1 -162.89937104792824 -132.52846830847102 
+                    L -100.84246779157462 -82.04143276238682 
+                    A 130 130 0 0 0 -106.20608609135752 -74.96844187493267 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="307.17391304347825" data-tier="terminal" x="-160.95463250601273" y="-122.05575068326108" transform="rotate(217.17391304347825, -160.95463250601273, -122.05575068326108)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Coconut</text><path d="M 0 0 
+                    L -100.84246779157462 -82.04143276238682 
+                    A 130 130 0 0 1 -95.0086753561561 -88.73190861842505 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -100.84246779157462 -82.04143276238682 
+                    L -162.89937104792824 -132.52846830847102 
+                    A 210 210 0 0 1 -153.47555249840602 -143.33616007591738 
+                    L -95.0086753561561 -88.73190861842505 
+                    A 130 130 0 0 0 -100.84246779157462 -82.04143276238682 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="311.0869565217391" data-tier="terminal" x="-152.250031116127" y="-132.75514312123036" transform="rotate(221.08695652173913, -152.250031116127, -132.75514312123036)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Plum</text><path d="M 0 0 
+                    L -95.0086753561561 -88.73190861842505 
+                    A 130 130 0 0 1 -88.73190861842504 -95.00867535615612 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -95.0086753561561 -88.73190861842505 
+                    L -153.47555249840602 -143.33616007591738 
+                    A 210 210 0 0 1 -143.33616007591738 -153.47555249840605 
+                    L -88.73190861842504 -95.00867535615612 
+                    A 130 130 0 0 0 -95.0086753561561 -88.73190861842505 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="315" data-tier="terminal" x="-142.83556979968264" y="-142.8355697996826" transform="rotate(225, -142.83556979968264, -142.8355697996826)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Peach</text><path d="M 0 0 
+                    L -88.73190861842504 -95.00867535615612 
+                    A 130 130 0 0 1 -82.0414327623869 -100.84246779157455 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -88.73190861842504 -95.00867535615612 
+                    L -143.33616007591738 -153.47555249840605 
+                    A 210 210 0 0 1 -132.52846830847116 -162.8993710479281 
+                    L -82.0414327623869 -100.84246779157455 
+                    A 130 130 0 0 0 -88.73190861842504 -95.00867535615612 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="318.9130434782609" data-tier="terminal" x="-132.7551431212305" y="-152.25003111612688" transform="rotate(228.91304347826087, -132.7551431212305, -152.25003111612688)" text-anchor="end" dx="-4" style="dominant-baseline: middle;">Cherry</text><path d="M 0 0 
+                    L -82.0414327623869 -100.84246779157455 
+                    A 130 130 0 0 1 -74.96844187493274 -106.20608609135746 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -82.0414327623869 -100.84246779157455 
+                    L -132.52846830847116 -162.8993710479281 
+                    A 210 210 0 0 1 -121.10286764412211 -171.56367753219283 
+                    L -74.96844187493274 -106.20608609135746 
+                    A 130 130 0 0 0 -82.0414327623869 -100.84246779157455 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="322.82608695652175" data-tier="terminal" x="-122.05575068326107" y="-160.95463250601276" transform="rotate(412.82608695652175, -122.05575068326107, -160.95463250601276)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Apricot</text><path d="M 0 0 
+                    L -74.96844187493274 -106.20608609135746 
+                    A 130 130 0 0 1 -67.54591350460645 -111.07452259104346 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -74.96844187493274 -106.20608609135746 
+                    L -121.10286764412211 -171.56367753219283 
+                    A 210 210 0 0 1 -109.11262950744118 -179.4280749547625 
+                    L -67.54591350460645 -111.07452259104346 
+                    A 130 130 0 0 0 -74.96844187493274 -106.20608609135746 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="326.7391304347826" data-tier="terminal" x="-110.78727799236248" y="-168.90878909945155" transform="rotate(416.7391304347826, -110.78727799236248, -168.90878909945155)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Apple</text><path d="M 0 0 
+                    L -67.54591350460645 -111.07452259104346 
+                    A 130 130 0 0 1 -59.80845490504974 -115.42507839230879 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -67.54591350460645 -111.07452259104346 
+                    L -109.11262950744118 -179.4280749547625 
+                    A 210 210 0 0 1 -96.6136579235419 -186.4558958644988 
+                    L -59.80845490504974 -115.42507839230879 
+                    A 130 130 0 0 0 -67.54591350460645 -111.07452259104346 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="330.6521739130435" data-tier="terminal" x="-99.00226386995936" y="-176.0754149466158" transform="rotate(420.6521739130435, -99.00226386995936, -176.0754149466158)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Pear</text><path d="M 0 0 
+                    L -59.80845490504974 -115.42507839230879 
+                    A 130 130 0 0 1 -51.79214168001134 -119.23746919570891 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -59.80845490504974 -115.42507839230879 
+                    L -96.6136579235419 -186.4558958644988 
+                    A 210 210 0 0 1 -83.66422886771062 -192.61437331614516 
+                    L -51.79214168001134 -119.23746919570891 
+                    A 130 130 0 0 0 -59.80845490504974 -115.42507839230879 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="334.5652173913044" data-tier="terminal" x="-86.7556554920764" y="-182.4210959295557" transform="rotate(424.5652173913044, -86.7556554920764, -182.4210959295557)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Cider</text><path d="M 0 0 
+                    L -51.79214168001134 -119.23746919570891 
+                    A 130 130 0 0 1 -43.53434958222823 -122.49391987544665 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -51.79214168001134 -119.23746919570891 
+                    L -83.66422886771062 -192.61437331614516 
+                    A 210 210 0 0 1 -70.32471855590714 -197.8747936449523 
+                    L -43.53434958222823 -122.49391987544665 
+                    A 130 130 0 0 0 -51.79214168001134 -119.23746919570891 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="338.47826086956525" data-tier="terminal" x="-74.10455220023739" y="-187.9162455542423" transform="rotate(428.47826086956525, -74.10455220023739, -187.9162455542423)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Orange</text><path d="M 0 0 
+                    L -43.53434958222823 -122.49391987544665 
+                    A 130 130 0 0 1 -35.073580250413166 -125.1792473552139 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -43.53434958222823 -122.49391987544665 
+                    L -70.32471855590714 -197.8747936449523 
+                    A 210 210 0 0 1 -56.65732194297511 -202.21263034303783 
+                    L -35.073580250413166 -125.1792473552139 
+                    A 130 130 0 0 0 -43.53434958222823 -122.49391987544665 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="342.3913043478261" data-tier="terminal" x="-61.107939277977245" y="-192.53524289646052" transform="rotate(432.3913043478261, -61.107939277977245, -192.53524289646052)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Grapefruit</text><path d="M 0 0 
+                    L -35.073580250413166 -125.1792473552139 
+                    A 130 130 0 0 1 -26.449281696842487 -127.28093139870195 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -35.073580250413166 -125.1792473552139 
+                    L -56.65732194297511 -202.21263034303783 
+                    A 210 210 0 0 1 -42.72576274105325 -205.60765841328777 
+                    L -26.449281696842487 -127.28093139870195 
+                    A 130 130 0 0 0 -35.073580250413166 -125.1792473552139 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="346.304347826087" data-tier="terminal" x="-47.82641293422215" y="-196.2565520583842" transform="rotate(436.304347826087, -47.82641293422215, -196.2565520583842)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Lime</text><path d="M 0 0 
+                    L -26.449281696842487 -127.28093139870195 
+                    A 130 130 0 0 1 -17.701664382512128 -128.789172984723 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -26.449281696842487 -127.28093139870195 
+                    L -42.72576274105325 -205.60765841328777 
+                    A 210 210 0 0 1 -28.5949963102119 -208.04404866762943 
+                    L -17.701664382512128 -128.789172984723 
+                    A 130 130 0 0 0 -26.449281696842487 -127.28093139870195 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="350.2173913043478" data-tier="terminal" x="-34.32189777579071" y="-199.06282257887378" transform="rotate(440.2173913043478, -34.32189777579071, -199.06282257887378)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Lemon</text><path d="M 0 0 
+                    L -17.701664382512128 -128.789172984723 
+                    A 130 130 0 0 1 -8.871513737407275 -129.69693999477008 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -17.701664382512128 -128.789172984723 
+                    L -28.5949963102119 -208.04404866762943 
+                    A 210 210 0 0 1 -14.330906806580984 -209.51044153001322 
+                    L -8.871513737407275 -129.69693999477008 
+                    A 130 130 0 0 0 -17.701664382512128 -128.789172984723 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="354.1304347826087" data-tier="terminal" x="-20.65735808629092" y="-200.94097032933516" transform="rotate(444.1304347826087, -20.65735808629092, -200.94097032933516)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Marmalade</text><path d="M 0 0 
+                    L -8.871513737407275 -129.69693999477008 
+                    A 130 130 0 0 1 -2.3880612583373385e-14 -130 
+                    L 0 0 
+                    A 0 0 0 0 0 0 0 Z" fill="var(--c-fruit)" class="segment" style="pointer-events: none;"></path><path d="M -8.871513737407275 -129.69693999477008 
+                    L -14.330906806580984 -209.51044153001322 
+                    A 210 210 0 0 1 -3.857637417314162e-14 -210 
+                    L -2.3880612583373385e-14 -130 
+                    A 130 130 0 0 0 -8.871513737407275 -129.69693999477008 Z" fill="var(--c-fruit)" class="segment outer-segment"></path><text class="wheel-text outer-tier-text" data-base-angle="358.04347826086956" data-tier="terminal" x="-6.896504257565481" y="-201.88223851796715" transform="rotate(448.04347826086956, -6.896504257565481, -201.88223851796715)" text-anchor="start" dx="4" style="dominant-baseline: middle;">Orange Flavouring</text><text class="wheel-text inner-tier-text" data-base-angle="301.30434782608694" data-tier="primary" x="-38.448873204592" y="-23.381277751594496" transform="rotate(211.30434782608694, -38.448873204592, -23.381277751594496)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Fruit</text><text class="wheel-text" data-base-angle="262.17391304347825" data-tier="subcategory" x="-101.04996649570573" y="13.888998207817158" transform="rotate(172.17391304347825, -101.04996649570573, 13.888998207817158)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Dessert</text><text class="wheel-text" data-base-angle="287.6086956521739" data-tier="subcategory" x="-97.22076621504443" y="-30.856484189869633" transform="rotate(197.60869565217388, -97.22076621504443, -30.856484189869633)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Nutty</text><text class="wheel-text" data-base-angle="301.30434782608694" data-tier="subcategory" x="-87.15077926374185" y="-52.99756290361419" transform="rotate(211.30434782608694, -87.15077926374185, -52.99756290361419)" text-anchor="end" dx="-2" style="dominant-baseline: middle;">Gooey</text><text class="wheel-text" data-base-angle="322.82608695652175" data-tier="subcategory" x="-61.632111731151625" y="-81.27412136442229" transform="rotate(412.82608695652175, -61.632111731151625, -81.27412136442229)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Tropical</text><text class="wheel-text" data-base-angle="344.3478260869565" data-tier="subcategory" x="-27.51927065801648" y="-98.21756330947552" transform="rotate(434.3478260869565, -27.51927065801648, -98.21756330947552)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Stone</text><text class="wheel-text" data-base-angle="354.1304347826087" data-tier="subcategory" x="-10.430943192087494" y="-101.46524244352567" transform="rotate(444.1304347826087, -10.430943192087494, -101.46524244352567)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Orchard</text><text class="wheel-text" data-base-angle="358.04347826086956" data-tier="subcategory" x="-3.4823932389687084" y="-101.94053628134975" transform="rotate(448.04347826086956, -3.4823932389687084, -101.94053628134975)" text-anchor="start" dx="2" style="dominant-baseline: middle;">Citrus</text></g>
+                <circle cx="0" cy="0" r="4" class="center-pin"></circle>
+            </svg>
+        </div>
+
+        <div class="info-panel" id="infoPanel" style="border-left-color: var(--c-plants);">
+            <div id="defaultPrompt" style="display: none;">
+                <h2 style="margin-bottom:12px; color:#333; font-weight:800; text-transform:uppercase;">Select a Tasting Descriptor</h2>
+                <p style="color:#555; line-height: 1.5; font-size: 0.95rem;">Click any target terminal note on the outside tier of the wheel to populate its respective chemical causes (terpenes, ketones, aldehydes), production parameters, and advanced mixology management strategies.</p>
+            </div>
+            <div id="panelContent" style="display: block;">
+                <div class="info-header">
+                    <div class="info-title" id="pTitle">Thyme</div>
+                    <div class="info-category" id="pCategory" style="background-color: var(--c-plants);">Plants</div>
+                </div>
+                <div class="info-section">
+                    <h3>Chemical Origin &amp; Production Cause</h3>
+                    <p id="pOrigin">Thymol-related aromatic compounds surviving distillation, common in slow-fermented washes using natural agave yeasts.</p>
+                </div>
+                <div class="info-section">
+                    <h3>Palate Profiling &amp; Mixology Architecture</h3>
+                    <p id="pMixology">Provides an elegant, earthy herb character. Enhances grapefruit or citrus oils in advanced highball builds.</p>
+                </div>
+                <div class="info-section">
+                    <h3>Classic Structural Benchmark Cases</h3>
+                    <p id="pExamples">Artisanal clay-pot distillates with long wash histories.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- COMPLETE ACADEMIA PATRON TEQUILA SENSORY DATA STRUTURE MAP ---
+        const tequilaWheelData = [
+            {
+                category: "Chemical", color: "var(--c-chemical)",
+                subcategories: [
+                    {
+                        name: "Solventy",
+                        items: [
+                            { name: "Acetone", origin: "High initial concentrations of ethyl acetate and light heads fractions surviving distillation. Common in fast continuous-column executions or narrow-cut configurations run too hot.", mixology: "Presents a sharp top-note aroma profile. Tame in mixology through cold aeration, high dilution rates, or pairing with volatile citrus oils like pink grapefruit.", examples: "Industrial-scale diffuser blanco expressions with minimal heads management." },
+                            { name: "Alcohol", origin: "Pure sensory perception of ethanol, unmasked by sweet wood lactones or complex agave proteins. Common in high-proof distillates or fast runs with low copper contact time.", mixology: "Establishes a strong structural layout backbone. Essential for formatting classic structured cocktails like the Tequila Martini or high-lift sour architectures.", examples: "Still-strength (45-55% ABV) architectural blancos." },
+                            { name: "Plastic", origin: "Trace volatile chemical compounds, often linked to low-oxygen environments during long fermentation cycles or synthetic hoses/seals used in industrial setups.", mixology: "An esoteric, technical trait. Best managed by adding salinity or dry mineral components to re-focus the palate toward savory elements.", examples: "Mass-market diffuser white spirits." },
+                            { name: "Rubber", origin: "Heavy organosulfur clusters. Occurs when yeasts break down elemental sulfur residues left over from agricultural field dustings on agave leaves before processing.", mixology: "Polarizing industrial note. Balance using rich agave nectars, modifiers featuring high brix indices, or saline rims.", examples: "Lowland pot-still profiles where jimadores employ a longer jima cut leaves." }
+                        ]
+                    },
+                    {
+                        name: "Artificial",
+                        items: [
+                            { name: "Vanilla Flavoring", origin: "Vanillin extract additions rather than natural barrel maturation extraction. Often used alongside glycerin texturizers in non-100% agave options or manipulated finishes.", mixology: "Imparts a highly persistent perception of sweetness. Avoid overly sweet liqueurs; cut through the profile using bitter amari or fresh lime.", examples: "Mixto products or overly mass-market 'smooth' expressions." },
+                            { name: "Cherry Flavoring", origin: "Benzaldehyde-heavy additives or high-temperature chemical reactions between non-agave sugars during quick autoclave operations.", mixology: "Brings an intense confectionary sweetness. Pair with robust citrus or dry vermouths to build counter-structural lines.", examples: "Flavored commercial spirit varieties or low-end mixtos." },
+                            { name: "Almond Flavoring", origin: "Synthetic marzipan markers or trace chemical components typical of processing adjustments made to correct defects in low-grade distillates.", mixology: "Presents a heavy, unrefined top-note. Complements intense baking spice elements or coffee modifiers in savory cocktail platforms.", examples: "Low-cost industrial bulk distillates." },
+                            { name: "Bubble Gum", origin: "High concentrations of isoamyl acetate esters combining with synthetic yeast derivatives under high fermentation temperatures.", mixology: "Very polarizing aroma profile. Counteract by leaning into high-acid citrus components or dry effervescent modifiers like tonic water.", examples: "Mass-produced column blancos." },
+                            { name: "Sweetener", origin: "Exogenous additives (glycerin, cane syrup, or jarabe) permitted up to 1% by weight under CRT regulations to smooth out harsh elements.", mixology: "Alters natural mouthfeel. Avoid additional sweet components; utilize dry bitters, fresh citrus juice, or heavy ice dilution blocks.", examples: "Ultra-premium mass-market 'celebrity' expressions focused on extreme softness." },
+                            { name: "Cream Soda", origin: "Combination of synthetic vanillin and artificial ethyl butyrate esters designed to emulate long-term oak aging profiles instantly.", mixology: "Dominant character. Balance with high-proof modifiers, cold-brew coffee bases, or savory food elements.", examples: "Addictive-heavy manipulated reposados." },
+                            { name: "Banana Flavoring", origin: "Excess isoamyl acetate combined with volatile processing esters. Common when industrial yeasts are run under heavy osmotic pressure.", mixology: "Imparts an artificial fruit profile. Best balanced with warm spices, ginger beers, or refreshing carbonated long styles.", examples: "Non-100% Agave industrial variants." }
+                        ]
+                    }
+                ]
+            },
+            {
+                category: "Flowers", color: "var(--c-flowers)",
+                subcategories: [
+                    {
+                        name: "White",
+                        items: [
+                            { name: "Jasmine", origin: "Delicate monoterpene and benzyl alcohol streams surviving slow distillation passes. Enhanced by wild yeast conversions during cold open-air fermentations.", mixology: "Highly elegant top-note. Best showcased in elegant stemware or modern gin-style martini conversions using dry, un-aged blanc expressions.", examples: "Highland (Los Altos) artisanal clay-pot blancos." },
+                            { name: "Orange Blossom", origin: "Presence of nerol and linalool terpenes. Indicates healthy, slow-cooked blue agave processed via traditional brick ovens (hornos) with minimal caramel stress.", mixology: "Provides exceptional lift. Highlight using premium tonic waters, fresh orange oil mists, or dry sparkling white wines.", examples: "Traditional Los Altos estates focused on highland terroir." }
+                        ]
+                    },
+                    {
+                        name: "Purple",
+                        items: [
+                            { name: "Lavender", origin: "High terpene expressions (linalyl acetate). Developed during gentle, low-pressure brick oven cooks that preserve volatile botanical precursors.", mixology: "Ethereal and distinct. Avoid heavy, rich mixers; pair with clean mineral waters, dry vermouth, or a simple expression of lemon zest.", examples: "Artesanal pot-still blancos from Jesus Maria region." },
+                            { name: "Lilac", origin: "Complex floral alcohols created during open-vat fermentations where the mash interacts with airborne wild yeasts from surrounding fields.", mixology: "Brings a delicate, old-world elegance. Perfect for designing low-abv aperitifs or minimalist, ice-cold neat pours.", examples: "Traditional family estates utilizing open-air wooden wash vats." }
+                        ]
+                    },
+                    {
+                        name: "Yellow",
+                        items: [
+                            { name: "Rose", origin: "Phenylethyl alcohol markers. Emerges during slow, meticulous distillation loops where copper contact strips out heavier savory elements.", mixology: "Brings a soft floral dimension. Complements fresh red fruits, raspberries, or crisp pink aperitif wines.", examples: "Highland blancos featuring long, slow hearts collection parameters." },
+                            { name: "Marigold", origin: "Lutein oxidation products. Often develops during short maturation runs inside old, neutral oak barrels with minimal wood toast interference.", mixology: "Brings an elegant autumn character. Pairs beautifully with orchard fruits, subtle honey, or dry amontillado sherry finishes.", examples: "Lightly aged traditional reposados from clay-oven distilleries." }
+                        ]
+                    }
+                ]
+            },
+            {
+                category: "Plants", color: "var(--c-plants)",
+                subcategories: [
+                    {
+                        name: "Herbal",
+                        items: [
+                            { name: "Damiana", origin: "Native botanical terpene carryover. Often found when wild fields are adjacent to the agave farms, with yeasts carrying native pollens into the open fermentation tanks.", mixology: "Imparts a unique sweet-herbal quality. Promotes natural complexity in traditional margaritas; eliminates the need for heavy orange curacaos.", examples: "Baja region styles or traditional estate-grown expressions." },
+                            { name: "Lemongrass", origin: "High concentrations of citral monoterpenes. Typical of high-altitude agaves harvested at maximum maturity when sugar counts peak.", mixology: "Provides superb refreshing lift. Exceptional pairing option with raw seafood dishes, ceviche, or crudo courses.", examples: "Premium Los Altos blancos (Atotonilco El Alto)." },
+                            { name: "Dill", origin: "Oxygenated wood compound interactions common when reposado or añejo expressions are aged in charred American white oak casks.", mixology: "Brings a savory, herbaceous wood note. Coordinates flawlessly with celery bitters, fresh cucumber juices, or tomato waters.", examples: "Añejo expressions using traditional ex-bourbon cooperage lineups." },
+                            { name: "Chamomile", origin: "Ester configurations linked to slow, low-temperature fermentations with fibers left inside the tanks (mashing via traditional tahona).", mixology: "Brings a soft, relaxing floral-herb note. Best served in a premium copita glass with a single drop of artisanal spring water.", examples: "Tahona-crushed artisanal blanco styles." }
+                        ]
+                    },
+                    {
+                        name: "Green",
+                        items: [
+                            { name: "Grass", origin: "Hexanal and cis-3-hexenol aldehydes. Released during raw agave crushing phases, especially when utilizing modern roller mill extractions.", mixology: "The ultimate validation of a fresh, crisp spirit canvas. Outstanding in smash formats featuring fresh garden herbs like basil or cilantro.", examples: "Highland roller-mill blancos focused on bright green agave character." },
+                            { name: "Mint", origin: "Volatile monoterpenes surviving low-temperature pot-still runs. Indicates careful management of the still temperatures during cuts.", mixology: "Brings a beautiful structural cooling mechanism. Complements refreshing highballs or classic muddled mojito adaptations.", examples: "Traditional valley or lowland pot-still blancos." },
+                            { name: "Aloe", origin: "Clean, viscous vegetable compounds tracking from the pure core inner heart of young or lightly cooked agaves.", mixology: "Adds exceptional mouthfeel weight. Perfect companion for dry botanical sodas or minimalist tonic builds.", examples: "Agave juice profiles managed with stainless steel autoclaves." },
+                            { name: "Asparagus", origin: "Dimethyl sulfide (DMS) precursors produced during long, low-temperature cooking processes inside classic brick ovens.", mixology: "Brings a deep, texturing savory note. Complements complex culinary cocktails featuring green elements or savory bases.", examples: "Brick-oven cooked lowland singles estates." },
+                            { name: "Bean", origin: "Trace amino-carbonyl components developed during wild, unstructured open-tank fermentations without artificial temperature control.", mixology: "Provides a rustic, earthy frame. Complements rich, savory food courses or intense amaros in stirred recipes.", examples: "Traditional rustico styles from small valley distilleries." },
+                            { name: "Basil", origin: "Linalool and estragole compounds. Developed when agaves are harvested with a tight jima cut, completely removing all green leaves down to the pure white piña.", mixology: "Provides an elegant, peppery green note. Pair with premium olive oils, tomato waters, or fresh lemon mists.", examples: "High-end artisanal blancos using strict estate-grown harvesting metrics." },
+                            { name: "Bell Pepper", origin: "Methoxypyrazines tracking directly from lowlands agave fields where heavy volcanic clays influence the root networks.", mixology: "Provides a magnificent savory backbone. The ultimate engine for innovative Bloody Mary or green juice builds.", examples: "Valley region terroir-focused producers (Amatitán/Tequila town)." },
+                            { name: "Jalapeño", origin: "Capsaicin-mimicking volatile compounds formed when agave leaves are left slightly long during the harvesting process.", mixology: "Brings a wonderful organic heat and crisp green pop. Ideal for enhancing dry sours or classic spicy cocktails without artificial syrups.", examples: "Lowland blancos featuring traditional long-leaf harvesting styles." },
+                            { name: "Thyme", origin: "Thymol-related aromatic compounds surviving distillation, common in slow-fermented washes using natural agave yeasts.", mixology: "Provides an elegant, earthy herb character. Enhances grapefruit or citrus oils in advanced highball builds.", examples: "Artisanal clay-pot distillates with long wash histories." },
+                            { name: "Oregano", origin: "Carvacrol streams developed during extended fermentations where agave fibers are left inside wood vats during processing.", mixology: "Brings a deep, savory complexity. Complements complex vermouths or dry sherries in stirred formulations.", examples: "Tahona-crushed, wood-vat fermented open-air blancos." },
+                            { name: "Rosemary", origin: "Pinenes and camphor terpenes common in agaves grown alongside wild highland brush and harvested at complete peak sugar saturation.", mixology: "Adds deep botanical architecture. Torch a rosemary sprig as an ambient aromatic feature for premium cocktail service.", examples: "Los Altos single-estate highland expressions." },
+                            { name: "Sage", origin: "Complex thujone-like volatile compounds generated through minimal reflux configurations during initial distillation runs.", mixology: "Brings a luxurious savory-dry character. Pairs beautifully with honey modifiers or aged chartreuse components.", examples: "Traditional copper pot-still blancos without rectification columns." }
+                        ]
+                    },
+                    {
+                        name: "Savory",
+                        items: [
+                            { name: "Tobacco", origin: "Carotenoid breakdown products common when mature spirits are stored for long cycles in warm, oxidized oak conditions.", mixology: "Highly sophisticated, deeply dry. Reserve for premium spirit-forward nightcaps or serve neat alongside dark chocolate flights.", examples: "Ultra-aged Extra Añejo styles." },
+                            { name: "Black Tea", origin: "Polyphenolic developments and wood tannins common to expressions aged inside heavily used or exhausted neutral casks.", mixology: "Brings an elegant dry finish to the back of the palate. Helps tame sweet modifiers or high-sugar liqueurs.", examples: "Traditional Reposados managed with large oak pipones." },
+                            { name: "Corn", origin: "Dimethysulfide carryover or thermal processing interactions common when agaves are run through high-speed steam diffusers.", mixology: "Presents a sweet, grain-like profile. Best utilized in crisp highballs with highly effervescent mineral waters.", examples: "Industrial diffuser-based mixtos or commercial products." },
+                            { name: "Sweet Potato", origin: "Maillard reaction products generated during slow, low-pressure caramelization inside traditional masonry brick ovens (hornos).", mixology: "Imparts a deep, authentic cooked agave richness. The foundation of true, traditional single-malt quality tequila.", examples: "Artisanal hornos-cooked pot-still blancos." },
+                            { name: "Cooked Agave", origin: "The absolute sensory core of premium tequila. Caused by the transformation of inulin into fructose during long cooking stages.", mixology: "Provides the indispensable core structural spine. Never mask this character; build minimalist cocktails that showcase this note.", examples: "100% Agave artisanal expressions from traditional producers." }
+                        ]
+                    }
+                ]
+            },
+            {
+                category: "Earth", color: "var(--c-earth)",
+                subcategories: [
+                    {
+                        name: "Peppery",
+                        items: [
+                            { name: "White Pepper", origin: "Formed via specific yeast pathways when fermentations are executed without fiber contact, emphasizing crisp, bright esters.", mixology: "Brings clean, energetic focus. Excellent for sharpening classic sours or elegant, elongated carbonated builds.", examples: "Highland column-to-pot blanco transitions." },
+                            { name: "Black Pepper", origin: "4-vinylguaiacol compounds. The definitive organoleptic hallmark of traditional Lowland/Valley agaves grown in iron-rich volcanic soils.", mixology: "Provides magnificent structural pop and cut. Balances agave nectars, fresh citrus, or heavy citrus garnishes flawlessly.", examples: "Traditional Valley region pot-still blanco styles." }
+                        ]
+                    },
+                    {
+                        name: "Minerally",
+                        items: [
+                            { name: "Limestone", origin: "Direct usage of hard, deep sub-surface well water rich in calcium carbonates during the final proofing stages of processing.", mixology: "Provides a crisp, refreshing chalky spine. Exceptional companion for raw seafood, oysters, or minimalist highballs.", examples: "Highland distilleries using natural deep volcanic wells." },
+                            { name: "Wet Cement", origin: "High mineral counts and earth compounds tracking from unlined masonry brick ovens or traditional stone tahona pits.", mixology: "Adds an old-world, industrial complexity. Highly prized by spirits connoisseurs and wine sommeliers.", examples: "100% Tahona-crushed, stone-oven processed expressions." }
+                        ]
+                    },
+                    {
+                        name: "Musty",
+                        items: [
+                            { name: "Mushroom", origin: "1-octen-3-ol formations. Can develop during slow dunder-style fermentations or inside highly humid barrel cellars with earthen floors.", mixology: "Provides an intriguing savory-earth component. Capable of adding remarkable complexity to modern savory cocktail modifications.", examples: "Traditional wild-ferment reposados." },
+                            { name: "Olive", origin: "Vat-derived organic acids (cis-3-hexenol interactions). Highly prominent in Valley tequilas utilizing extended open-air fermentations.", mixology: "The ultimate engine for savory drink programs. Shines spectacularly in Tequila Dirty Martinis or savory Gibson adjustments.", examples: "Valley region pot-still landmarks with long open fermentations." },
+                            { name: "Yeast", origin: "Autolysis of yeast cells. Occurs when spent lees are left in the pot still base during the initial distillation loop.", mixology: "Brings a bready, savory textural weight to the mid-palate. Helps soften the bitter edges of amari or fresh citrus peels.", examples: "Un-filtered single-estate artisanal blancos." },
+                            { name: "Wet Earth", origin: "Geosmin absorption tracking directly from volcanic clay soils during the extensive 6-to-8 year growth cycle of the agave plant.", mixology: "Brings an authentic, grounded terroir profile. Outstanding in simple Ti' Punch adjustments or served neat at room temperature.", examples: "Traditional Lowland/Valley single-estate field selections." },
+                            { name: "Wet Leaves", origin: "Light green aldehydes combined with high damp moisture levels inside dark barrel-aging maturation cellars.", mixology: "Brings an elegant damp-wood character. Combines gracefully with herbal liqueurs or dry french vermouths.", examples: "Aged profiles managed in highly humid subterranean cellars." }
+                        ]
+                    }
+                ]
+            },
+            {
+                category: "Wood", color: "var(--c-wood)",
+                subcategories: [
+                    {
+                        name: "Fresh",
+                        items: [
+                            { name: "Cedar", origin: "Exotic resinous terpene extractions occurring when reposado or añejo expressions are aged in large, low-char casks.", mixology: "Intensely perfumed. Needs cautious dosing in cocktail menu execution to avoid overwhelming delicate fresh citrus notes.", examples: "Reposados finished in large French oak vats or alternative wood setups." },
+                            { name: "Pine Tree", origin: "Alpha-pinene terpene streams captured during swift distillation passes when processing agaves with high wood fiber contact.", mixology: "Provides a crisp, botanical finish reminiscent of world-class gin. Spectacular in elegant modified collins or club sodas.", examples: "Highland pot-still blancos crushed with traditional wood-wheel tools." },
+                            { name: "Oak (Fresh)", origin: "High levels of active wood tannins and ellagitannins. Extracted rapidly when tequila is stored in virgin or low-fill oak cooperage.", mixology: "Creates a highly dry, structured wood finish. Balance this extraction with rich agave syrups or sweet modifiers.", examples: "Modern experimental virgin oak finishes." },
+                            { name: "Wood Shavings", origin: "High concentration of alpha-muurolene from quick wood extractions before long-term oxidation softens the barrel profiles.", mixology: "Presents a clean, raw wood top-note. Complements high-acid lime or carbonated setups in modern highball execution.", examples: "Young reposado expressions managed in large active casks." },
+                            { name: "Wood Bark", origin: "Heavy extractive polyphenols drawn from oak wood staves during early storage cycles in high-temperature warehouses.", mixology: "Brings a pleasant, rustic wood dryness. Excellent for structuring long drinks or taming high-sugar modifiers.", examples: "Commercial reposados aged in fast-extraction environments." }
+                        ]
+                    },
+                    {
+                        name: "Burnt",
+                        items: [
+                            { name: "Leather", origin: "Isovaleric acid and wood phenolic structures developing over extensive tropical maturation cycles in heavily used barrels.", mixology: "Highly sophisticated, deeply dry character. Reserve for premium stirred drinks or serve neat alongside luxury cigars.", examples: "Ultra-aged Extra Añejo benchmarks." },
+                            { name: "Oak (Charred)", origin: "Direct extraction of the inner layer of highly-fired white oak barrels. Releases carbon microparticles which filter and impart smoke elements.", mixology: "Excellent structural spine for spirit-forward classic rum or whiskey variations. Replaces bourbon cleanly in a Tequila Manhattan.", examples: "Añejo expressions aged in heavy-char American white oak." },
+                            { name: "Smoke", origin: "Guaiacol absorption. Derived from intentional wood fires beneath traditional brick ovens or deep barrel charring profiles.", mixology: "Provides ambient background depth. Outstanding split-base option with artisanal mezcals to add complexity to classic sours.", examples: "Traditional artisanal hornos-cooked profiles with direct fire exposure." },
+                            { name: "Charcoal", origin: "Carbon filtering passes (filtration through active charcoal columns) deployed to strip out color from aged reposado or añejo stocks.", mixology: "The definitive marker for Cristalino styles. Yields vanilla sweetness with a completely clear visual footprint.", examples: "Premium Cristalino Añejo expressions." }
+                        ]
+                    }
+                ]
+            },
+            {
+                category: "Spice", color: "var(--c-spice)",
+                subcategories: [
+                    {
+                        name: "Baking",
+                        items: [
+                            { name: "Cinnamon", origin: "Cinnamaldehyde-mimicking structures generated during wood lignin breakdown under specific toast profiles in American oak.", mixology: "Adds exceptional warm spice pop. Highly versatile across autumn/winter menus; pairs with apple, pear, or chocolate.", examples: "Reposado expressions managed with toasted ex-bourbon barrels." },
+                            { name: "Clove", origin: "4-vinylguaiacol compounds generated by wild yeast strains during long, open-air vat fermentations with fibers.", mixology: "Provides a powerful structural spice spine. Essential for authentic, complex tropical punch architectures or hot serves.", examples: "Tahona-crushed traditional reposado lines." },
+                            { name: "Allspice", origin: "Eugenol modifications reacting with secondary wood components during long storage in humid warehouse tracks.", mixology: "The natural partner to real pimento dram. Enhances the structural mid-palate of advanced stirred tequila drinks.", examples: "Añejo expressions using traditional old-school cooperage setups." },
+                            { name: "Nutmeg", origin: "Myristicin formations tracking from oak wood degradation over extensive tropical aging environments in European oak.", mixology: "The classic winter garnish finisher. Grate fresh over the top of the drink to maximize these volatile top-notes.", examples: "Añejo styles managed in French oak cognac casks." }
+                        ]
+                    },
+                    {
+                        name: "Medicinal",
+                        items: [
+                            { name: "Licorice", origin: "Anethole-like compound groupings developing during extensive maturation runs inside old European oak casks.", mixology: "Brings an elegant bittersweet depth. Pairs beautifully with complex amaros or real absinthe mists.", examples: "Extra Añejo expressions using sherry-cask finishing steps." },
+                            { name: "Anise", origin: "Volatile oil extractions common in lowlands distillates processed with fast vapor speeds and high water-reflux levels.", mixology: "Provides a brilliant clean botanical lift. Exceptional when paired with fresh cucumber, mint, or crisp chartreuse.", examples: "Valley region pot-still white spirits." }
+                        ]
+                    }
+                ]
+            },
+            {
+                category: "Fruit", color: "var(--c-fruit)",
+                subcategories: [
+                    {
+                        name: "Dessert",
+                        items: [
+                            { name: "Cocoa", origin: "Strecker aldehydes formed during the thermal toasting of wood proteins inside cooperage barrel staves.", mixology: "Pairs flawlessly with real chocolate bitters, espresso modifiers, or rich mint garnishes.", examples: "Añejo profiles using medium-to-heavy toast structures." },
+                            { name: "Chocolate", origin: "Advanced amino-carbonyl interactions blending with heavy vanillin extractions in ultra-aged expressions.", mixology: "Deeply rich and indulgent. Reserve for neat service alongside premium single-origin chocolate flights.", examples: "Ultra-aged extra añejo selections." },
+                            { name: "Coffee Beans", origin: "Pyrazine compound groups created via high-temperature charring lines inside imported bourbon oak casks.", mixology: "The ultimate baseline for espresso martinis or coffee-infused cocktail variations. Adds deep savory lines.", examples: "Añejo expressions featuring char-heavy barrel systems." },
+                            { name: "Molasses", origin: "Deep caramelization markers formed during heavy distillation cycles or prolonged aging in highly active wood systems.", mixology: "Rich, dark, and powerful. Combines beautifully with ginger beer or heavy aromatic bitter profiles.", examples: "Highly manipulated low-end mixto distillates." },
+                            { name: "Cola", origin: "Complex ester clusters and spicy wood extractions that mimic the aromatic profile of traditional botanicals.", mixology: "A natural companion for premium highballs or modern twists on classic carbonated serves.", examples: " reposados aged in heavily toasted wood structures." },
+                            { name: "Vanilla Bean", origin: "Breakdown of wood lignin into pure vanillin, standard in first-fill charred American white oak barrels.", mixology: "Highly friendly and universally appealing. Combines effortlessly with ginger, citrus, or orchard fruits.", examples: "Reposado and añejo benchmarks using first-fill bourbon oak." },
+                            { name: "Honey", origin: "Phenethyl alcohol esters interacting with toasted oak components during extended maturation periods.", mixology: "Adds gorgeous mid-palate roundness. Pairs beautifully with chamomile, ginger, or fresh orchard fruits.", examples: "Traditional Reposados with low toast profiles." },
+                            { name: "Caramel", origin: "Hemicellulose thermal breakdown inside barrel staves, creating rich caramel markers that bleed into the spirit.", mixology: "Provides a classic aged spine. Highly versatile across all cocktail families, adding color and body.", examples: "Standard commercial reposado profiles." },
+                            { name: "Dulce de Leche", origin: "Advanced interaction of wood lipids and concentrated lactones inside heavily toasted barrels over long aging cycles.", mixology: "Highly luxurious aroma profile. Outstanding as a standalone neat pour or in premium dessert programs.", examples: "Añejo and Extra Añejo luxury lines." },
+                            { name: "Toffee", origin: "Advanced degradation of wood structural elements over extensive maturation runs in hot tropical zones.", mixology: "Rich, deep, and highly integrated. Best appreciated with minimal manipulation or over a single clear ice sphere.", examples: "Extra Añejo historic barrel selections." }
+                        ]
+                    },
+                    {
+                        name: "Nutty",
+                        items: [
+                            { name: "Almond", origin: "Benzaldehyde formations occurring during extended wood micro-oxygenation, heavily augmented by barrel storage.", mixology: "The baseline natural companion to real orgeat. Boosts the mid-palate profile of traditional sour variants.", examples: "Añejo tequilas utilizing medium used cooperage configurations." },
+                            { name: "Hazelnut", origin: "Generated via complex amino-carbonyl interactions during multi-year aging processes where spirits undergo gentle oxidation.", mixology: "Brings a smooth, rich character to neat serves. Pairs magnificently with high-fat dark chocolates or rich cheese courses.", examples: "French oak managed añejo expressions." },
+                            { name: "Walnut", origin: "Slightly oxidized oil profile caused by long head-space air-contact inside aging casks, converting fatty acids into nut-like ketones.", mixology: "Brings an elegant dry quality that helps tame sweet vermouth or rich liqueurs in complex stir builds.", examples: "Ultra-aged tequilas with significant head-space history." }
+                        ]
+                    },
+                    {
+                        name: "Gooey",
+                        items: [
+                            { name: "Pineapple", origin: "Ethyl butyrate ester cascades. Highly emphasized by using specialized yeast cultures and managing slow, low-temperature fermentations.", mixology: "Adds deep tropical complexity. Connects seamlessly with fresh lime, agave nectars, or carbonated mixers.", examples: "Highland blancos featuring long, slow hearts collection parameters." },
+                            { name: "Melon", origin: "Clean, light volatile esters tracking from column-still components where temperature control keeps yeast un-stressed.", mixology: "Provides an elegant, crisp entry point. Ideal for delicate, shaken drinks where freshness is the core objective.", examples: "Modern lowlands column blancos." },
+                            { name: "Banana", origin: "Isoamyl acetate compounds. Frequently found in clean, pot-distilled rums or multi-aged spirits using traditional mashing.", mixology: "Provides an elegant fruit top-note. Perfect for adapting classic sours or refreshing long drinks.", examples: "Highland estate blancos focused on bright fruit character." },
+                            { name: "Coconut", origin: "Gamma-octalactone extraction from heavily active, first-fill American white oak ex-bourbon barrels.", mixology: "Provides a natural creaminess on the palate. Elevates classic highballs or tropical builds without needing artificial syrups.", examples: "Reposados aged in fresh american white oak casks." }
+                        ]
+                    },
+                    {
+                        name: "Tropical",
+                        items: [
+                            { name: "Plum", origin: "Heavy organic acid extractions interacting over extended maturations with deeply caramelized oak barrel linings.", mixology: "Rich and luxurious. Elevates stirred drinks; pairs wonderfully with rich game dishes or computational pastry menus.", examples: "Añejo profiles using port-wine barrel finishes." },
+                            { name: "Peach", origin: "Lactone developments common to slow, cool maturation cycles in damp, coastal warehouses with stable microclimates.", mixology: "Adds an elegant stone-fruit brightness. Complements vermouth-forward configurations perfectly.", examples: "Lightly aged reposados from traditional cellars." },
+                            { name: "Cherry", origin: "Benzaldehyde and ethyl lactate combos, often heightened by final finishing loops in seasoned wine casks.", mixology: "Adds deep ruby tones and dark fruit elements. Brilliant when used in premium Manhattan variations.", examples: "Añejo tequilas finished in sherry or red wine oak." },
+                            { name: "Apricot", origin: "Gamma-undecalactone pathways created through esterification inside second-fill ex-bourbon white oak barrels.", mixology: "Brings a wonderful stone-fruit quality. Connects seamlessly with peach bitters, dry sherries, or herbal aperitifs.", examples: "Traditional highland reposados." },
+                            { name: "Apple", origin: "Ethyl butyrate esters. Produced during early fermentation cycles when temperature regulation keeps yeast working at an even, unstressed pace.", mixology: "Adds a bright, approachable top-note. Perfect for adapting classic Collins or refreshing long drinks.", examples: "Bright highland blancos from Los Altos." },
+                            { name: "Pear", origin: "Isoamyl acetate. Produced during clean, column-distilled blanco extractions with strict temperature controls.", mixology: "Provides clean, energetic focus. Excellent for modifying classic sours or elegant, elongated highballs.", examples: "Modern continuous column blancos." },
+                            { name: "Cider", origin: "Slightly oxidized apple ester groupings common in washes that undergo extended primary fermentations before distillation.", mixology: "Brings an elegant crispness. Helps soften the bitter edges of amari or fresh citrus peels.", examples: "Artisanal pot-still blancos with long vat histories." }
+                        ]
+                    },
+                    {
+                        name: "Stone",
+                        items: [
+                            { name: "Orange", origin: "Octyl acetate developments common to traditional agave fermentations processed in classic pot stills.", mixology: "Adds a beautiful structural link to premium orange liqueurs, sweet vermouths, and fresh citrus garnishes.", examples: "High-end pot-still blancos from traditional makers." },
+                            { name: "Grapefruit", origin: "Limonene and specific sulfur compound configurations. The ultimate natural sensory companion for 100% blue agave.", mixology: "The baseline flavor identity for the authentic Paloma cocktail (tequila, lime, pink grapefruit soda).", examples: "Highland pot-still blancos focused on bright citrus notes." },
+                            { name: "Lime", origin: "Terpene architectures common in fresh agaves or tequilas produced with minimal copper contact during short fermentation loops.", mixology: "The foundational baseline for authentic Margaritas. Accents natural sugarcane notes perfectly.", examples: "Standard silver/blanco expressions across the category." },
+                            { name: "Lemon", origin: "Limonene pathways surviving distillation, common in light column-still extractions with strict temperature controls.", mixology: "Brings clean, energetic focus. Excellent for modifying classic sours or elegant, elongated highballs.", examples: "Modern industrial blanco tequilas." }
+                        ]
+                    },
+                    {
+                        name: "Orchard",
+                        items: [
+                            { name: "Marmalade", origin: "Esterification of concentrated orange-peel oils reacting with caramelized wood sugars over extended cask exposures.", mixology: "Imparts a brilliant bitter-sweet complexity. Elevates classic stirred profiles like the El Presidente or Tequila Negronis.", examples: "Aged Reposado expressions managed in historic pipones." }
+                        ]
+                    },
+                    {
+                        name: "Citrus",
+                        items: [
+                            { name: "Orange Flavouring", origin: "Synthetic citrus additives or non-regulated flavor modifiers introduced post-distillation to mimic highland fruit sweetness.", mixology: "Dominant character. Balance with high-proof modifiers, cold-brew coffee bases, or savory food elements.", examples: "Low-end flavored commercial varieties or manipulated gold tequilas." }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // --- MASTER SVG ENGINE ---
+        const rotatingGroup = document.getElementById('rotatingGroup');
+        const TOTAL_ITEMS = tequilaWheelData.reduce((acc, cat) => {
+            return acc + cat.subcategories.reduce((sAcc, sub) => sAcc + sub.items.length, 0);
+        }, 0); // Total number of outermost slices (79)
+
+        let segmentIndex = 0;
+        
+        // Radii metrics configurations
+        const innerRadius = 0;
+        const middleRadius = 130;
+        const outerRadius = 210;
+
+        function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+            const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+            return {
+                x: centerX + (radius * Math.cos(angleInRadians)),
+                y: centerY + (radius * Math.sin(angleInRadians))
+            };
+        }
+
+        function makeSegmentPath(innerR, outerR, startAngle, endAngle) {
+            const sInner = polarToCartesian(0, 0, innerR, startAngle);
+            const eInner = polarToCartesian(0, 0, innerR, endAngle);
+            const sOuter = polarToCartesian(0, 0, outerR, startAngle);
+            const eOuter = polarToCartesian(0, 0, outerR, endAngle);
+            const largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
+            
+            return `M ${sInner.x} ${sInner.y} 
+                    L ${sOuter.x} ${sOuter.y} 
+                    A ${outerR} ${outerR} 0 ${largeArc} 1 ${eOuter.x} ${eOuter.y} 
+                    L ${eInner.x} ${eInner.y} 
+                    A ${innerR} ${innerR} 0 ${largeArc} 0 ${sInner.x} ${sInner.y} Z`;
+        }
+
+        // Loop over database configurations
+        tequilaWheelData.forEach((cat) => {
+            let catIndexStart = segmentIndex;
+
+            // Render individual terminal rays slicing directly from the inner pivot to the outer rim
+            cat.subcategories.forEach((sub) => {
+                sub.items.forEach((item) => {
+                    const startAngle = (segmentIndex / TOTAL_ITEMS) * 360;
+                    const endAngle = ((segmentIndex + 1) / TOTAL_ITEMS) * 360;
+
+                    // A. Underlay color segment running from 0 to intermediate boundary (middleRadius)
+                    const innerPath = makeSegmentPath(innerRadius, middleRadius, startAngle, endAngle);
+                    const innerSeg = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    innerSeg.setAttribute("d", innerPath);
+                    innerSeg.setAttribute("fill", cat.color);
+                    innerSeg.setAttribute("class", "segment");
+                    innerSeg.style.pointerEvents = "none"; // Keeps click target isolated to outer tier
+                    rotatingGroup.appendChild(innerSeg);
+
+                    // B. Active clickable descriptor segment running from intermediate boundary out to rim
+                    const outPathData = makeSegmentPath(middleRadius, outerRadius, startAngle, endAngle);
+                    const outSeg = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    outSeg.setAttribute("d", outPathData);
+                    outSeg.setAttribute("fill", cat.color);
+                    outSeg.setAttribute("class", "segment outer-segment");
+
+                    outSeg.addEventListener('click', (e) => {
+                        document.querySelectorAll('.outer-segment').forEach(s => s.classList.remove('active'));
+                        outSeg.classList.add('active');
+                        showDetails(item, cat);
+                        e.stopPropagation();
+                    });
+                    rotatingGroup.appendChild(outSeg);
+
+                    // C. Append outermost terminal text item reference metadata
+                    const itemAngle = startAngle + (endAngle - startAngle) / 2;
+                    const outText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    outText.setAttribute("class", "wheel-text outer-tier-text");
+                    outText.setAttribute("data-base-angle", itemAngle);
+                    outText.setAttribute("data-tier", "terminal");
+                    outText.textContent = item.name;
+                    rotatingGroup.appendChild(outText);
+
+                    segmentIndex++;
+                });
+            });
+
+            // Calculate precise shared parent ray lines vectors over the compiled item arrays
+            const catItemCount = segmentIndex - catIndexStart;
+            const catStartAngle = (catIndexStart / TOTAL_ITEMS) * 360;
+            const catEndAngle = (segmentIndex / TOTAL_ITEMS) * 360;
+
+            // Center Category Text placement node mapping
+            const catAngle = catStartAngle + (catEndAngle - catStartAngle) / 2;
+            const catText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            catText.setAttribute("class", "wheel-text inner-tier-text");
+            catText.setAttribute("data-base-angle", catAngle);
+            catText.setAttribute("data-tier", "primary");
+            catText.textContent = cat.category;
+            rotatingGroup.appendChild(catText);
+
+            // Intermediate Subcategory Text placement node mapping
+            let rollingOffset = catIndexStart;
+            cat.subcategories.forEach((sub) => {
+                const subStartAngle = (rollingOffset / TOTAL_ITEMS) * 360;
+                const subEndAngle = ((rollingOffset + sub.items.length) / TOTAL_ITEMS) * 360;
+                const subAngle = subStartAngle + (subEndAngle - subStartAngle) / 2;
+
+                const subText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                subText.setAttribute("class", "wheel-text");
+                subText.setAttribute("data-base-angle", subAngle);
+                subText.setAttribute("data-tier", "subcategory");
+                subText.textContent = sub.name;
+                rotatingGroup.appendChild(subText);
+
+                rollingOffset += sub.items.length;
+            });
+        });
+
+        // --- INTERACTIVE PANEL CONTROL CONTENT MAPPER ---
+        const defaultPrompt = document.getElementById('defaultPrompt');
+        const panelContent = document.getElementById('panelContent');
+        const infoPanel = document.getElementById('infoPanel');
+        
+        const pTitle = document.getElementById('pTitle');
+        const pCategory = document.getElementById('pCategory');
+        const pOrigin = document.getElementById('pOrigin');
+        const pMixology = document.getElementById('pMixology');
+        const pExamples = document.getElementById('pExamples');
+
+        function showDetails(item, cat) {
+            defaultPrompt.style.display = 'none';
+            panelContent.style.display = 'block';
+            
+            infoPanel.style.borderLeftColor = cat.color;
+            pTitle.textContent = item.name;
+            pCategory.textContent = cat.category;
+            pCategory.style.backgroundColor = cat.color;
+            
+            pOrigin.textContent = item.origin;
+            pMixology.textContent = item.mixology;
+            pExamples.textContent = item.examples;
+        }
+
+        // --- SPIN ALIGNMENT PHYSICS & HEMISPHERE INVERSION ENGINE ---
+        const wrapper = document.getElementById('wheelWrapper');
+        let currentRotation = 0;
+        let isDragging = false;
+        let startAngle = 0;
+
+        function getAngle(clientX, clientY) {
+            const rect = wrapper.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            return Math.atan2(clientY - centerY, clientX - centerX) * 180 / Math.PI;
+        }
+
+        function adjustTextOrientation() {
+            const texts = document.querySelectorAll('.wheel-text');
+            texts.forEach(text => {
+                const baseAngle = parseFloat(text.getAttribute('data-base-angle'));
+                const tier = text.getAttribute('data-tier');
+                
+                let viewAngle = (baseAngle + currentRotation) % 360;
+                if (viewAngle < 0) viewAngle += 360;
+
+                const isLeftHemisphere = (viewAngle > 90 && viewAngle < 270);
+                
+                // Track geometric target radius bands
+                let textRadius = 202; 
+                if (tier === 'primary') textRadius = 45; 
+                if (tier === 'subcategory') textRadius = 102; 
+
+                const pos = polarToCartesian(0, 0, textRadius, baseAngle);
+                text.setAttribute('x', pos.x);
+                text.setAttribute('y', pos.y);
+
+                if (isLeftHemisphere) {
+                    text.setAttribute('transform', `rotate(${baseAngle - 90}, ${pos.x}, ${pos.y})`);
+                    text.setAttribute('text-anchor', 'end');
+                    text.setAttribute('dx', tier === 'terminal' ? '-4' : '-2');
+                } else {
+                    text.setAttribute('transform', `rotate(${baseAngle + 90}, ${pos.x}, ${pos.y})`);
+                    text.setAttribute('text-anchor', 'start');
+                    text.setAttribute('dx', tier === 'terminal' ? '4' : '2');
+                }
+                text.style.dominantBaseline = 'middle';
+            });
+        }
+
+        adjustTextOrientation();
+
+        // Mechanical Action Hooks
+        function startSpin(e) {
+            isDragging = true;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            startAngle = getAngle(clientX, clientY) - currentRotation;
+        }
+
+        function doSpin(e) {
+            if (!isDragging) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            currentRotation = getAngle(clientX, clientY) - startAngle;
+            
+            rotatingGroup.style.transform = `rotate(${currentRotation}deg)`;
+            adjustTextOrientation();
+        }
+
+        function stopSpin() {
+            isDragging = false;
+        }
+
+        wrapper.addEventListener('mousedown', startSpin);
+        document.addEventListener('mousemove', doSpin);
+        document.addEventListener('mouseup', stopSpin);
+
+        wrapper.addEventListener('touchstart', startSpin, { passive: true });
+        document.addEventListener('touchmove', doSpin, { passive: false });
+        document.addEventListener('touchend', stopSpin);
+    </script>
+
+</body></html>
