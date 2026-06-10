@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Brandy Aroma & Flavor Wheel</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Georgia, serif;
+    background: #110d0a;
+    color: #f5e6c8;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h1 {
+    font-size: 1.4rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #c9a96e;
+    padding: 1.5rem 0 0.3rem;
+    text-align: center;
+}
+
+.subtitle {
+    font-size: 0.75rem;
+    color: #8a6b3a;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.8rem;
+    text-align: center;
+}
+
+.layout {
+    display: flex;
+    gap: 0;
+    width: 100%;
+    max-width: 1600px;
+    align-items: flex-start;
+    padding: 0 1rem 2rem;
+}
+
+.wheel-wrap {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+}
+
+#wheelSvg {
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+
+#wheelSvg:active {
+    cursor: grabbing;
+}
+
+.detail-panel {
+    flex: 1;
+    min-width: 320px;
+    max-width: 460px;
+    background: #1c140e;
+    border: 1px solid #4a3421;
+    border-radius: 12px;
+    padding: 1.6rem 1.8rem;
+    margin-left: 2rem;
+    min-height: 520px;
+    transition: opacity 0.3s;
+}
+
+.detail-panel h2 {
+    font-size: 1.6rem;
+    color: #e8c97e;
+    margin-bottom: 0.2rem;
+    font-weight: 400;
+    font-style: italic;
+}
+
+.detail-panel .association-tag {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #8a6b3a;
+    margin-bottom: 0.4rem;
+}
+
+.detail-panel .category-tag {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #c9a96e;
+    margin-bottom: 1.2rem;
+    border-bottom: 1px solid #3a2510;
+    padding-bottom: 0.4rem;
+}
+
+.detail-panel .section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #c9a96e;
+    margin-top: 1.2rem;
+    margin-bottom: 0.3rem;
+    font-weight: bold;
+}
+
+.detail-panel .body-text {
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: #d4c0a0;
+    margin-bottom: 0.8rem;
+}
+
+.detail-panel .highlight {
+    color: #e8c97e;
+}
+
+.spin-hint {
+    font-size: 0.72rem;
+    color: #4a3015;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.08em;
+}
+
+@media(max-width:1180px){  
+    .layout{flex-direction:column;align-items:center;}  
+    .detail-panel{margin-left:0;margin-top:1rem;width:100%;max-width:95vw;}  
+    h1{font-size:1.1rem;}  
+    #wheelSvg{width:min(95vw,900px);height:min(95vw,900px);}
+}
+</style>
+</head>
+<body>
+
+<h1>Brandy Aroma &amp; Flavor Finder</h1>
+<div class="subtitle">Interactive Mapping System for Spirits Professionals</div>
+<div class="spin-hint">↺ Click &amp; drag to spin &nbsp;|&nbsp; Click a rim segment to evaluate</div>
+
+<div class="layout">
+    <div class="wheel-wrap">
+        <svg id="wheelSvg" viewBox="-640 -640 1280 1280" width="1020" height="1020" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="detail-panel" id="detailPanel">
+        <div style="color:#5a4020;font-size:0.95rem;margin-top:5rem;text-align:center;font-style:italic;">
+            Select a volatile descriptor segment<br>from the outer ring to map sensory notes.
+        </div>
+    </div>
+</div>
+
+<script>
+const WHEEL_DATA = [
+    {
+        association: "Positive Brandy Aroma Association",
+        color: "#2a1c12", textColor: "#c9a96e",
+        categories: [
+            {
+                name: "Floral", color: "#6a4a75", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Floral", color: "#8a6095", descriptors: ["Rose", "Potpourri"] },
+                    { name: "Muscat", color: "#7b5284", descriptors: ["Hanepoot grape", "Raisin"] }
+                ]
+            },
+            {
+                name: "Fruity", color: "#8c3232", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Fruity", color: "#b04444", descriptors: ["Esterry/synthetic fruit", "Fig", "Apple", "Citrus", "Prune", "Grape", "Peach/apricot (dried)", "Peach/apricot (fresh)"] }
+                ]
+            },
+            {
+                name: "Herbaceous", color: "#2e5433", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Herbaceous", color: "#3e7045", descriptors: ["Buchu", "Eucalyptus", "Minty", "Grassy", "Malt", "Tea/hay/straw"] }
+                ]
+            },
+            {
+                name: "Woody", color: "#6b4423", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Woody", color: "#8c5b32", descriptors: ["Dusty/plank", "Vanilla", "Oak", "Cedarwood", "Resinous", "Cigar box/tobacco pouch"] }
+                ]
+            },
+            {
+                name: "Toasted / Nutty", color: "#54432e", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Toasted", color: "#735c3f", descriptors: ["Coffee", "Smoky"] },
+                    { name: "Nutty", color: "#665136", descriptors: ["Hazelnut", "Almond", "Walnut", "Flor sherry"] }
+                ]
+            },
+            {
+                name: "Sweet associated", color: "#8c5823", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Sweet associated", color: "#ad7031", descriptors: ["Port", "Sweet sherry", "Molasses", "Chocolate", "Caramel/toffee", "Honey", "Strawberry jam"] }
+                ]
+            },
+            {
+                name: "Spices", color: "#783b1d", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Spices", color: "#9c4e28", descriptors: ["Cinnamon", "Cloves", "Nutmeg"] }
+                ]
+            }
+        ]
+    },
+    {
+        association: "Negative brandy aroma association",
+        color: "#181818", textColor: "#a63c3c",
+        categories: [
+            {
+                name: "Solvent/chemical", color: "#454b54", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Solvent/chemical", color: "#59616d", descriptors: ["Detergent", "Ethylacetate", "Acetone"] }
+                ]
+            },
+            {
+                name: "Sour associated", color: "#544f33", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Heads", color: "#706a44", descriptors: ["Ethanol", "Acetaldehyde"] },
+                    { name: "Sour associated", color: "#635d3b", descriptors: ["Acetic acid", "Vinegary/vinous", "Rancid/Butyric acid"] },
+                    { name: "Feints", color: "#7d754a", descriptors: ["Pungent", "Fusel oil", "Fatty acid"] }
+                ]
+            },
+            {
+                name: "Tails", color: "#4a3c31", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Tails", color: "#5e4d3f", descriptors: ["Tobacco oil", "Fishy", "Lees"] }
+                ]
+            },
+            {
+                name: "Musty", color: "#4f4946", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Musty", color: "#6b635f", descriptors: ["Paper", "Wet cardboard", "Mushroom", "Musty cork", "Musty barrel"] }
+                ]
+            },
+            {
+                name: "Sulphury", color: "#595936", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Sulphury", color: "#757547", descriptors: ["Sweaty", "Hydrogen sulphide", "Sulphur dioxide", "Cabbage", "Garlic"] }
+                ]
+            },
+            {
+                name: "Phenolic / Tar", color: "#383c3e", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Phenolic", color: "#4b5154", descriptors: ["Tar"] },
+                    { name: "Tar", color: "#42474a", descriptors: ["Plastic", "Metallic", "Diesel", "Scorched", "Rubbery"] }
+                ]
+            },
+            {
+                name: "Smooth associated", color: "#2d383a", textColor: "#f5e6c8",
+                subs: [
+                    { name: "Smooth associated", color: "#3d4b4e", descriptors: ["Butter", "Oily", "Lees oil", "Soapy"] }
+                ]
+            }
+        ]
+    }
+];
+
+const DESCRIPTIONS = {
+    "Rose": {
+        producers: "Commonly seen in exceptionally elegant Borderies Cognacs and young, floral Armagnacs from the Bas-Armagnac region.",
+        study: "Driven by terpene alcohols like <span class='highlight'>geraniol</span> and <span class='highlight'>beta-phenylethanol</span>. These delicate compounds evaporate early during wood extraction, meaning intense floral characteristics indicate minimized, hyper-judicious new oak contact or highly specialized micro-distallation curves.",
+        server: "Frame this for your guests as an elegant 'perfumed aromatic brightness' typical of single-distillate column entries or white grape focus. Beautiful for a floral variation on a French 75 or Sidecar."
+    },
+    "Potpourri": {
+        producers: "Often detected in complex, long-aged Grande Champagne Cognacs.",
+        study: "Indicates partial oxidative concentration of terpene pools interacting with minor levels of aldehydes over extended timeframes. It signals a complex evolution intermediate between direct floral bloom and oxidative dried fruit.",
+        server: "Describe this as a 'deep, dried botanical warmth.' Excellent for pairing tableside with lighter, fruit-driven dessert configurations."
+    },
+    "Hanepoot grape": {
+        producers: "A distinctive marker in South African Pot Still Brandies, where Muscat d'Alexandrie (locally known as Hanepoot) is utilized.",
+        study: "Direct varietal carryover of free monoterpenes (<span class='highlight'>linalool</span> and <span class='highlight'>geraniol</span>). Unlike ugni blanc, which distills neutral, muscat-derived base wines hold high terpene fractions that survive pot-still execution without thermal breakdown.",
+        server: "An absolute winner for aromatic curiosity. Tell guests this delivers the rich, explicit perfume of fresh table grapes directly to the glass. Perfect baseline for an aromatic brandy punch."
+    },
+    "Raisin": {
+        producers: "Immensely typical in Spanish Brandy de Jerez aged in Pedro Ximénez casks.",
+        study: "Arises from the combination of grape-derived concentrated sugars and cask absorption of high-density residual sugar left behind in seasoned oak pores. Thermal changes in the copper still can also amplify light furfural-caramelization mirroring sun-dried fruit.",
+        server: "A very welcoming, accessible note. Tell guests it represents 'concentrated, sundried grape richness.' Instantly direct them to try it neat as a post-dinner replacement for sweet wines."
+    },
+    "Esterry/synthetic fruit": {
+        producers: "Encountered in lower-tier continuous column distillates or high-speed, hot industrial fermentations.",
+        study: "An overproduction of volatile fatty acid esters, particularly <span class='highlight'>isoamyl acetate</span> (banana drop) and <span class='highlight'>ethyl butyrate</span> (pineapple candy). Often signals a lack of precise head cutting or temperature control during primary yeast conversions.",
+        server: "If a guest notes an artificial or 'bubblegum-like' fruit character, this is the compound. It brings a candy lift that works well when trying to cut through heavy syrups in high-volume crushed ice tiki modifications."
+    },
+    "Fig": {
+        producers: "Prominent in well-matured XO Cognacs and traditional, rancio-forward Armagnacs.",
+        study: "A complex sign of micro-oxidation interacting with wood lactones over decades. This breakdown product of fatty acid structures mimics concentrated stone-and-seed fruits as the liquid concentrates inside porous oak.",
+        server: "Describe this as a rich, savory jamminess. Excellent option to recommend alongside charcuterie boards featuring cured duck or sheep's milk cheeses."
+    },
+    "Apple": {
+        producers: "Ubiquitous across Calvados (apple brandy) and young, vibrant cognacs using high-acid base wines.",
+        study: "Driven by <span class='highlight'>ethyl malate</span> and <span class='highlight'>hexyl acetate</span>. High-acid varieties preserve apple-pith crispness throughout distillation. If heavy and stewed, it points to higher temperatures; if green, it tracks to sharp, pristine primary cuts.",
+        server: "A crisp, refreshing baseline marker. Use this asset to construct crisp, seasonal variations of a classic Jack Rose or highball with artisanal soda."
+    },
+    "Citrus": {
+        producers: "Frequently found in Fins Bois and Bons Bois Cognacs, providing a bright top note lift.",
+        study: "Driven by light limonene monoterpene trails. These volatile elements are highly interactive with copper surfaces; their cleanly delineated execution requires highly targeted, sharp heart captures on the still.",
+        server: "Points to a bright, vibrant, zest-like character. Great baseline indicator to match with orange liqueurs for the ultimate premium Sidecar script."
+    },
+    "Prune": {
+        producers: "A signature classic trait of older, traditional Armagnacs from Bas-Armagnac.",
+        study: "Derived from prolonged interaction with localized dark wood tannins and minor, legal, traditional use of boisé (oak-water reduction cooked with prune elements) to achieve integration in old casks. Represents a structural marker of rich, heavy distillates.",
+        server: "Deep, dark, stewed plum warmth. Point guests toward this option if they are seeking a bold, velvety spirit to accompany heavy espresso or dark chocolate pairings."
+    },
+    "Grape": {
+        producers: "Vibrant and clear in clear Piscos and unaged Eau-de-Vie de Vin.",
+        study: "The pure, primary expression of the base crop untouched by wood chemistry. Highlights simple hexanol chains and fresh fruit esters surviving low-temperature copper still conversions.",
+        server: "The raw essence of the fruit before oak alters its profile. Highly recommended for crisp, aromatic, refreshing summer serves like a Pisco Sour."
+    },
+    "Peach/apricot (dried)": {
+        producers: "Classic secondary indicator in mid-aged VSOP and early XO expressions.",
+        study: "Driven by the emergence of aromatic trace <span class='highlight'>gamma-lactones</span>. These develop as wood lignin starts breaking down, combining beautifully with the concentrated residual white-wine fruit properties of the grape blend.",
+        server: "A sophisticated stone-fruit note. Use this profile to upsell your guest to a mid-tier VSOP selection served over a large clear ice rock."
+    },
+    "Peach/apricot (fresh)": {
+        producers: "Apparent in young, high-quality copper pot still brandies before aggressive wood pickup.",
+        study: "Tracks directly to original varietal esters and early stage lactone synthesis during temperature-monitored, long yeast fermentations.",
+        server: "Fresh, juicy, summer orchard brightness. An accessible gateway note for guests transitioning from white wines or gin to aged brown spirits."
+    },
+    "Buchu": {
+        producers: "Highly specific to South African Pot Still brandies utilizing regional fynbos-adjacent setups.",
+        study: "Sourced from native vegetation terpene variables or specific storage interactions. Contains specific sulfur-terpene arrays (<span class='highlight'>diosphenol</span>), yielding a distinctive blackcurrant-mint complexity unique to the cape.",
+        server: "An exotic, minty botanical note. Perfect for high-level cocktail curation where you need a savory, aromatic accent to stand out."
+    },
+    "Eucalyptus": {
+        producers: "Spotted across specific New World expressions where nearby flora interacts with open-air fermentation vats.",
+        study: "Driven by trace capture of <span class='highlight'>1,8-cineole</span>. It adds an ethereal, cooling sensation on the upper palate that cuts through heavy, sweet oak compounds.",
+        server: "A cooling, mint-like freshness. Suggest this option to guests who appreciate a bright, non-cloying structure in their premium spirits."
+    },
+    "Minty": {
+        producers: "Found in specific high-acid, cool-vintage distillates or particular column extractions.",
+        study: "Volatile monoterpenoid formations captured at high, early rectifying markers. Provides an elevated lifting sensation on the nose.",
+        server: "A clean, cooling lift. Excellent for refreshing summer highballs modified with premium tonic or mineral waters."
+    },
+    "Grassy": {
+        producers: "Occasionally noticeable in young, cold-fermented base wine distillates.",
+        study: "Driven by aldehyde compounds like <span class='highlight'>hexanal</span>. Indicates early harvest profiles or high canopy shade during grape cluster maturation.",
+        server: "A fresh, green, snapping herbal property. Good for adding a crisp vegetal dimension in modern mixology configurations."
+    },
+    "Malt": {
+        producers: "Present in specific heavy continuous pot-still variations or direct cereal-grain blended variations.",
+        study: "Signals heavy amino acid tracking or minor levels of thermal scorching during wash distillation inside the kettle.",
+        server: "A warm, cereal, grain-like depth. Perfect bridge recommendation for guests who generally drink Scotch or Bourbon."
+    },
+    "Tea/hay/straw": {
+        producers: "A signature tertiary character of gracefully aged, old vintage cognacs and armagnacs.",
+        study: "The oxidative breakdown of carotenoids inside the spirit over years of barrel storage, yielding subtle <span class='highlight'>beta-damascenone</span> elements that mimic dried leaves and field straws.",
+        server: "A beautifully elegant, rustic maturity. Point your serious spirits collectors toward this profile for a reflective neat pour experience."
+    },
+    "Dusty/plank": {
+        producers: "Found in spirits stored in old, exhausted wood or improperly seasoned casks.",
+        study: "Indicates a high release of structural wood fiber elements without corresponding vanillin or toast chemicals, often due to over-used barrels.",
+        server: "If a guest finds the finish excessively dry or 'wood-shaving' heavy, it stems from old wood extraction. Balance it with rich sweeteners in cocktails."
+    },
+    "Vanilla": {
+        producers: "The classic calling card of high-grade VSOP and XO selections aged in seasoned French oak (Limousin/Tronçais).",
+        study: "Direct extraction of <span class='highlight'>vanillin</span> from the thermal degradation of wood lignin during the barrel toasting process. More pronounced in newer oak barrels.",
+        server: "A universal crowd pleaser. Tell guests this luxurious note comes naturally from oak contact. Suggest it as an ideal introductory neat pour or premium base."
+    },
+    "Oak": {
+        producers: "Found across all standard aged brandy categories.",
+        study: "An encompassing structural extraction of oak tannins, wood sugars, and volatile aromatics. Forms the physical and texturized backbone of aged distillates.",
+        server: "The core foundational signature of barrel aging. Gives the liquid its weight, structural dry finish, and golden color profile."
+    },
+    "Cedarwood": {
+        producers: "Spotted in ancient, ultra-aged vintage selections with extended wood contact.",
+        study: "Complex combination of oxidized resinous terpenes and deep cask wood extractions, showing up late in the maturation spectrum.",
+        server: "An elite, deeply satisfying aromatic note reminiscent of fine humidor boxes. Best served entirely neat to let the aroma open up slowly."
+    },
+    "Resinous": {
+        producers: "Often tracked in heavy toast barrel regimes or brandies using highly specific wood varieties.",
+        study: "Derived from high-temperature wood cell crystallization during Cooperage breakdown, liberating rich, sap-adjacent aromatic compounds.",
+        server: "A bold, slightly sappy wood depth. Adds an incredible structural spine that holds its own perfectly against heavy bitters in an Old Fashioned format."
+    },
+    "Cigar box/tobacco pouch": {
+        producers: "The ultimate benchmark tertiary aroma of prestigious, old XO and Hors d'Âge Cognacs.",
+        study: "A harmonious convergence of wood extraction, natural grape rancio, and micro-oxygenation. Represents advanced degradation of complex cask compounds.",
+        server: "The pinnacle of aged complexity. Describe this to your guest as a warm, aromatic spiced-tobacco leaf profile. Must be enjoyed neat in proper glassware."
+    },
+    "Coffee": {
+        producers: "Noticeable in heavy-toast barrel executions or brandies aged in re-charred casks.",
+        study: "Driven by Maillard reaction browning products like <span class='highlight'>furfurals</span> generated when intense flame caramelizes wood sugars during barrel manufacturing.",
+        server: "A dark, roasted espresso-like warmth. An incredible bridge option to suggest to guests who typically drink dark, charred Bourbons."
+    },
+    "Smoky": {
+        producers: "Found in expressions utilizing direct oak fire toasting or specific charred barrel finishes.",
+        study: "Traces back to <span class='highlight'>guaiacol</span> and <span class='highlight'>4-methylguaiacol</span> absorbed from wood smoke during structural barrel-making preparation.",
+        server: "A distinct toasted element. Great for adding a sophisticated, faintly campfire-tinged complexity to spirit-forward cocktail builds."
+    },
+    "Hazelnut": {
+        producers: "Commonly encountered in well-integrated, elegant VSOP Cognacs.",
+        study: "Tracks to intermediate oxidation cycles interacting with light wood lactone compounds, creating a creamy, rounded fat profile.",
+        server: "A smooth, highly inviting nuttiness. Pairs flawlessly with dessert courses or rich, milk-chocolate pairings."
+    },
+    "Almond": {
+        producers: "Vibrant in younger, pit-still expressions and brandies undergoing traditional lees distillation.",
+        study: "Linked to trace paths of <span class='highlight'>benzaldehyde</span>. When subtle and clean, it adds an elegant marzipan top-note lift to the primary nose.",
+        server: "A sweet, marzipan-like nuance. Gives an excellent textural lift that cuts through fresh lemon juice beautifully in a traditional sour."
+    },
+    "Walnut": {
+        producers: "A major, classic component of highly developed, older Spanish Solera brandies.",
+        study: "Signals deliberate, highly styled oxidative maturation columns. The interaction with air develops distinct rancio attributes mirroring oxidized nut oils.",
+        server: "A dry, classic savory nut flavor. Perfect for presenting as an alternative option for guests who typically gravitate towards dry sherries or tawny ports."
+    },
+    "Flor sherry": {
+        producers: "Exclusively found in Brandy de Jerez aged in traditional casks previously holding Fino or Manzanilla sherry.",
+        study: "Direct extraction of systemic <span class='highlight'>acetals</span> and oxidative yeast indicators absorbed from old cask stave structures saturated with flor yeast culture.",
+        server: "A highly specialized style choice. It brings a crisp, dry, complex savory attribute that makes an incredible substitute for dry vermouth in high-end variations."
+    },
+    "Port": {
+        producers: "Encountered in modern brandies featuring targeted finish treatments in vintage Port wine casks.",
+        study: "Result of dark wine extraction from oak wood pores, pulling rich anthocyanin properties and deep berry wine properties into the brandy solution.",
+        server: "Delivers a rich, dark-fruit wine finish. Highlight this option for guests who want a sweeter, smoother profile with a velvety texture."
+    },
+    "Sweet sherry": {
+        producers: "Standard baseline markers in classic Spanish Brandy de Jerez Solera systems.",
+        study: "Tracks to heavy cask wood seasoning saturation from Oloroso or Pedro Ximénez sherry fills, introducing high unctuousness and specific sugar paths.",
+        server: "Rich, luscious, and deeply comforting. An easy recommendation for anyone who prefers a rounder, sweet-tinged style over sharp, dry spirits."
+    },
+    "Molasses": {
+        producers: "Noticeable in heavily toasted barrel treatments or where slight wood sugar caramelization is maximized.",
+        study: "High level concentration of deep <span class='highlight'>furfural</span> tracks interacting with dense cask sugars over prolonged warm-climate maturation.",
+        server: "A thick, dark, dark-caramel depth. Excellent for cold weather menus or mixed into bold, hot beverage variations."
+    },
+    "Chocolate": {
+        producers: "Frequently highlighted in luxurious, ancient XO Cognacs and premium long-aged pot still selections.",
+        study: "Complex chemical synthesis of pyrazines extracted from deep wood toast interacting over long timeframes with decomposing wine esters.",
+        server: "An indulgent, bittersweet cocoa note. Point guests toward this selection as an excellent liquid dessert alternative at the end of the evening."
+    },
+    "Caramel/toffee": {
+        producers: "Common across highly integrated consumer selections and brandies using small, controlled dose additions of caramel color.",
+        study: "Can stem from highly caramelized barrel sugar extractions or legal standard additions of spirit caramel used to adjust consistency across batch volumes.",
+        server: "A highly approachable, buttery caramel sweetness. A fantastic baseline option to build smooth, balanced classic cocktail presentations."
+    },
+    "Honey": {
+        producers: "Evident in aromatic distillates, particularly those showing early stage noble-rot interactions or highly floral base crops.",
+        study: "Driven by <span class='highlight'>phenylacetic acid</span> esters. Surfacing frequently when floral terpenes start oxidizing cleanly without heavy oak wood masking.",
+        server: "A rich, organic sweetness on the nose. Beautiful for adding an elegant, texturized lift to warm toddy formats or premium sours."
+    },
+    "Strawberry jam": {
+        producers: "A unique, sweet fruit note found occasionally in specific warm-climate distillates.",
+        study: "High concentrations of <span class='highlight'>furaneol</span> compounds combining with primary red grape ester residue, creating a distinct cooked preserve note.",
+        server: "A playful, sweet berry conserve trait. Fun to utilize as an interesting talking point for adventurous cocktail menu themes."
+    },
+    "Cinnamon": {
+        producers: "Highly visible in brandies using medium-plus toast or new oak integration phases.",
+        study: "Derived from wood-extracted <span class='highlight'>cinnamaldehyde</span>. Extracted steadily from toast arrays, it indicates clean wood structural integration.",
+        server: "Warm, baking-spice comfort. Highlight this selection to guests on cool autumn or winter evenings as an inviting neat pour option."
+    },
+    "Cloves": {
+        producers: "Commonly associated with brandies matured in tightly grained European oak casks.",
+        study: "Direct extraction of <span class='highlight'>eugenol</span> from the seasoned oak wood structures. This compound peaks around medium toast levels during coopering.",
+        server: "A sharp, aromatic baking spice element. Gives the spirit a great structural edge that stands up well against rich culinary pairings."
+    },
+    "Nutmeg": {
+        producers: "Frequently found in balanced, well-aged VSOP and older traditional representations.",
+        study: "A complex spice profile arising from the integration of wood eugenol paths with micro-oxidized terpene alcohol fractions over time.",
+        server: "A classic, elegant spice attribute. Ideal for highlighting in classic variations like the Brandy Alexander or festive eggnog formats."
+    },
+    "Detergent": {
+        producers: "Fault indicator. Tracks to industrial cleaner residues in processing tanks or fermentation vats.",
+        study: "Signals contaminated winemaking mechanics or lazy tank rinsing procedures prior to loading raw base crop materials.",
+        server: "An immediate rejection note. If a guest identifies a soapy, chemical cleanser attribute, pull the glass, verify the bottle, and replace immediately."
+    },
+    "Ethylacetate": {
+        producers: "Fault indicator. Found in poorly managed, wild-ferment setups or distressed distillations.",
+        study: "<span class='highlight'>Ethyl acetate</span> forms via the condensation of acetic acid and ethanol. At trace tiers, it gives a fruity lift; at high volume, it yields a piercing model-airplane glue fault.",
+        server: "A distinct chemical fault resembling harsh glue. If detected, the spirit is fundamentally flawed and should be removed from service."
+    },
+    "Acetone": {
+        producers: "Fault indicator. Appears when head cuts on the still are taken far too late in the distillation curve.",
+        study: "A collection of ultra-low boiling point fractions including direct acetone properties. These should be strictly separated and removed during the initial still execution phase.",
+        server: "Smells explicitly like nail polish remover. A structural distillation error that completely ruins the mid-palate and nose. Do not serve."
+    },
+    "Ethanol": {
+        producers: "Noticeable in young, unintegrated, cheap high-proof column selections.",
+        study: "Raw, unrefined alcohol vapor masking underlying fruit properties. Indicates insufficient aging time to allow ester integration or poor proofing down execution.",
+        server: "If a guest complains that the brandy feels too 'hot' or burns the nose, the ethanol vapor is unintegrated. Serve it on ice to calm the burn."
+    },
+    "Acetaldehyde": {
+        producers: "Fault indicator. Common in oxidized base wines or spirits with excessive head integration.",
+        study: "Result of alcohol oxidation, generating high concentrations of <span class='highlight'>acetaldehyde</span>. Mimics raw bruised apples or flat, oxidized white wine notes.",
+        server: "Brings a sharp, bruised-apple staleness. Signals either an unjudicious distillation cut or severe oxygen exposure failure in the cellar."
+    },
+    "Acetic acid": {
+        producers: "Fault indicator. Tracks to infected, vinegary base wines entering the still.",
+        study: "Acetobacter contamination in the base crop converts ethanol to vinegar properties, which then distills over, throwing off the structural balance.",
+        server: "A sour, sharp vinegar odor. This indicates an absolute failure of raw material quality control before distillation even began."
+    },
+    "Vinegary/vinous": {
+        producers: "Fault indicator. Found in low-tier brandies using highly unstable, turning base wines.",
+        study: "High volatile acidity presence tracking cleanly through the system due to inadequate monitoring of fermentation tank seals.",
+        server: "A sour, stale wine properties note. Lacks the clean finish expected of a polished, pristine commercial spirit selection."
+    },
+    "Rancid/Butyric acid": {
+        producers: "Fault indicator. Highly problematic, stemming from bacterial infections during late-stage fermentation.",
+        study: "Bacterial generation of <span class='highlight'>butyric acid</span>, creating highly offensive sensory compounds that mimic spoiled butter or human vomit.",
+        server: "An absolute critical failure note. If encountered, the batch is completely contaminated. Do not allow this to reach a guest table."
+    },
+    "Pungent": {
+        producers: "Fault indicator. Associated with dirty distillation runs or late feint inclusions.",
+        study: "Heavy, sharp organic compounds tracking over due to aggressive boiling speeds inside the pot still, confusing the heart cuts.",
+        server: "A harsh, burning, prickly sensation that overpowers the nasal passages. Indicates poor technical handling on the still."
+    },
+    "Fusel oil": {
+        producers: "Found in heavy, unrefined spirits or brandies with lazy tail separation boundaries.",
+        study: "A collection of high-molecular-weight alcohols (<span class='highlight'>isoamyl, propanol, butanol</span>). Necessary in tiny trace increments for texture, but toxic and oily if over-extracted.",
+        server: "Brings a heavy, thick, industrial oil character that coats the throat unpleasantly. Use with caution."
+    },
+    "Fatty acid": {
+        producers: "Noticeable when tail management limits are pushed too far into the low-proof runoff.",
+        study: "Long-chain fatty acids tracking into the final collection. Can create visual cloudiness or oily textures when proofed down with water.",
+        server: "A heavy, slightly waxy, thick aroma. If it cuts down the vibrant fruit profile too much, it points to a lazy tail cut by the distiller."
+    },
+    "Tobacco oil": {
+        producers: "Encountered in deep tail cuts on old-school pot stills.",
+        study: "Heavy nicotine-adjacent and alkaloid compounds condensed late in the run sequence. Pushes a bitter, dark, heavy tar property.",
+        server: "A heavy, slightly acrid tobacco leaf ash character. Distinct from the beautiful 'cigar box' oak notes; this feels dirty and heavy."
+    },
+    "Fishy": {
+        producers: "Severe fault indicator. Stemming from amine compound spoilage or major tank cleaning issues.",
+        study: "Advanced decomposition of nitrogenous elements inside distressed base wash setups, concentrating foul amine streams into the collection.",
+        server: "An immediate disqualifier. Smells explicitly of stale fish or decomposing ocean proteins. Pull from inventory immediately."
+    },
+    "Lees": {
+        producers: "Typical in traditional method Cognacs distilled 'sur lie' (on the yeast sediment).",
+        study: "When executed with master-level care, heating dead yeast cells releases beautiful creaminess and structural complexity. If mismanaged, it yields an autolytic yeast staleness.",
+        server: "A heavy, bready, yeasty compound. In artisan selections, it adds incredible body; in cheap setups, it just tastes heavy and cloudy."
+    },
+    "Paper": {
+        producers: "Fault indicator. Found in spirits stored in cheap packaging or filtering systems.",
+        study: "Cellulose breakdown tracking into the solution, masking delicate floral top notes with a flat dryness.",
+        server: "A flat, dry, dull recycled-paper note. Strips the spirit of its natural vibrancy and leaves the finish boring and short."
+    },
+    "Wet cardboard": {
+        producers: "Severe fault indicator. The classic sign of systemic cork taint or tainted storage lines.",
+        study: "Driven by <span class='highlight'>2,4,6-Trichloroanisole (TCA)</span>. Even at single-digit parts per trillion, it strips out all beautiful oak and fruit chemistry, leaving a damp cellar smell.",
+        server: "The absolute calling card of a corked bottle. If a guest says it smells like a 'wet cardboard box,' validate their claim instantly and replace the pour."
+    },
+    "Mushroom": {
+        producers: "Can show up as a tertiary note in old cellars, or indicate rot issues on the grape clusters.",
+        study: "Driven by <span class='highlight'>1-octen-3-ol</span>. If elegant and old, it acts as a forest-floor accent; if young, it points to moldy, botrytis-damaged grapes entering the crush pad.",
+        server: "An earthy, raw fungal character. If it overpowers the fruit in a young brandy, it points to poor fruit sorting standards during harvest."
+    },
+    "Musty cork": {
+        producers: "Fault indicator. Localized packaging failure on individual bottle enclosures.",
+        study: "Microbial contamination within the natural cork structure generating localized off-odors that seep down into the neck of the bottle.",
+        server: "A variant of TCA taint. If the nose feels muted and stale, inspect the cork disc for physical mold or dry rot signatures."
+    },
+    "Musty barrel": {
+        producers: "Fault indicator. Stemming from old, infected wood storage systems in the cellar.",
+        study: "Molds or anaerobic bacteria nesting inside un-topped or improperly dried empty barrels, ruining any spirit later filled inside.",
+        server: "A permanent stale wood property that cannot be aerated or fixed with decanting. The entire bottle allocation is compromised."
+    },
+    "Sweaty": {
+        producers: "Fault indicator. Associated with wild yeast strains or late distillation selections.",
+        study: "Excess accumulation of volatile fatty acids like <span class='highlight'>isovaleric acid</span>, creating a distinct locker-room or stale sweat profile.",
+        server: "A stale, human sweat off-note. Highly disruptive to clean tasting routines. Reject the bottle if this persists after open aeration."
+    },
+    "Hydrogen sulphide": {
+        producers: "Fault indicator. The result of stressed yeast tracking through an un-cleansed distillation process.",
+        study: "Stressed yeast lacking nitrogen inputs generates excessive <span class='highlight'>H₂S</span> (rotten egg gas). If the still lacks adequate copper contact, it fails to strip it out.",
+        server: "Smells clearly of rotten eggs or struck matches. Points to an anaerobic failure in fermentation or a still lacking clean copper surfaces."
+    },
+    "Sulphur dioxide": {
+        producers: "Fault indicator. Stemming from over-sulfited grape juice entering the still system.",
+        study: "Excessive vineyard or crush-pad <span class='highlight'>SO₂</span> additions gas off during heating, creating a sharp, stinging sensation in the throat.",
+        server: "A sharp, prickly, match-stick sting on the nose. It causes an immediate throat catch that ruins any elegant neat service delivery."
+    },
+    "Cabbage": {
+        producers: "Fault indicator. A standard sulfur compound error from late distillation phases.",
+        study: "Decomposition of sulfur-containing amino acids yielding <span class='highlight'>dimethyl sulfide (DMS)</span>. Pushes notes of cooked or rotting vegetation.",
+        server: "Smells distinctly of boiled cabbage or canned corn. A clear industrial distraction that shouldn't be present in a premium selection."
+    },
+    "Garlic": {
+        producers: "Severe fault indicator. Pushed by highly advanced reduction setups or mercaptan conversions.",
+        study: "Conversion of simple sulfides into heavy <span class='highlight'>ethanethiol</span> structures, generating permanent foul, garlic-like properties.",
+        server: "An absolute culinary distraction in spirits service. It smells like raw garlic oil or rubber gas. Unfit for commercial cocktail use."
+    },
+    "Tar": {
+        producers: "Fault indicator. Tracks to over-heated, scorched pot still bottoms or industrial sealing failures.",
+        study: "Heavy, sharp organic compounds tracking over due to aggressive boiling speeds inside the pot still, confusing the heart cuts.",
+        server: "A heavy, chemical tar pitch. Overpowers all base grape notes and feels highly industrial and sharp on the back palate."
+    },
+    "Plastic": {
+        producers: "Fault indicator. Caused by improper storage lines or cheap plastic hose connections in production plants.",
+        study: "High-proof spirit acting as a solvent on sub-standard industrial synthetic hoses, leaching polymer chemicals into the final liquid.",
+        server: "An industrial chemical fault. If a guest notes a 'synthetic plastic tupperware' flavor, it stems from chemical leaching. Do not serve."
+    },
+    "Metallic": {
+        producers: "Fault indicator. Stemming from prolonged storage in raw metal transit vats or old iron pipe setups.",
+        study: "Spirit interaction with non-inert metal systems, picking up free iron ions that catalyze fast oxidation and leave a bloody taste.",
+        server: "A sharp, tinny, blood-like finish. It leaves a metallic weight on the sides of the tongue that destroys the entire mid-palate structure."
+    },
+    "Diesel": {
+        producers: "Fault indicator. Tracks to exhaust gas leaks near open fermentation tanks or severe reduction paths.",
+        study: "Absorption of external heavy hydrocarbon vapors during the open vat wine stage, or complex ring-compound synthesis under heat.",
+        server: "Smells like raw machinery fuel or oily garage floors. A catastrophic production contamination flaw that requires discarding the bottle."
+    },
+    "Scorched": {
+        producers: "Fault indicator. Caused by running direct-fired pot stills too fast without checking solids.",
+        study: "Yeast sediment drops to the bottom of the copper kettle and bakes directly onto the hot metal, releasing bitter <span class='highlight'>furfurals</span> and acrid carbon notes.",
+        server: "A bitter, burnt, ash-tray finish. Signals a lack of technical care during the high-heat distillation phase by the distillery crew."
+    },
+    "Rubbery": {
+        producers: "Fault indicator. A deep, heavy sulfur reduction error.",
+        study: "Advanced synthesis of complex vulcanized rubber sulfides formed when heavy tail fractions interact with high heating elements.",
+        server: "Smells explicitly of burnt car tires or old elastic bands. A heavy, industrial distraction that completely ruins mixology balance."
+    },
+    "Butter": {
+        producers: "Can show up in white wine distillates that completed full Malolactic conversion.",
+        study: "Driven by <span class='highlight'>diacetyl</span> synthesis from lactic acid bacteria activity. Delightful in tiny traces for texture, but greasy if unmonitored.",
+        server: "A heavy, movie-popcorn butter quality. If it feels too slick or artificial, it will distract from clean cocktail acid structures."
+    },
+    "Oily": {
+        producers: "Found in spirits with heavy tail collection limits or low-rectification column curves.",
+        study: "High percentage presence of fixed higher alcohols and essential fatty acid lipids that alter surface tension variables on the palate.",
+        server: "A thick, mouth-coating weight. Great if you want a bold texture to hold up to heavy modifiers, but cloying if served warm neat."
+    },
+    "Lees oil": {
+        producers: "Classic secondary character in artisan charente pot still methods.",
+        study: "Advanced ester synthesis generated when fatty acids in dead yeast slurry undergo thermal binding with ethanol, creating rich lipid weights.",
+        server: "A unique, fatty, luxurious waxy fruitiness. Highly prized by spirits connoisseurs for adding deep, structural length to the finish."
+    },
+    "Soapy": {
+        producers: "Fault indicator. Stemming from extreme tail extensions or bad tank washing setups.",
+        study: "Hydrolysis of heavy fats generating free sodium-soap structures when high-proof elements interact with residue cleanser layers.",
+        server: "A flat, filmy, candle-wax or soap lather profile. It leaves a slick, flat clean taste that strips out any genuine flavor length."
+    }
+};
+
+const svg = document.getElementById('wheelSvg');
+const detail = document.getElementById('detailPanel');
+const TWO_PI = Math.PI * 2;
+
+let rotation = 0;
+let isDragging = false;
+let lastAngle = 0;
+let velocity = 0;
+let lastTime = 0;
+let animFrame = null;
+
+function polarToCart(cx, cy, r, angle) {
+    return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+}
+
+function describeArcRing(r1, r2, startAngle, endAngle) {
+    const [sx1, sy1] = polarToCart(0, 0, r1, startAngle);
+    const [ex1, ey1] = polarToCart(0, 0, r1, endAngle);
+    const [sx2, sy2] = polarToCart(0, 0, r2, startAngle);
+    const [ex2, ey2] = polarToCart(0, 0, r2, endAngle);
+    const large = endAngle - startAngle > Math.PI ? 1 : 0;
+    return `M ${sx1} ${sy1} A ${r1} ${r1} 0 ${large} 1 ${ex1} ${ey1} L ${ex2} ${ey2} A ${r2} ${r2} 0 ${large} 0 ${sx2} ${sy2} Z`;
+}
+
+function generateSegmentColor(angle) {
+    const deg = (angle * 180 / Math.PI + 360) % 360;
+    return `hsl(${deg}, 45%, 42%)`;
+}
+
+function buildWheelGeometry() {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('id', 'wheelG');
+
+    const R_CENTER = 110;
+    const R_TIER1 = 260;
+    const R_TIER2 = 430;
+    const R_TIER3 = 600;
+
+    let totalOuterDescriptors = 0;
+    WHEEL_DATA.forEach(div => {
+        div.categories.forEach(cat => {
+            cat.subs.forEach(sub => {
+                totalOuterDescriptors += sub.descriptors.length;
+            });
+        });
+    });
+
+    const anglePerDescriptor = TWO_PI / totalOuterDescriptors;
+    let runningDescriptorCount = 0;
+
+    WHEEL_DATA.forEach((div, divIdx) => {
+        let totalDivDescs = 0;
+        div.categories.forEach(c => c.subs.forEach(s => totalDivDescs += s.descriptors.length));
+        
+        const divStartAngle = runningDescriptorCount * anglePerDescriptor - Math.PI/2;
+        const divEndAngle = divStartAngle + (totalDivDescs * anglePerDescriptor);
+
+        const divBoundary = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        divBoundary.setAttribute('d', describeArcRing(R_CENTER, R_TIER3, divStartAngle, divEndAngle));
+        divBoundary.setAttribute('fill', 'none');
+        divBoundary.setAttribute('stroke', divIdx === 0 ? '#c9a96e' : '#a63c3c');
+        divBoundary.setAttribute('stroke-width', '2');
+        g.appendChild(divBoundary);
+
+        div.categories.forEach(cat => {
+            let totalCatDescs = 0;
+            cat.subs.forEach(s => totalCatDescs += s.descriptors.length);
+            
+            const catStartAngle = runningDescriptorCount * anglePerDescriptor - Math.PI/2;
+            const catEndAngle = catStartAngle + (totalCatDescs * anglePerDescriptor);
+            const catMidAngle = catStartAngle + (catEndAngle - catStartAngle) / 2;
+
+            const catPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            catPath.setAttribute('d', describeArcRing(R_CENTER, R_TIER1, catStartAngle, catEndAngle));
+            catPath.setAttribute('fill', cat.color);
+            catPath.setAttribute('stroke', '#110d0a');
+            catPath.setAttribute('stroke-width', '1.5');
+            g.appendChild(catPath);
+
+            const [cx, cy] = polarToCart(0, 0, (R_CENTER + R_TIER1) / 2, catMidAngle);
+            const catText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            catText.setAttribute('x', cx); catText.setAttribute('y', cy);
+            catText.setAttribute('text-anchor', 'middle'); catText.setAttribute('dominant-baseline', 'central');
+            catText.setAttribute('font-size', '13'); catText.setAttribute('font-weight', 'bold');
+            catText.setAttribute('fill', '#000');
+            
+            let textRot = (catMidAngle * 180 / Math.PI);
+            if (catMidAngle > 0 && catMidAngle < Math.PI) textRot -= 180;
+            catText.setAttribute('transform', `rotate(${textRot}, ${cx}, ${cy})`);
+            catText.style.pointerEvents = 'none';
+            catText.textContent = cat.name;
+            g.appendChild(catText);
+
+            cat.subs.forEach(sub => {
+                let totalSubDescs = sub.descriptors.length;
+                const subStartAngle = runningDescriptorCount * anglePerDescriptor - Math.PI/2;
+                const subEndAngle = subStartAngle + (totalSubDescs * anglePerDescriptor);
+                const subMidAngle = subStartAngle + (subEndAngle - subStartAngle) / 2;
+
+                const subPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                subPath.setAttribute('d', describeArcRing(R_TIER1, R_TIER2, subStartAngle, subEndAngle));
+                subPath.setAttribute('fill', sub.color);
+                subPath.setAttribute('stroke', '#110d0a');
+                subPath.setAttribute('stroke-width', '1.2');
+                g.appendChild(subPath);
+
+                const [sx, sy] = polarToCart(0, 0, (R_TIER1 + R_TIER2) / 2, subMidAngle);
+                const subText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                subText.setAttribute('x', sx); subText.setAttribute('y', sy);
+                subText.setAttribute('text-anchor', 'middle'); subText.setAttribute('dominant-baseline', 'central');
+                subText.setAttribute('font-size', '11');
+                subText.setAttribute('fill', '#110d0a');
+                
+                let sTextRot = (subMidAngle * 180 / Math.PI);
+                if (subMidAngle > 0 && subMidAngle < Math.PI) sTextRot -= 180;
+                subText.setAttribute('transform', `rotate(${sTextRot}, ${sx}, ${sy})`);
+                subText.style.pointerEvents = 'none';
+                subText.textContent = sub.name !== cat.name ? sub.name : "";
+                g.appendChild(subText);
+
+                sub.descriptors.forEach(desc => {
+                    const descStartAngle = runningDescriptorCount * anglePerDescriptor - Math.PI/2;
+                    const descEndAngle = descStartAngle + anglePerDescriptor;
+                    const descMidAngle = descStartAngle + anglePerDescriptor / 2;
+
+                    const descPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const fillHex = generateSegmentColor(descMidAngle);
+                    descPath.setAttribute('d', describeArcRing(R_TIER2, R_TIER3, descStartAngle, descEndAngle));
+                    descPath.setAttribute('fill', fillHex);
+                    descPath.setAttribute('stroke', '#110d0a');
+                    descPath.setAttribute('stroke-width', '0.8');
+                    descPath.setAttribute('class', 'desc-seg');
+                    descPath.setAttribute('cursor', 'pointer');
+                    
+                    descPath.addEventListener('click', () => showDetailPanel(desc, cat.name, div.association));
+                    g.appendChild(descPath);
+
+                    const [dx, dy] = polarToCart(0, 0, (R_TIER2 + R_TIER3) / 2, descMidAngle);
+                    const descText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    descText.setAttribute('x', dx); descText.setAttribute('y', dy);
+                    descText.setAttribute('text-anchor', 'middle'); descText.setAttribute('dominant-baseline', 'central');
+                    
+                    descText.setAttribute('font-size', '16');
+                    
+                    let dTextRot = (descMidAngle * 180 / Math.PI);
+                    
+                    if (descMidAngle > 0 && descMidAngle < Math.PI) {
+                        dTextRot -= 180;
+                    }
+                    
+                    descText.setAttribute('transform', `rotate(${dTextRot}, ${dx}, ${dy})`);
+                    
+                    descText.style.pointerEvents = 'none';
+                    descText.textContent = desc;
+                    g.appendChild(descText);
+
+                    runningDescriptorCount++;
+                });
+            });
+        });
+    });
+
+    const hub = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    hub.setAttribute('cx', '0');
+    hub.setAttribute('cy', '0'); 
+    hub.setAttribute('r', R_CENTER);
+    hub.setAttribute('fill', '#26190e'); hub.setAttribute('stroke', '#c9a96e'); hub.setAttribute('stroke-width', '3');
+    g.appendChild(hub);
+
+    const hubText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    hubText.setAttribute('x', '0'); hubText.setAttribute('y', '5');
+    hubText.setAttribute('text-anchor', 'middle'); hubText.setAttribute('dominant-baseline', 'central');
+    hubText.setAttribute('font-size', '65'); hubText.setAttribute('fill', '#e8c97e');
+    hubText.setAttribute('font-family', 'Georgia, serif'); hubText.setAttribute('font-weight', 'bold');
+    hubText.textContent = 'B';
+    g.appendChild(hubText);
+
+    svg.appendChild(g);
+}
+
+function showDetailPanel(name, category, association) {
+    const lookup = DESCRIPTIONS[name];
+    const isPositive = association.toLowerCase().includes('positive');
+    const assocColor = isPositive ? '#c9a96e' : '#a63c3c';
+
+    if (!lookup) {
+        detail.innerHTML = `
+            <div class="association-tag" style="color:${assocColor}">${association}</div>
+            <h2>${name}</h2>
+            <div class="category-tag">${category}</div>
+            <div class="section-title">Sensory Classification</div>
+            <div class="body-text">Distillation data point for <span class='highlight'>${name}</span> mapping underway. Volatile threshold properties register across macro group partitions.</div>
+        `;
+        return;
+    }
+
+    detail.innerHTML = `
+        <div class="association-tag" style="color:${assocColor}">${association}</div>
+        <h2>${name}</h2>
+        <div class="category-tag">${category}</div>
+        
+        <div class="section-title">Notable Producer Notes</div>
+        <div class="body-text">${lookup.producers}</div>
+
+        <div class="section-title">Sommelier &amp; Mixologist Study Analysis</div>
+        <div class="body-text">${lookup.study}</div>
+
+        <div class="section-title">Server &amp; Guest Friendly Context</div>
+        <div class="body-text">${lookup.server}</div>
+    `;
+}
+
+function getAngle(e, rect) {
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return Math.atan2(clientY - cy, clientX - cx);
+}
+
+function applyRotation() {
+    const g = document.getElementById('wheelG');
+    if (g) g.setAttribute('transform', `rotate(${rotation * 180 / Math.PI})`);
+}
+
+function momentum() {
+    if (!isDragging && Math.abs(velocity) > 0.001) {
+        rotation += velocity;
+        velocity *= 0.96;
+        applyRotation();
+        animFrame = requestAnimationFrame(momentum);
+    }
+}
+
+svg.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('desc-seg')) return;
+    isDragging = true;
+    const rect = svg.getBoundingClientRect();
+    lastAngle = getAngle(e, rect);
+    lastTime = Date.now();
+    velocity = 0;
+    if (animFrame) cancelAnimationFrame(animFrame);
+    svg.style.cursor = 'grabbing';
+});
+
+window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const rect = svg.getBoundingClientRect();
+    const angle = getAngle(e, rect);
+    const delta = angle - lastAngle;
+    const now = Date.now();
+    velocity = delta / (Math.max(1, now - lastTime)) * 16;
+    rotation += delta;
+    lastAngle = angle;
+    lastTime = now;
+    applyRotation();
+});
+
+window.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    svg.style.cursor = 'grab';
+    animFrame = requestAnimationFrame(momentum);
+});
+
+svg.addEventListener('touchstart', e => {
+    const isDesc = e.target.classList.contains('desc-seg');
+    if (isDesc) return;
+    e.preventDefault();
+    isDragging = true;
+    const rect = svg.getBoundingClientRect();
+    lastAngle = getAngle(e, rect);
+    lastTime = Date.now();
+    velocity = 0;
+    if (animFrame) cancelAnimationFrame(animFrame);
+}, { passive: false });
+
+svg.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const angle = getAngle(e, rect);
+    const delta = angle - lastAngle;
+    const now = Date.now();
+    velocity = delta / (Math.max(1, now - lastTime)) * 16;
+    rotation += delta;
+    lastAngle = angle;
+    lastTime = now;
+    applyRotation();
+}, { passive: false });
+
+svg.addEventListener('touchend', () => {
+    isDragging = false;
+    animFrame = requestAnimationFrame(momentum);
+});
+
+buildWheelGeometry();
+</script>
+</body>
+</html>
