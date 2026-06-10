@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Gin Aroma & Flavor Wheel</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Georgia,serif;background:#0d1611;color:#e3ece6;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+h1{font-size:1.4rem;font-weight:400;letter-spacing:0.15em;text-transform:uppercase;color:#a3c2ae;padding:1.2rem 0 0.3rem;text-align:center;}
+.subtitle{font-size:0.75rem;color:#6b8e78;letter-spacing:0.1em;margin-bottom:0.8rem;text-align:center;}
+.layout{display:flex;gap:0;width:100%;max-width:1150px;align-items:flex-start;padding:0 1rem 2rem;}
+.wheel-wrap{flex:0 0 auto;display:flex;justify-content:center;}
+#wheelSvg{cursor:grab;user-select:none;touch-action:none;}
+#wheelSvg:active{cursor:grabbing;}
+.detail-panel{flex:1;min-width:280px;max-width:400px;background:#132219;border:1px solid #2d4a39;border-radius:12px;padding:1.4rem 1.6rem;margin-left:1.5rem;min-height:480px;transition:opacity 0.3s;}
+.detail-panel h2{font-size:1.4rem;color:#b2d1be;margin-bottom:0.2rem;font-weight:400;font-style:italic;}
+.detail-panel .category-tag{font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:#6b8e78;margin-bottom:0.8rem;}
+.detail-panel .section-title{font-size:0.75rem;color:#a3c2ae;text-transform:uppercase;letter-spacing:0.05em;margin:0.8rem 0 0.3rem 0;font-weight:bold;border-bottom:1px solid #2d4a39;padding-bottom:2px;}
+.detail-panel .body{font-size:0.88rem;line-height:1.6;color:#cbdad0;}
+.spin-hint{font-size:0.72rem;color:#3b5c47;text-align:center;margin-bottom:0.5rem;letter-spacing:0.08em;}
+@media(max-width:750px){
+  .layout{flex-direction:column;align-items:center;}
+  .detail-panel{margin-left:0;margin-top:1rem;width:100%;max-width:95vw;}
+  h1{font-size:1.1rem;}
+}
+</style>
+</head>
+<body>
+<h1>Artisan Gin Flavor Finder</h1>
+<div class="subtitle">An Advanced Organoleptic Study Tool for Hospitality Professionals</div>
+<div class="spin-hint">↺ Click &amp; drag center to spin &nbsp;|&nbsp; Tap an outer segment to analyze</div>
+<div class="layout">
+  <div class="wheel-wrap">
+    <svg id="wheelSvg" viewBox="-320 -320 640 640" width="560" height="560" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+  <div class="detail-panel" id="detailPanel">
+    <div style="color:#3b5c47;font-size:0.95rem;margin-top:5rem;text-align:center;font-style:italic;">Select any botanical or flavor descriptor from the outer wheel edge to populate distillation chemistry, service notation, and mixology blueprints.</div>
+  </div>
+</div>
+<script>
+const DATA = {
+  categories: [
+    {
+      name:"CITRUS", color:"#e2a84b", textColor:"#3d2400",
+      sub:[
+        {name:"Acidic",color:"#f2be6b",descriptors:[{name:"Lemon",slug:"lemon"},{name:"Lime",slug:"lime"}]},
+        {name:"Zesty",color:"#e6b053",descriptors:[{name:"Grapefruit",slug:"grapefruit"},{name:"Orange",slug:"orange"}]}
+      ]
+    },
+    {
+      name:"FLESHY FRUIT", color:"#d48a55", textColor:"#3d1600",
+      sub:[
+        {name:"Mellow",color:"#e09e70",descriptors:[{name:"Mango",slug:"mango"},{name:"Apricot",slug:"apricot"},{name:"Peach",slug:"peach"},{name:"Melon",slug:"melon"}]}
+      ]
+    },
+    {
+      name:"FRESH FRUIT", color:"#c97365", textColor:"#ffffff",
+      sub:[
+        {name:"Juicy",color:"#d68678",descriptors:[{name:"Cucumber",slug:"cucumber"},{name:"Apple",slug:"apple"},{name:"Grape",slug:"grape"}]}
+      ]
+    },
+    {
+      name:"RED FRUITS", color:"#ab4e68", textColor:"#ffffff",
+      sub:[
+        {name:"Delicate",color:"#bd647c",descriptors:[{name:"Gooseberries",slug:"gooseberries"},{name:"Redcurrant",slug:"redcurrant"}]},
+        {name:"Bright",color:"#b35670",descriptors:[{name:"Sloe",slug:"sloe"},{name:"Cherry",slug:"cherry"}]}
+      ]
+    },
+    {
+      name:"FLORAL", color:"#674d93", textColor:"#ffffff",
+      sub:[
+        {name:"Perfumed",color:"#7c64a6",descriptors:[{name:"Rose",slug:"rose"},{name:"Violet",slug:"violet"}]},
+        {name:"Fresh",color:"#72589c",descriptors:[{name:"Lavender",slug:"lavender"},{name:"Meadowsweet",slug:"meadowsweet"}]},
+        {name:"Aromatic",color:"#674d93",descriptors:[{name:"Chamomile",slug:"chamomile"},{name:"Elderflower",slug:"elderflower"}]}
+      ]
+    },
+    {
+      name:"GRASSY", color:"#7ca655", textColor:"#122b00",
+      sub:[
+        {name:"Fragrant",color:"#8fb66a",descriptors:[{name:"Marigold",slug:"marigold"},{name:"Earl Grey",slug:"earl-grey"}]},
+        {name:"Leafy",color:"#7ca655",descriptors:[{name:"Lemon Grass",slug:"lemon-grass"},{name:"Hibiscus",slug:"hibiscus"}]}
+      ]
+    },
+    {
+      name:"HERBAL", color:"#4e9652", textColor:"#002402",
+      sub:[
+        {name:"Herbaceous",color:"#64a868",descriptors:[{name:"Caraway Seed",slug:"caraway-seed"},{name:"Mint",slug:"mint"},{name:"Parsley",slug:"parsley"}]},
+        {name:"Vegetal",color:"#559e59",descriptors:[{name:"Thyme",slug:"thyme"},{name:"Rosemary",slug:"rosemary"}]},
+        {name:"Savoury",color:"#4e9652",descriptors:[{name:"Sage",slug:"sage"},{name:"Bay Laurel",slug:"bay-laurel"},{name:"Fennel",slug:"fennel"}]}
+      ]
+    },
+    {
+      name:"PINEY", color:"#2d633b", textColor:"#ffffff",
+      sub:[
+        {name:"Medicinal",color:"#40784f",descriptors:[{name:"Pine Leaves",slug:"pine-leaves"},{name:"Juniper",slug:"juniper"}]},
+        {name:"Resinous",color:"#2d633b",descriptors:[{name:"Spruce",slug:"spruce"},{name:"Frankincense",slug:"frankincense"}]}
+      ]
+    },
+    {
+      name:"SWEET", color:"#9e7652", textColor:"#ffffff",
+      sub:[
+        {name:"Creamy",color:"#b08b68",descriptors:[{name:"Silver Birch Sap",slug:"silver-birch-sap"},{name:"Liquorice Root",slug:"liquorice-root"}]},
+        {name:"Buttery",color:"#9e7652",descriptors:[{name:"Honeysuckle",slug:"honeysuckle"},{name:"Vanilla",slug:"vanilla"}]}
+      ]
+    },
+    {
+      name:"NUTTY", color:"#594230", textColor:"#ffffff",
+      sub:[
+        {name:"Richly Scented",color:"#6e5643",descriptors:[{name:"Almond",slug:"almond"},{name:"Hazelnut",slug:"hazelnut"}]},
+        {name:"Woody",color:"#614a38",descriptors:[{name:"Walnut",slug:"walnut"},{name:"Chestnut",slug:"chestnut"}]},
+        {name:"Robust",color:"#594230",descriptors:[{name:"Nutmeg",slug:"nutmeg"}]}
+      ]
+    },
+    {
+      name:"ROOTY / SPICY", color:"#a63f30", textColor:"#ffffff", 
+      sub:[
+        {name:"Dusty",color:"#ad4b3b",descriptors:[{name:"Angelica",slug:"angelica"},{name:"Orris Root",slug:"orris-root"},{name:"Cassia Bark",slug:"cassia-bark"}]},
+        {name:"Warming",color:"#b85242",descriptors:[{name:"Cinnamon",slug:"cinnamon"},{name:"Clove",slug:"clove"},{name:"Cardamom",slug:"cardamom"}]},
+        {name:"Pungent",color:"#c25c4c",descriptors:[{name:"Saffron",slug:"saffron"},{name:"Cumin",slug:"cumin"},{name:"Anise",slug:"anise"}]},
+        {name:"Curried",color:"#cc6758",descriptors:[{name:"Grains of Paradise",slug:"grains-of-paradise"},{name:"Pepper",slug:"pepper"}]},
+        {name:"Earthy",color:"#d67263",descriptors:[{name:"Cubeb Berries",slug:"cubeb-berries"}]},
+        {name:"Fiery",color:"#e07e6f",descriptors:[{name:"Ginger",slug:"ginger"}]},
+        {name:"Piquant",color:"#eb8b7b",descriptors:[{name:"Coriander Seed",slug:"coriander-seed"}]}
+      ]
+    }
+  ]
+};
+
+const DESCRIPTIONS = {
+  "lemon": {
+    cat: "Citrus · Acidic",
+    origin: "Derived from fresh or dried lemon peel (Citrus limon). Limonene is the primary volatile terpene compound. Often fixed using vapor infusion to retain bright, volatile, high-toned top notes rather than deep maceration which extracts heavier, bitter lipids.",
+    pairing: "Essential backbone for London Dry style profiles. Acts as a bright bridge for juniper pinene compounds.",
+    mixology: "Amplifies the refreshing, sharp architecture of a Tom Collins or Gin Sour. When selecting tonics, pair with standard Indian tonics containing lower citric acid levels to prevent an astringent overlap."
+  },
+  "lime": {
+    cat: "Citrus · Acidic",
+    origin: "Sourced via lime peel or whole dehydrated lime (Citrus aurantiifolia). Contains high ratios of alpha-pinene and beta-pinene along with limonene, giving it a sharper, more piercing, slightly tropical citrus tone compared to lemon.",
+    pairing: "Commonly utilized in Contemporary/Western style gins to accentuate crisp, exotic flavor lines.",
+    mixology: "The ultimate target for a Gin & Tonic or Gimlet. Cuts beautifully through heavy, resinous, high-proof navy strength gins by offering a high-acid counterweight."
+  },
+  "grapefruit": {
+    cat: "Citrus · Zesty",
+    origin: "Utilizes pink or white grapefruit peel. The key character compound is nootkatone, a highly potent, complex sesquiterpene that introduces a distinctive pleasantly bitter, oil-rich citrus dimension to the distillate.",
+    pairing: "Bridges the gap between sharp citrus and deep root spices (like angelica) due to its sulfurous and bitter undertones.",
+    mixology: "Sensational in a Negroni or Paloma variation. Provides excellent structural complexity to lower-abv aperitivo drinks."
+  },
+  "orange": {
+    cat: "Citrus · Zesty",
+    origin: "Sweet orange (Citrus sinensis) or bitter Seville orange (Citrus aurantium) peels. Maceration yields rich, warm, fleshy citrus notes, whereas vapor infusion isolates the ethereal, bright top-note aromas.",
+    pairing: "Crucial element in balancing aggressive spice or high-heat botanicals like ginger, clove, or cassia.",
+    mixology: "Magnificent when paired with sweet vermouth; a primary aromatic driver in a classic Martinez or Hanky Panky cocktail."
+  },
+  "mango": {
+    cat: "Fleshy Fruit · Mellow",
+    origin: "Extracted via fresh fruit maceration or precise modern vacuum distillation to avoid cooking the delicate sugars. Rich in myrcene, a terpene that naturally acts as an exceptional aromatic fixative for lighter green botanicals.",
+    pairing: "Perfect partner for spicy gins containing cubeb berries, grains of paradise, or fresh ginger.",
+    mixology: "Lends a luscious, tropical texture and weight to contemporary tropical punch builds, Clover Club variations, or modern highballs."
+  },
+  "apricot": {
+    cat: "Fleshy Fruit · Mellow",
+    origin: "Fresh or dried stone fruit infusion. Driven by fruit benzaldehyde (almond-like stone character) and various fruit gamma-lactones, providing an intense, velvety fruit sweetness without altering the spirit's base proof.",
+    pairing: "Provides a brilliant bridge for floral profiles (elderflower, jasmine) and soft wood notes.",
+    mixology: "Excellent for balancing dry, tannic modifiers like dry vermouth, French aperitif wines, or bitter amaros."
+  },
+  "peach": {
+    cat: "Fleshy Fruit · Mellow",
+    origin: "Infused via fresh flesh maceration. Dominated by stone fruit lactones, providing a soft, summer-forward fruit profile that softens the aggressive dry bite of high-alpha-pinene juniper.",
+    pairing: "Pairs seamlessly with soft herbal gins containing mint, parsley, or lemon grass.",
+    mixology: "A natural choice for elegant spritzes, refreshing highballs, or sophisticated summer Collins style serves."
+  },
+  "melon": {
+    cat: "Fleshy Fruit · Mellow",
+    origin: "Vacuum or cold-distilled melon flesh. Highly unstable under heat; relies on advanced vacuum distillation to capture volatile aldehydes like cis-6-nonenal, which provides a crisp, watery, green-flesh sweetness.",
+    pairing: "Creates a stunning, elegant presentation when aligned with fresh fruit or grassy gin profiles.",
+    mixology: "Outstanding in exceptionally dry, crisp Martinis. Serve with a premium cucumber garnish to highlight the delicate ester notes."
+  },
+  "cucumber": {
+    cat: "Fresh Fruit · Juicy",
+    origin: "Captured via post-distillation cold-maceration or gentle vacuum distillation. Driven by nonadienal compounds, providing a uniquely cooling, refreshing, crisp green melon-adjacent flavor vector.",
+    pairing: "The legendary thematic calling card of New Western gins. Pairs naturally with rose, mint, and soft citrus.",
+    mixology: "The gold standard element for a classic afternoon highball or a refreshing summer Gin & Tonic garnished with fresh cucumber ribbons."
+  },
+  "apple": {
+    cat: "Fresh Fruit · Juicy",
+    origin: "Fresh apple pomace or cider reduction added directly to the pot still base. Rich in crisp hexyl acetate esters, yielding an elegant, orchard-fresh profile with an underlying touch of malic acidity.",
+    pairing: "Pairs with sweet spices like cinnamon, clove, and nutmeg to invoke a comforting rancio/pastry depth.",
+    mixology: "Adds exceptional fruit depth to a Gin Sour or white negroni variation. Enhances the natural fruit notes in dry vermouth."
+  },
+  "grape": {
+    cat: "Fresh Fruit · Juicy",
+    origin: "Typically extracted by utilizing a neutral grape spirit base (reminiscent of Cognac bases) or by distilling fresh grape must. Features elevated levels of ethyl caproate, bringing a refined, wine-like elegance.",
+    pairing: "Creates a rounder, silkier mouthfeel that acts as a buffer for sharp, punchy London Dry botanicals.",
+    mixology: "A natural baseline for a classic French 75 or elegant, high-end spirit-forward Martinis accompanied by a expressed lemon twist."
+  },
+  "gooseberries": {
+    cat: "Red Fruits · Delicate",
+    origin: "Fresh gooseberry maceration. Imparts a bright, highly distinct tartness and complex green-fruit profile, containing trace amounts of methoxypyrazines that give it a Sauvignon Blanc-like aromatic edge.",
+    pairing: "Combines gorgeously with elderflower, lemon grass, and sharp citrus flavor pathways.",
+    mixology: "Brings a crisp, vinous quality to a standard highball. Functions wonderfully when substituting for dry white wine in cocktails."
+  },
+  "redcurrant": {
+    cat: "Red Fruits · Delicate",
+    origin: "Maceration of whole fresh redcurrant berries. Infuses the distillate with a delicate, tart red berry fruit character and a beautiful, translucent, jewel-like acidity.",
+    pairing: "Complements bright citrus notes and helps ground dry, root-spiced botanical configurations.",
+    mixology: "Ideal for crafting bright summer punches, unique Bramble adaptations, or adding crisp fruit lines to a dry spritz."
+  },
+  "sloe": {
+    cat: "Red Fruits · Bright",
+    origin: "The definitive baseline for traditional Sloe Gin. Blackthorn plums (sloe berries) are steeped directly in high-proof gin alongside sugar for months. Yields a rich, deep red color, heavy sweetness, and stone-fruit tartness.",
+    pairing: "Inherently high in natural fruit plum notes and bitter almond tones derived from the fruit pits.",
+    mixology: "The undisputed star of the Sloe Gin Fizz. Can be structurally utilized as a sweet modifier or amaro substitute in modern complex cocktail builds."
+  },
+  "cherry": {
+    cat: "Red Fruits · Bright",
+    origin: "Infused using sweet or sour cherry skins and flesh. Benzaldehyde is the dominant aromatic driver, introducing a sweet, rich, dark stone-fruit fruitiness alongside a hint of luxurious marzipan.",
+    pairing: "Aligns flawlessly with dark baking spices, cacao, walnut, and robust oak-aged modifiers.",
+    mixology: "A stellar choice for a Martinez twist, complex winter flips, or adding a rich berry line to spirit-forward cocktails."
+  },
+  "rose": {
+    cat: "Floral · Perfumed",
+    origin: "Fresh rose petal distillation, usually performed via delicate steam or vapor infusion. Driven by geraniol and phenylethyl alcohol, generating an intensely perfumed, elegant, Turkish delight floral sweetness.",
+    pairing: "A key component in premium contemporary gins. Aligns elegantly with cucumber and light tea profiles.",
+    mixology: "Elevates delicate floral Martinis, Aviation cocktails, or highball serves featuring subtle floral-forward premium tonics."
+  },
+  "violet": {
+    cat: "Floral · Perfumed",
+    origin: "Derived from violet flowers or violet leaves. Rich in ionone compounds, providing an elusive, powdery, highly sophisticated sweet floral aroma that can easily become dominant if over-distilled.",
+    pairing: "Historically linked to traditional European botanical profiles and modern avant-garde cocktail gins.",
+    mixology: "The perfect enhancer for the classic Aviation cocktail, eliminating the need for inferior synthetic violet crèmes."
+  },
+  "lavender": {
+    cat: "Floral · Fresh",
+    origin: "Dried lavender buds (Lavandula angustifolia). High in linalool and linalyl acetate, contributing a intensely relaxing, deep floral-herbaceous aroma with a subtle, clean pine-camphorous finish.",
+    pairing: "Must be used sparingly; integrates beautifully with bright lemon citrus notes and sweet honey profiles.",
+    mixology: "Adds an immersive aromatic dimension to Gin Sours, honey-sweetened Bee's Knees, or artisanal lavender syrup fizzes."
+  },
+  "meadowsweet": {
+    cat: "Floral · Fresh",
+    origin: "Wild meadowsweet flowers (Filipendula ulmaria). Contains natural methyl salicylate, providing a fascinating, complex sweet floral aroma with faint, warm undertones of wintergreen and soft vanilla.",
+    pairing: "Excellent for establishing a wild, rustic, meadow-like terroir expression in contemporary artisanal gins.",
+    mixology: "Pairs spectacularly with dry, herbal vermouths inside an ultra-clean Martini garnished with a fresh herb sprig."
+  },
+  "chamomile": {
+    cat: "Floral · Aromatic",
+    origin: "Dried chamomile flowers. Rich in bisabolol and chamazulene, offering a soothing, gentle, sweet apple-honey floral aroma that yields a remarkably smooth, oily mouthfeel perception.",
+    pairing: "Acts as a magnificent textural and aromatic soothing agent for highly aggressive juniper or citrus forward gins.",
+    mixology: "Sensational when mixed into a honey-based cocktail, hot toddies, or integrated into an elegant, low-proof afternoon tea highball."
+  },
+  "elderflower": {
+    cat: "Floral · Aromatic",
+    origin: "Fresh elderflower blossoms (Sambucus nigra). Driven by complex monoterpenes and hotrienol, providing a heady, sweet, tropical-tinged floral note with hints of white grape and lychee.",
+    pairing: "A massively popular contemporary botanical that harmonizes naturally with Sauvignon Blanc finishes or pear modifiers.",
+    mixology: "The ultimate modifier for a French 75, elegant floral spritzes, or upgrading a standard Gin & Tonic with a fresh floral lift."
+  },
+  "marigold": {
+    cat: "Grassy · Fragrant",
+    origin: "Dried marigold petals. Yields a bright, pleasantly pungent, musky, warm grassy aromatic string with distinct undertones of dry summer hay and faint autumn saffron.",
+    pairing: "Works brilliantly to add a rustic, artisanal, farm-fresh earthiness to warm, spice-driven gins.",
+    mixology: "Brings an exceptional savory element to dry Martinis, or a brilliant complex layer to herbal aperitivo drinks."
+  },
+  "earl-grey": {
+    cat: "Grassy · Fragrant",
+    origin: "Distilled black tea leaves scented with oil of bergamot orange peel. Combines deep, drying tea tannins with the volatile, high-toned citrus shine of bergamot linalool.",
+    pairing: "Provides a phenomenal dry, intellectual baseline for citrus and heavy spice-forward gin profiles.",
+    mixology: "The undisputed champion for a Chelsea Sidecar or punch formats. The natural tea tannins yield an unmatched bone-dry finish."
+  },
+  "lemon-grass": {
+    cat: "Grassy · Leafy",
+    origin: "Fresh or dried stalks of Cymbopogon. Citral is the dominant compound, delivering an incredibly clean, laser-sharp, grassy-citrus punch without any of the heavy, bitter citric acid lipids found in fruit peels.",
+    pairing: "A foundational element for modern Asian-inspired expression gins. Complements ginger, kaffir lime, and mint.",
+    mixology: "Incredible in a Southside, Eastside, or any highball featuring fresh mint, Thai basil, or spicy ginger beer."
+  },
+  "hibiscus": {
+    cat: "Grassy · Leafy",
+    origin: "Dried calyces of Hibiscus sabdariffa. Introduces a sharp, tart, cranberry-like grassy acidity and, when used as a post-distillation macerate, a stunning, vibrant deep ruby red hue.",
+    pairing: "Blends seamlessly with red fruit profiles and offers a fantastic crisp counter to sweet citrus notes.",
+    mixology: "An absolute visual and structural showstopper inside premium spritzes, winter brambles, or unique clover club riffs."
+  },
+  "caraway-seed": {
+    cat: "Herbal · Herbaceous",
+    origin: "Seeds of Carum carvi. Carvone is the primary active compound, delivering a warm, highly aromatic, distinctively herbal profile with a savory sweet-rye rye bread finish (adjacent to Scandinavian Aquavit).",
+    pairing: "Establishes a fascinating bridge into intensely savory, culinary-forward contemporary gin styles.",
+    mixology: "Magnificent when substituted into a Red Snapper (Gin Bloody Mary) or a ultra-savory Gibson garnished with cocktail onions."
+  },
+  "mint": {
+    cat: "Herbal · Herbaceous",
+    origin: "Fresh peppermint or spearmint leaves. Menthol introduces an instantly recognizable, intensely cooling, refreshing green herbal pop that opens up the olfactory receptors.",
+    pairing: "Provides an exceptional lifting action for heavy pine juniper notes and sweet citrus lines.",
+    mixology: "The fundamental engine behind the Southside cocktail. Always express fresh mint over the drink to lock onto the internal mint distillate notes."
+  },
+  "parsley": {
+    cat: "Herbal · Herbaceous",
+    origin: "Fresh flat-leaf or curly parsley. Packed with apiol, offering a clean, mineral-toned, crisp, slightly peppery green vegetable note that evokes a fresh garden terroir.",
+    pairing: "Integrates perfectly with savory botanicals like sage, thyme, and crisp celery seed.",
+    mixology: "The ultimate option for an ultra-savory, refreshing green garden highball, botanical Snapper, or a crisp dry Gibson."
+  },
+  "thyme": {
+    cat: "Herbal · Vegetal",
+    origin: "Fresh or dried Thymus vulgaris. Thymol is the heavy hitter here, supplying a pungent, warm, wood-herbal aroma with subtle medicinal and sweet earth undertones.",
+    pairing: "A classic Mediterranean botanical tier. Pairs perfectly with citrus oils and rich green olives.",
+    mixology: "Sensational in a Gin & Tonic served with a bruised fresh thyme sprig and a chartreuse rinse, or integrated into savory Mediterranean highballs."
+  },
+  "rosemary": {
+    cat: "Herbal · Vegetal",
+    origin: "Fresh rosemary needles (Rosmarinus officinalis). Brimming with eucalyptol, camphor, and alpha-pinene, creating a high-impact, resinous, powerfully aromatic wood-herbal punch.",
+    pairing: "Shares strong pinene lines with juniper, making it an excellent amplifier for classic gin structures.",
+    mixology: "Outstanding in savory Negronis or charred-rosemary smoked highballs. Cuts cleanly through high-sugar modifiers."
+  },
+  "sage": {
+    cat: "Herbal · Savoury",
+    origin: "Dried Salvia officinalis leaves. Loaded with thujone, introducing a deep, velvet-textured, musky, warming savory-herbaceous punch with a fine, drying peppery finish.",
+    pairing: "Harmonizes magnificently with robust woody nuts, rich roots, and sweet citrus peels.",
+    mixology: "Ideal for sophisticated, spirit-forward winter cocktails, savory autumn flips, or custom dirty Martinis featuring a sage leaf garnish."
+  },
+  "bay laurel": {
+    cat: "Herbal · Savoury",
+    origin: "Dried leaves of Laurus nobilis. Rich in eugenol and cineole, contributing a highly sophisticated, warm, woody-herbal aroma with fine, exotic undertones of sweet nutmeg and clove spice.",
+    pairing: "Acts as a phenomenal binding agent that seamlessly unites bright volatile citrus top notes with heavy, oily root fixatives.",
+    mixology: "Brings an unrivaled culinary complexity to high-end Martinis, savory punches, or complex herbal highballs."
+  },
+  "fennel": {
+    cat: "Herbal · Savoury",
+    origin: "Fennel seeds or whole wild fronds. Dominated by anethole, injecting an incredibly distinct, sweet green anise/licorice punch with a clean, refreshing mineral lift.",
+    pairing: "Excellent for texturing and expanding the sweetness of a gin without utilizing sugar inputs.",
+    mixology: "A perfect companion for a classic Martinez twist, white negronis, or a highball garnished with a fresh slice of star anise."
+  },
+  "pine leaves": {
+    cat: "Piney · Medicinal",
+    origin: "Freshly foraged pine or fir needles. Loaded with exceptional concentrations of pure alpha-pinene, delivering an ultra-crisp, refreshing, walks-in-the-forest alpine pine snap.",
+    pairing: "Amplifies and stretches the natural core identity of juniper, establishing an intense alpine forest aesthetic.",
+    mixology: "Sensational in an ice-cold, bone-dry Martini. Use a premium dry vermouth to let the intense pine notes cleanly take center stage."
+  },
+  "juniper": {
+    cat: "Piney · Medicinal",
+    origin: "The legal and spiritual absolute core of all gin (Juniperus communis). Packed with alpha-pinene, beta-pinene, and myrcene. Provides the foundational piney, resinous, waxy, wood-spiced, and mildly camphorous structure.",
+    pairing: "The mandatory centerpiece. All other botanicals are structurally balanced around the high-impact juniper baseline.",
+    mixology: "The baseline for everything. In a classic London Dry, aggressive juniper demands premium high-bitter quinine tonics or dry French vermouths."
+  },
+  "spruce": {
+    cat: "Piney · Resinous",
+    origin: "Fresh spruce tips. Imparts a bright, uniquely resinous pine character backed by an unexpected, beautiful flash of sharp, green citrus acidity (vitamin C profiles inside the fresh green tips).",
+    pairing: "A brilliant contemporary addition for creating hyper-regional, terroir-driven northern or alpine style gins.",
+    mixology: "Brings a wonderful crisp, outdoor brightness to a Tom Collins or an incredibly complex alpine-style Gimlet serve."
+  },
+  "frankincense": {
+    cat: "Piney · Resinous",
+    origin: "The aromatic resin of Boswellia trees. Yields a deeply hypnotic, ancient, resinous, balsamic wood aroma with intriguing undertones of dark sweet citrus oil and clean cold incense smoke.",
+    pairing: "Functions as a high-end, luxurious fixing agent that grounds lighter floral and citrus elements for an extended finish.",
+    mixology: "Stunning inside elite, slow-sipping, spirit-forward nightcaps, vintage Martinez builds, or wood-smoked Negronis."
+  },
+  "silver-birch-sap": {
+    cat: "Sweet · Creamy",
+    origin: "Collected fresh from birch trees and reduced into the still. Introduces a beautifully smooth, delicate, mineral-rich wood sweetness and provides a naturally rounded, silky, viscous mouthfeel perception.",
+    pairing: "Perfect for softening the aggressive, tongue-drying prickle of high-proof or heavily root-spiced gins.",
+    mixology: "The ultimate asset for a velvety smooth Martini or an exceptionally elegant, silky Gin Sour that glides over the palate."
+  },
+  "liquorice-root": {
+    cat: "Sweet · Creamy",
+    origin: "The root of Glycyrrhiza glabra. Contains glycyrrhizin, a compound up to 50 times sweeter than cane sugar. Crucially, glycyrrhizin does not vaporize during distillation, but the volatile sweet aromatics do, providing a distinct illusion of deep sweetness and an exceptionally rich, viscous texture.",
+    pairing: "A cornerstone structural fixative in London Dry and Old Tom styles, working to bind erratic, volatile citrus top notes.",
+    mixology: "Essential for rounding out dry, bitter elements in a Negroni. Softens the harsh high-proof burn in spirit-forward builds."
+  },
+  "honeysuckle": {
+    cat: "Sweet · Buttery",
+    origin: "Fresh honeysuckle blossoms. Delivers a thick, decadent, honey-floral sweetness with fine, rich undertones of warm nectar and soft yellow tree fruits.",
+    pairing: "Pairs beautifully with sweet citrus profiles and rich, buttery wood nuts.",
+    mixology: "Exceptional within a Bee's Knees, delicate summer spritzes, or an elegant alternative Collins serve using elderflower tonic."
+  },
+  "vanilla": {
+    cat: "Sweet · Buttery",
+    origin: "Vanilla planifolia pods, often introduced via post-distillation finishing or barrel aging. Driven by vanillin, introducing a warm, comforting, creamy, buttery sweet wood profile.",
+    pairing: "The ultimate indicator for barrel-aged/cask-finished gins. Harmonizes flawlessly with oak tannins and orange peel.",
+    mixology: "A phenomenal asset for complex winter cocktails, cold-brew coffee gin serves, or custom Old Fashioned style gin variations."
+  },
+  "almond": {
+    cat: "Nutty · Richly Scented",
+    origin: "Bitter or sweet almond meal added to the pot still. Benzaldehyde provides a deep, luxurious, rich marzipan and amaretto nut note. It also contributes essential oils that enhance the spirit's physical viscosity.",
+    pairing: "A historic component in classic London Dry recipes, working to lock down volatile juniper top notes.",
+    mixology: "Adds a stunning, velvety marzipan depth to a classic Martinez, or a beautiful texture to egg-white Gin Sours."
+  },
+  "hazelnut": {
+    cat: "Nutty · Richly Scented",
+    origin: "Toasted hazelnut infusion. Releases rich, warm, oily pyrazines, delivering an intensely comforting, roasted, buttery nut depth that coats the back of the palate.",
+    pairing: "Pairs magnificently with deep, earthy spices (cassia, nutmeg) and barrel-aged gin expressions.",
+    mixology: "Sensational in winter cocktails, Alexander variations, or serving as a rich, nutty modifier layer within a bold Negroni."
+  },
+  "walnut": {
+    cat: "Nutty · Woody",
+    origin: "Black or green walnut shells. Brings a deep, slightly dry, tannic, woody nuttiness with complex, darker savory oily layers.",
+    pairing: "Integrates flawlessly with heavy root botanicals like angelica and robust warming baking spices.",
+    mixology: "The ultimate choice for a spirit-forward, ultra-complex nightly sipper, custom black negronis, or an artisanal walnut highball."
+  },
+  "chestnut": {
+    cat: "Nutty · Woody",
+    origin: "Roasted chestnuts. Yields a soft, rich, uniquely starchy, sweet woody nut flavor that provides an incredible structural warmth and thickness to the mid-palate.",
+    pairing: "Works hand-in-hand with creamy, buttery sweet profiles like vanilla and liquorice root.",
+    mixology: "An exceptional addition for artisanal cold-weather menus, hot toddies, or rich, complex flip style cocktails."
+  },
+  "nutmeg": {
+    cat: "Nutty · Robust",
+    origin: "The seed of Myristica fragrans. Rich in myristicin, delivering an intensely warm, highly robust, woody-aromatic spice punch with fine, sweet-exotic undertones.",
+    pairing: "A classic baking spice element that adds immense depth to high-proof navy strength or cask-matured gins.",
+    mixology: "The definitive aromatic dusting requirement for a classic Gin Alexander or hot mulled gin punches."
+  },
+  "angelica": {
+    cat: "Rooty / Spicy · Dusty",
+    origin: "Angelica archangelica root. The absolute cornerstone fixative of gin distillation. Highly substantive, earthy, musky, and dry-woody. It possesses a heavy molecular weight, meaning it acts as an anchor in the pot still, holding back the ultra-volatile juniper and citrus notes so they linger longer on the palate.",
+    pairing: "The primary structural anchor alongside juniper and coriander seed. Vital to the dry architecture of London Dry.",
+    mixology: "Provides the intense, lingering dry finish that defines a proper bone-dry Martini. Holds its own against heavy vermouth additions."
+  },
+  "orris root": {
+    cat: "Rooty / Spicy · Dusty",
+    origin: "The dried, aged rhizome of Iris germanica. Requires 3-5 years of aging to develop its active aroma compounds (irones). Introduces a dusty, earthy, elegant violet-powder scent. Like angelica, it is an essential fixative that binds lighter oils into the liquid matrix.",
+    pairing: "The second great anchor fixative of classic distillation. Softens harsh alcohol burn by introducing a perceived floral texture.",
+    mixology: "Crucial for high-end, aromatic Martinis. Ensures that the delicate floral or citrus notes in a cocktail do not instantly dissipate."
+  },
+  "cassia bark": {
+    cat: "Rooty / Spicy · Dusty",
+    origin: "The bark of Cinnamomum cassia. Introduces a pungent, sweet-hot, rustic cinnamon-adjacent wood spice. Contains high amounts of cinnamaldehyde, yielding a deep, warming, slightly dusty bark structure.",
+    pairing: "Essential for generating base-note warmth in traditional winter profiles or robust spiced gins.",
+    mixology: "Cuts aggressively through heavy citrus and sugar modifiers. Absolute perfection inside warm punch variations or a bold, fiery Martinez."
+  },
+  "cinnamon": {
+    cat: "Rooty / Spicy · Warming",
+    origin: "True Ceylon cinnamon bark (Cinnamomum verum). Sweeter, more delicate, and significantly more refined than cassia. Delivers an elegant, warming, exotic woody-sweet baking spice line.",
+    pairing: "Brings a highly sophisticated aromatic top-tier to contemporary spiced or festive gin releases.",
+    mixology: "Magnificent in apple or pear juice based hot serves, complex toddies, or a unique spiced negroni build."
+  },
+  "clove": {
+    cat: "Rooty / Spicy · Warming",
+    origin: "Dried flower buds of Syzygium aromaticum. Brimming with eugenol, creating an intensely sharp, warming, numbing spice line. Must be distilled with extreme precision to prevent it from completely stripping the still.",
+    pairing: "Pairs beautifully with sweet orange peel, vanilla, and robust oak-aged modifiers.",
+    mixology: "The ultimate aromatic engine for winter flips, mulled wines, or adding intense structural warmth to hot gin toddies."
+  },
+  "cardamom": {
+    cat: "Rooty / Spicy · Warming",
+    origin: "Green cardamom pods (Elettaria cardamomum). Rich in cineole and limonene, executing a magnificent, bright, highly volatile aromatic blast of cooling eucalyptus, bright citrus, and warm green spice.",
+    pairing: "An absolute superstar botanical in Contemporary/Western gins. Explodes with aromatic presence.",
+    mixology: "Sensational in a Gin & Tonic garnished with an expressed grapefruit twist or a customized cardamom-spiced espresso martini."
+  },
+  "saffron": {
+    cat: "Rooty / Spicy · Pungent",
+    origin: "The dried stigmas of Crocus sativus. Introduced either to the still or as a post-distillation macerate (yielding a rich golden hue). Delivers an intensely pungent, exotic, metallic-savory honey and hay note.",
+    pairing: "Establishes an elite, luxurious contemporary flavor line that demands high-end savory pairings.",
+    mixology: "Provides an incredibly striking visual presentation and an earthy, exotic undertone to ultra-premium custom Negronis."
+  },
+  "cumin": {
+    cat: "Rooty / Spicy · Pungent",
+    origin: "Seeds of Cuminum cyminum. Packed with cuminaldehyde, infusing the distillate with an incredibly distinct, intensely warm, sharp, slightly bitter, heavy savory-earthy aroma.",
+    pairing: "A daring botanical choice for forward-thinking culinary gins. Pairs naturally with citrus and coriander.",
+    mixology: "The ultimate weapon for an avant-garde savory Gibson or a high-intensity botanical Red Snapper (Bloody Mary)."
+  },
+  "anise": {
+    cat: "Rooty / Spicy · Pungent",
+    origin: "Aniseed or star anise. Loaded with trans-anethole, yielding an intensely sweet, pungent, distinctively black licorice flavor that creates a louche (milky clouding effect) when dropped in proof.",
+    pairing: "Works brilliantly to elongate the perceived sweetness and mouth-coating richness of a gin.",
+    mixology: "Excellent within vintage Martinez builds or cocktails incorporating absinthe washes, mint modifiers, or fresh lime."
+  },
+  "grains of paradise": {
+    cat: "Rooty / Spicy · Curried",
+    origin: "Aframomum melegueta seeds from West Africa. A close relative of ginger but acts like a highly sophisticated pepper. Features paradol, injecting a gorgeous, multi-dimensional wood spice with vibrant flashes of black pepper, lavender, and fresh cardamom citrus.",
+    pairing: "A foundational element in high-end contemporary gins. Expands the mid-palate complexity effortlessly.",
+    mixology: "Sensational inside a classic Gin Tonic. Elevates the natural botanicals without requiring heavy fruit or vegetable garnishes."
+  },
+  "pepper": {
+    cat: "Rooty / Spicy · Curried",
+    origin: "Black, white, or green peppercorns (Piper nigrum). Driven by piperine, delivering a sharp, dry, wood-spiced heat and a clean, biting savory snap on the finish.",
+    pairing: "Excellent for cutting through heavy, unctuous sweet profiles or oily botanical builds.",
+    mixology: "The definitive choice for an authentic Red Snapper, or adding a dry peppery snap to a dirty Martini."
+  },
+  "cubeb berries": {
+    cat: "Rooty / Spicy · Earthy",
+    origin: "Piper cubeba from Java. Tail-bearing peppercorns that introduce a highly complex, earthy pepper spice with beautiful, cooling undertones of fresh pine boughs, allspice, and clean eucalyptus.",
+    pairing: "Frequently paired with modern bold gins to generate a long, multidimensional, warming peppery finish.",
+    mixology: "Magnificent in a Negroni or spirit-forward old-school cocktails where its cooling spice notes complement sweet vermouth."
+  },
+  "ginger": {
+    cat: "Rooty / Spicy · Fiery",
+    origin: "Fresh or dried rhizome of Zingiber officinale. Packed with gingerol (which converts to shogaol when dried), introducing an instantly recognizable hot, sharp, zesty, fireside spice burn.",
+    pairing: "Works hand-in-hand with bright citrus profiles (lemon, lemongrass) to drive high-intensity freshness.",
+    mixology: "The absolute baseline partner for highballs utilizing premium ginger beer, or adding an intense, fiery kick to winter Sours."
+  },
+  "coriander seed": {
+    cat: "Rooty / Spicy · Piquant",
+    origin: "The absolute #2 most critical botanical in gin production worldwide. Driven by linalool, which contributes an intensely fresh, sweet, sage-like herbal woodiness backed by a brilliant, high-toned citrus burst.",
+    pairing: "Acts as the literal chemical bridge in the still, fusing the deep pine notes of juniper with volatile citrus top notes.",
+    mixology: "Omnipresent across all cocktail formats. Essential for holding together the balance of citrus and pine inside a Gin Tonic."
+  }
+};
+
+const svg = document.getElementById('wheelSvg');
+const detail = document.getElementById('detailPanel');
+const TWO_PI = Math.PI * 2;
+let rotation = 0;
+let isDragging = false;
+let lastAngle = 0;
+let velocity = 0;
+let lastTime = 0;
+let animFrame = null;
+
+function polarToCart(cx,cy,r,angle){
+  return [cx + r*Math.cos(angle), cy + r*Math.sin(angle)];
+}
+
+function describeArcRing(r1,r2,startAngle,endAngle){
+  const [sx1,sy1] = polarToCart(0,0,r1,startAngle);
+  const [ex1,ey1] = polarToCart(0,0,r1,endAngle);
+  const [sx2,sy2] = polarToCart(0,0,r2,startAngle);
+  const [ex2,ey2] = polarToCart(0,0,r2,endAngle);
+  const large = endAngle - startAngle > Math.PI ? 1 : 0;
+  return `M ${sx1} ${sy1} A ${r1} ${r1} 0 ${large} 1 ${ex1} ${ey1} L ${ex2} ${ey2} A ${r2} ${r2} 0 ${large} 0 ${sx2} ${sy2} Z`;
+}
+
+function buildWheel(){
+  const catCount = DATA.categories.length;
+  const anglePerCat = TWO_PI / catCount;
+  const R_INNER = 65, R_CAT = 135, R_SUB = 205, R_DESC = 295;
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('id','wheelG');
+  
+  DATA.categories.forEach((cat, ci) => {
+    const catStart = ci * anglePerCat - Math.PI/2;
+    const catEnd = catStart + anglePerCat;
+    
+    // Tier 1: Category
+    const catPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+    catPath.setAttribute('d', describeArcRing(R_INNER, R_CAT, catStart, catEnd));
+    catPath.setAttribute('fill', cat.color);
+    catPath.setAttribute('stroke','#0d1611');
+    catPath.setAttribute('stroke-width','1.5');
+    g.appendChild(catPath);
+    
+    const catMidAngle = catStart + anglePerCat/2;
+    const [lx,ly] = polarToCart(0,0,(R_INNER + R_CAT)/2,catMidAngle);
+    
+    const catLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+    catLabel.setAttribute('x',lx); catLabel.setAttribute('y',ly);
+    catLabel.setAttribute('text-anchor','middle'); catLabel.setAttribute('dominant-baseline','central');
+    catLabel.setAttribute('font-size','5.5'); catLabel.setAttribute('fill', cat.textColor||'#fff');
+    catLabel.setAttribute('font-family','Georgia,serif'); catLabel.setAttribute('font-weight','bold');
+    catLabel.setAttribute('transform',`rotate(${(catMidAngle*180/Math.PI)},${lx},${ly})`);
+    catLabel.style.pointerEvents='none';
+    
+    const words = cat.name.split(' ');
+    if(words.length>1 && cat.name !== "EARL GREY" && cat.name !== "CARAWAY SEED"){
+      const t1 = document.createElementNS('http://www.w3.org/2000/svg','tspan');
+      t1.setAttribute('x',lx); t1.setAttribute('dy','-3'); t1.textContent = words[0];
+      const t2 = document.createElementNS('http://www.w3.org/2000/svg','tspan');
+      t2.setAttribute('x',lx); t2.setAttribute('dy','6'); t2.textContent = words.slice(1).join(' ');
+      catLabel.appendChild(t1); catLabel.appendChild(t2);
+    } else {
+      catLabel.textContent = cat.name;
+    }
+    g.appendChild(catLabel);
+    
+    const totalSubs = cat.sub.length;
+    const anglePerSub = anglePerCat / totalSubs;
+    
+    cat.sub.forEach((sub, si) => {
+      const subStart = catStart + si * anglePerSub;
+      const subEnd = subStart + anglePerSub;
+      const subMid = subStart + anglePerSub/2;
+      
+      // Tier 2: Intermediates
+      const subPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+      subPath.setAttribute('d', describeArcRing(R_CAT, R_SUB, subStart, subEnd));
+      subPath.setAttribute('fill', sub.color);
+      subPath.setAttribute('stroke','#0d1611');
+      subPath.setAttribute('stroke-width','1');
+      g.appendChild(subPath);
+      
+      const [slx,sly] = polarToCart(0,0,(R_CAT+R_SUB)/2,subMid);
+      const subLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+      subLabel.setAttribute('x',slx); subLabel.setAttribute('y',sly);
+      subLabel.setAttribute('text-anchor','middle'); subLabel.setAttribute('dominant-baseline','central');
+      subLabel.setAttribute('font-size','4.5'); subLabel.setAttribute('fill', cat.textColor||'#fff');
+      subLabel.setAttribute('font-family','Georgia,serif');
+      subLabel.setAttribute('transform',`rotate(${(subMid*180/Math.PI)},${slx},${sly})`);
+      subLabel.style.pointerEvents='none';
+      subLabel.textContent = sub.name;
+      g.appendChild(subLabel);
+      
+      const totalDesc = sub.descriptors.length;
+      const anglePerDesc = anglePerSub / totalDesc;
+      
+      sub.descriptors.forEach((desc, di) => {
+        const descStart = subStart + di * anglePerDesc;
+        const descEnd = descStart + anglePerDesc;
+        const descMid = descStart + anglePerDesc/2;
+        
+        // Tier 3 Wrapper Group to hold the segment and centered text cleanly
+        const itemGroup = document.createElementNS('http://www.w3.org/2000/svg','g');
+        itemGroup.setAttribute('class', 'interactive-item-wrap');
+        
+        const midR = (R_SUB + R_DESC) / 2;
+        const [cxPoint, cyPoint] = polarToCart(0, 0, midR, descMid);
+        
+        const descPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+        const dColor = lighten(sub.color, 25);
+        descPath.setAttribute('d', describeArcRing(R_SUB, R_DESC, descStart, descEnd));
+        descPath.setAttribute('fill', dColor);
+        descPath.setAttribute('stroke','#0d1611');
+        descPath.setAttribute('stroke-width','0.8');
+        descPath.setAttribute('class','desc-seg');
+        descPath.setAttribute('cursor','pointer');
+        
+        const descLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+        descLabel.setAttribute('x',cxPoint); descLabel.setAttribute('y',cyPoint);
+        descLabel.setAttribute('text-anchor','middle'); descLabel.setAttribute('dominant-baseline','central');
+        
+        // Locked at a permanent 11px rendering scale across the layout
+        descLabel.setAttribute('font-size','11'); 
+        descLabel.setAttribute('fill','#0f1c14');
+        descLabel.setAttribute('font-family','Georgia,serif'); descLabel.setAttribute('font-weight','bold');
+        descLabel.setAttribute('transform',`rotate(${(descMid*180/Math.PI)},${cxPoint},${cyPoint})`);
+        descLabel.style.pointerEvents='none';
+        
+        const dwords = desc.name.split(' ');
+        if(dwords.length>1 && desc.name !== "ORRIS ROOT" && desc.name !== "CASSIA BARK" && desc.name !== "EARL GREY"){
+          const t1=document.createElementNS('http://www.w3.org/2000/svg','tspan');
+          t1.setAttribute('x',cxPoint); t1.setAttribute('dy','-5'); t1.textContent=dwords[0];
+          const t2=document.createElementNS('http://www.w3.org/2000/svg','tspan');
+          t2.setAttribute('x',cxPoint); t2.setAttribute('dy','11'); t2.textContent=dwords.slice(1).join(' ');
+          descLabel.appendChild(t1); descLabel.appendChild(t2);
+        } else {
+          descLabel.textContent = desc.name;
+        }
+        
+        itemGroup.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showDetail(desc.slug, desc.name);
+        });
+        
+        itemGroup.appendChild(descPath);
+        itemGroup.appendChild(descLabel);
+        g.appendChild(itemGroup);
+      });
+    });
+  });
+  
+  // Center Medallion
+  const center = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  center.setAttribute('cx','0'); center.setAttribute('cy','0'); center.setAttribute('r',R_INNER);
+  center.setAttribute('fill','#132219'); center.setAttribute('stroke','#a3c2ae'); center.setAttribute('stroke-width','2');
+  g.appendChild(center);
+  
+  const ct = document.createElementNS('http://www.w3.org/2000/svg','text');
+  ct.setAttribute('text-anchor','middle'); ct.setAttribute('dominant-baseline','central');
+  ct.setAttribute('y','-10'); ct.setAttribute('font-size','9');
+  ct.setAttribute('fill','#a3c2ae'); ct.setAttribute('font-family','Georgia,serif');
+  ct.setAttribute('letter-spacing','0.05em'); ct.textContent='ARTISAN';
+  
+  const ct2 = document.createElementNS('http://www.w3.org/2000/svg','text');
+  ct2.setAttribute('text-anchor','middle'); ct2.setAttribute('dominant-baseline','central');
+  ct2.setAttribute('y','3'); ct2.setAttribute('font-size','11');
+  ct2.setAttribute('fill','#e3ece6'); ct2.setAttribute('font-family','Georgia,serif');
+  ct2.setAttribute('font-weight','bold'); ct2.textContent='GIN';
+  
+  const ct3 = document.createElementNS('http://www.w3.org/2000/svg','text');
+  ct3.setAttribute('text-anchor','middle'); ct3.setAttribute('dominant-baseline','central');
+  ct3.setAttribute('y','14'); ct3.setAttribute('font-size','6');
+  ct3.setAttribute('fill','#6b8e78'); ct3.setAttribute('font-family','Georgia,serif');
+  ct3.textContent='FLAVOR WHEEL';
+  
+  g.appendChild(ct); g.appendChild(ct2); g.appendChild(ct3);
+  svg.appendChild(g);
+}
+
+function lighten(hex, amount){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  r=Math.min(255,r+amount);g=Math.min(255,g+amount);b=Math.min(255,b+amount);
+  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+function showDetail(slug, name){
+  const data = DESCRIPTIONS[slug];
+  if(!data){
+    detail.innerHTML=`<h2>${name}</h2><div class="category-tag">Botanical Modifier</div><div class="body">Organoleptic technical details for <em>${name}</em> are being updated. Click adjacent fully integrated botanical blocks to evaluate flavor structures.</div>`;
+    return;
+  }
+  detail.innerHTML=`
+    <h2>${name}</h2>
+    <div class="category-tag">${data.cat}</div>
+    
+    <div class="section-title">Distillation &amp; Structural Origin</div>
+    <div class="body">${data.origin}</div>
+    
+    <div class="section-title">Organoleptic Pairings</div>
+    <div class="body">${data.pairing}</div>
+    
+    <div class="section-title">Mixology Blueprint &amp; Service Strategy</div>
+    <div class="body">${data.mixology}</div>
+  `;
+}
+
+function getAngle(e, rect){
+  const cx=rect.left+rect.width/2;
+  const cy=rect.top+rect.height/2;
+  const clientX = e.touches?e.touches[0].clientX:e.clientX;
+  const clientY = e.touches?e.touches[0].clientY:e.clientY;
+  return Math.atan2(clientY-cy, clientX-cx);
+}
+
+function applyRotation(){
+  const g = document.getElementById('wheelG');
+  if(g) g.setAttribute('transform',`rotate(${rotation * 180/Math.PI})`);
+}
+
+function momentum(){
+  if(!isDragging && Math.abs(velocity)>0.001){
+    rotation += velocity;
+    velocity *= 0.95;
+    applyRotation();
+    animFrame = requestAnimationFrame(momentum);
+  }
+}
+
+svg.addEventListener('mousedown', e=>{
+  if(e.target.closest('.interactive-item-wrap')) return;
+  isDragging=true;
+  const rect=svg.getBoundingClientRect();
+  lastAngle=getAngle(e,rect);
+  lastTime=Date.now();
+  velocity=0;
+  if(animFrame) cancelAnimationFrame(animFrame);
+  svg.style.cursor='grabbing';
+});
+
+window.addEventListener('mousemove',e=>{
+  if(!isDragging) return;
+  const rect=svg.getBoundingClientRect();
+  const angle=getAngle(e,rect);
+  const delta=angle-lastAngle;
+  const now=Date.now();
+  velocity=delta/(Math.max(1,now-lastTime))*16;
+  rotation+=delta;
+  lastAngle=angle;
+  lastTime=now;
+  applyRotation();
+});
+
+window.addEventListener('mouseup',()=>{
+  if(!isDragging) return;
+  isDragging=false;
+  svg.style.cursor='grab';
+  animFrame=requestAnimationFrame(momentum);
+});
+
+svg.addEventListener('touchstart', e=>{
+  if(e.target.closest('.interactive-item-wrap')) return;
+  e.preventDefault();
+  isDragging=true;
+  const rect=svg.getBoundingClientRect();
+  lastAngle=getAngle(e,rect);
+  lastTime=Date.now();
+  velocity=0;
+  if(animFrame)cancelAnimationFrame(animFrame);
+},{passive:false});
+
+svg.addEventListener('touchmove', e=>{
+  if(!isDragging)return;
+  e.preventDefault();
+  const rect=svg.getBoundingClientRect();
+  const angle=getAngle(e,rect);
+  const delta=angle-lastAngle;
+  const now=Date.now();
+  velocity=delta/(Math.max(1,now-lastTime))*16;
+  rotation+=delta;
+  lastAngle=angle;
+  lastTime=now;
+  applyRotation();
+},{passive:false});
+
+svg.addEventListener('touchend', e=>{
+  isDragging=false;
+  animFrame=requestAnimationFrame(momentum);
+});
+
+buildWheel();
+</script>
+</body>
+</html>
