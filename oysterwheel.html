@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Oyster Tasting Wheel</title>
+    <style>
+        :root {
+            --bg-color: #fcfbf7;
+            --text-color: #2c3e50;
+            --accent-color: #d4af37;
+            --panel-bg: #ffffff;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .subtitle {
+            margin-top: 0;
+            margin-bottom: 30px;
+            color: #7f8c8d;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            max-width: 1200px;
+            width: 100%;
+            gap: 40px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        /* Wheel Container Styles */
+        .wheel-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+
+        #wheelCanvas {
+            cursor: grab;
+            max-width: 100%;
+            height: auto;
+            background: transparent;
+            border-radius: 50%;
+            box-shadow: var(--shadow);
+        }
+
+        #wheelCanvas:active {
+            cursor: grabbing;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid #2c3e50;
+            z-index: 10;
+            filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.2));
+        }
+
+        /* Info Panel Styles */
+        .info-panel {
+            flex: 1;
+            min-width: 320px;
+            max-width: 450px;
+            background: var(--panel-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid #eaeaea;
+            box-sizing: border-box;
+            align-self: stretch;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .placeholder-text {
+            color: #95a5a6;
+            text-align: center;
+            margin: auto 0;
+            font-style: italic;
+        }
+
+        .flavor-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 5px;
+            text-transform: capitalize;
+            border-bottom: 3px solid #ccc;
+            padding-bottom: 8px;
+        }
+
+        .flavor-category {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .info-section {
+            margin-bottom: 20px;
+        }
+
+        .info-section h4 {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #7f8c8d;
+            letter-spacing: 0.5px;
+        }
+
+        .info-section p {
+            margin: 0;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        /* Quick-select grid */
+        .quick-select {
+            margin-top: 25px;
+            width: 100%;
+            max-width: 1000px;
+        }
+        .quick-select h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #7f8c8d;
+            text-align: center;
+        }
+        .buttons-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .descriptor-btn {
+            background: #fff;
+            border: 1px solid #dcdde1;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .descriptor-btn:hover {
+            background: #2c3e50;
+            color: #fff;
+            border-color: #2c3e50;
+        }
+
+        @media (max-width: 850px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .info-panel {
+                width: 100%;
+                max-width: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Oyster Tasting Wheel</h1>
+    <p class="subtitle">Click directly on any slice to instantly view its profile, or swipe to spin the wheel.</p>
+
+    <div class="container">
+        <div class="wheel-wrapper">
+            <div class="pointer"></div>
+            <canvas id="wheelCanvas" width="500" height="500"></canvas>
+        </div>
+
+        <div class="info-panel" id="infoPanel">
+            <div class="placeholder-text" id="placeholder">
+                <p>💡 Click directly on any segment label on the wheel or a button below to populate the tasting data!</p>
+            </div>
+            <div id="content" style="display: none;">
+                <h2 class="flavor-title" id="displayTitle">Descriptor</h2>
+                <div class="flavor-category" id="displayCategory">Category</div>
+                
+                <div class="info-section">
+                    <h4>Why it's used</h4>
+                    <p id="displayWhy">Loading description...</p>
+                </div>
+                
+                <div class="info-section">
+                    <h4>How it applies</h4>
+                    <p id="displayHow">Loading application data...</p>
+                </div>
+                
+                <div class="info-section">
+                    <h4>Notable Regions & Producers</h4>
+                    <p id="displayExamples">Loading examples...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="quick-select">
+        <h3>Direct Flavor Selector</h3>
+        <div class="buttons-grid" id="buttonsGrid"></div>
+    </div>
+
+    <script>
+        const tastingData = [
+            { name: "Copper / Brass", cat: "Metals & Minerals", color: "#f3f5d2", why: "Indicates a distinct metallic, penny-like bite derived from specific species and environments high in trace mineral composition.", how: "Typically found heavily in Ostrea edulis species. It hits the back sides of the tongue and lingers intensely as a signature finish.", examples: "Belon Oysters (Brittany, France), Maine Belons (USA)." },
+            { name: "Sweet", cat: "Taste", color: "#fff200", why: "Caused by high accumulations of glycogen in the oyster's muscle tissues, usually built up during cold months or feeding blooms.", how: "Presents as a mild, clean, sugary finish on the tip of the tongue, balancing intense salinity.", examples: "Kusshi (British Columbia), Taylor Pacific Rapiers, Kumamoto (Humboldt Bay, CA)." },
+            { name: "Umami", cat: "Taste", color: "#fff200", why: "Driven by high levels of naturally occurring glutamic acids and savory proteins inside the oyster meat.", how: "Coats the entire mouth with a rich, savory, broth-like weight that makes the flavor finish feel complete.", examples: "Hama Hama (WA), Shigoku (Samish Bay, WA)." },
+            { name: "Sea Lettuce", cat: "Seaweed", color: "#c8d665", why: "Reflects an oyster actively filtering shallow-water green macroalgae, infusing its tissues with a crisp, leafy ocean flavor.", how: "Hits the nose first as a vibrant marine aroma and leaves a bright, vegetal crispness on the palate.", examples: "Duxbury Pearls (MA), Wellfleets (Cape Cod, MA)." },
+            { name: "Kelp / Kombu", cat: "Seaweed", color: "#c8d665", why: "Sourced from deep, cold ocean waters rich in dense brown kelp forests.", how: "Offers a heavy, savory marine baseline that mimics a rich dashi broth mixed with clean sea salt.", examples: "Glidden Point (Damariscotta River, ME), Standish Shore (MA)." },
+            { name: "Cucumber", cat: "Green / Vegetal", color: "#a4ca68", why: "A classic compound match (lipid aldehydes) naturally present in certain oyster species that mirrors fresh melon and cucumber rinds.", how: "Provides a refreshing, clean, summer-vegetal lift right at the start of the chew.", examples: "Penn Cove Selects (WA), Quilcene (WA), most Pacific Northwest Crassostrea gigas." },
+            { name: "Bell Pepper", cat: "Green / Vegetal", color: "#a4ca68", why: "Pyrazines within the water column filter through the oyster, providing a snappy garden characteristic.", how: "Leaves a green, slightly sweet, bell-pepper skin accent on the mid-palate.", examples: "Totten Inlet Virginicas (WA)." },
+            { name: "Melon", cat: "Fruity", color: "#fca371", why: "Often shared with cucumber traits, this is triggered by enzyme reactions unique to pristine, low-stress environments.", how: "Delivers an aromatic, sweet, cantaloupe or honeydew-like finish.", examples: "Sweet Neck Oysters (MA), Pleasant Bay (MA)." },
+            { name: "Citrus", cat: "Fruity", color: "#fca371", why: "A high-acid perception that yields a bright, tangy, almost lemon-spritzed experience.", how: "Appears alongside sharp salt profiles, making the oyster taste crisp and self-saucing.", examples: "Sexton Island (NY), Beausoleil (New Brunswick, Canada)." },
+            { name: "Fresh Mushroom", cat: "Earthy", color: "#da8a57", why: "Derived from oysters grown near heavy river runoffs or muddy estuaries rich in organic decomposition materials.", how: "Adds a dark, forest-floor, earthy complexity to the back of the throat.", examples: "Lowcountry Oysters (SC), Rappahannock River Oysters (VA)." },
+            { name: "Almond", cat: "Nutty", color: "#b96434", why: "Associated with higher fat storage and healthy lipids stored in the oyster's mantle.", how: "Leaves a rich, marzipan or toasted nut dryness on the final finish.", examples: "Hog Island Sweetwater (CA), Netarts Bay (OR)." },
+            { name: "Miso", cat: "Savory", color: "#9a62a6", why: "A compound mix of deep earthiness, high salinity, and strong umami.", how: "Creates a deeply fermented, salty-savory density that stays on the tongue long after swallowing.", examples: "Samish Bay Pacifics (WA)." },
+            { name: "Buttery", cat: "Texture / Mouthfeel", color: "#c2e5f3", why: "Reflects fat, plump oysters harvested right before spawning season when glycogen storage is optimized.", how: "The meat feels thick, velvety, and melts away with a creamy dairy texture.", examples: "Kumamoto (CA/WA), Moonshoal Oysters (MA)." },
+            { name: "Snappy", cat: "Texture / Mouthfeel", color: "#c2e5f3", why: "Indicates cold-water tumbling or high wave action which forces the oyster to constantly work its adductor muscle.", how: "Gives a distinct, energetic, crisp bite that feels bouncy rather than soft.", examples: "Shigoku (WA), Rocky Ridge (PEI)." },
+            { name: "Brackish", cat: "Aroma", color: "#ffcb05", why: "Found in oysters native to low-salinity zones where massive freshwater rivers meet the incoming ocean tide.", how: "Smells like a fresh marsh breeze; tastes deeply mineral-rich with very low, approachable salt levels.", examples: "Rappahannock (Chesapeake Bay), Naked Cowboys (Long Island Sound, NY)." },
+            { name: "Oceanic", cat: "Aroma / Taste", color: "#ffcb05", why: "Harvested directly out of high-salinity pelagic ocean currents with no river dilute nearby.", how: "Smells like an exploding ocean wave; delivers an immediate punch of pure Atlantic or Pacific salt water.", examples: "Island Creek Oysters (Duxbury, MA), Chincoteague (VA)." }
+        ];
+
+        const canvas = document.getElementById("wheelCanvas");
+        const ctx = canvas.getContext("2d");
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = canvas.width / 2 - 10;
+
+        let currentAngle = 0;
+        let isDragging = false;
+        let startAngle = 0;
+        let angularVelocity = 0;
+        let lastTime = 0;
+        let lastAngle = 0;
+        let hasDragged = false; 
+        let animationFrameId = null;
+        const friction = 0.97;
+
+        const totalSlices = tastingData.length;
+        const sliceAngle = (2 * Math.PI) / totalSlices;
+
+        function drawWheel() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < totalSlices; i++) {
+                const angle = currentAngle + i * sliceAngle;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, angle, angle + sliceAngle);
+                ctx.closePath();
+                ctx.fillStyle = tastingData[i].color;
+                ctx.fill();
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(angle + sliceAngle / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#2c3e50";
+                ctx.font = "bold 11px sans-serif";
+                
+                let text = tastingData[i].name;
+                if(text.length > 15) text = text.substring(0,13) + "...";
+                ctx.fillText(text, radius - 25, 4);
+                ctx.restore();
+            }
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 60, 0, 2 * Math.PI);
+            ctx.fillStyle = "#ffffff";
+            ctx.fill();
+            ctx.strokeStyle = "#2c3e50";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.fillStyle = "#2c3e50";
+            ctx.font = "9px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("OYSTER", centerX, centerY - 10);
+            ctx.font = "bold 10px sans-serif";
+            ctx.fillText("MASTER", centerX, centerY + 3);
+            ctx.font = "9px sans-serif";
+            ctx.fillText("WHEEL", centerX, centerY + 16);
+        }
+
+        function getEventAngle(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const x = clientX - rect.left - centerX;
+            const y = clientY - rect.top - centerY;
+            return Math.atan2(y, x);
+        }
+
+        function handleStart(e) {
+            isDragging = true;
+            hasDragged = false;
+            angularVelocity = 0;
+            if(animationFrameId) cancelAnimationFrame(animationFrameId);
+            
+            startAngle = getEventAngle(e) - currentAngle;
+            lastTime = performance.now();
+            lastAngle = currentAngle;
+        }
+
+        function handleMove(e) {
+            if (!isDragging) return;
+            if(e.cancelable) e.preventDefault();
+
+            const angle = getEventAngle(e);
+            const deltaAngle = angle - startAngle;
+            
+            if (Math.abs(deltaAngle - currentAngle) > 0.03) {
+                hasDragged = true;
+            }
+
+            currentAngle = deltaAngle;
+
+            const now = performance.now();
+            const dt = now - lastTime;
+            if (dt > 0) {
+                angularVelocity = (currentAngle - lastAngle) / dt * 16.66;
+            }
+            lastTime = now;
+            lastAngle = currentAngle;
+
+            drawWheel();
+        }
+
+        function handleEnd(e) {
+            if (!isDragging) return;
+            isDragging = false;
+
+            if (!hasDragged) {
+                const clickAngle = getEventAngle(e);
+                let relativeAngle = (clickAngle - currentAngle) % (2 * Math.PI);
+                if (relativeAngle < 0) relativeAngle += 2 * Math.PI;
+                
+                const clickedIndex = Math.floor(relativeAngle / sliceAngle) % totalSlices;
+                
+                // INSTANT POPULATE: Show information straight away on click
+                updateInfoPanel(tastingData[clickedIndex]);
+                
+                // Then clean up with an auto-align scroll animation
+                animateToSlice(clickedIndex);
+            } else {
+                animationFrameId = requestAnimationFrame(animateSpin);
+            }
+        }
+
+        function animateSpin() {
+            if (isDragging) return;
+
+            if (Math.abs(angularVelocity) > 0.005) {
+                currentAngle += angularVelocity * 0.05;
+                angularVelocity *= friction;
+                drawWheel();
+                animationFrameId = requestAnimationFrame(animateSpin);
+            } else {
+                angularVelocity = 0;
+                determineSelectedSlice();
+            }
+        }
+
+        function determineSelectedSlice() {
+            let normalizedAngle = (3 * Math.PI / 2 - currentAngle) % (2 * Math.PI);
+            if (normalizedAngle < 0) normalizedAngle += 2 * Math.PI;
+
+            const index = Math.floor(normalizedAngle / sliceAngle) % totalSlices;
+            updateInfoPanel(tastingData[index]);
+        }
+
+        function updateInfoPanel(item) {
+            document.getElementById("placeholder").style.display = "none";
+            document.getElementById("content").style.display = "block";
+
+            document.getElementById("displayTitle").innerText = item.name;
+            document.getElementById("displayCategory").innerText = item.cat;
+            document.getElementById("displayWhy").innerText = item.why;
+            document.getElementById("displayHow").innerText = item.how;
+            document.getElementById("displayExamples").innerText = item.examples;
+        }
+
+        function animateToSlice(index) {
+            const targetAngle = 3 * Math.PI / 2 - (index * sliceAngle + sliceAngle / 2);
+            
+            let startTime = null;
+            const startRotation = currentAngle;
+            const duration = 500;
+
+            function snapAnimation(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                const easeProgress = 1 - Math.pow(1 - progress, 3); // cubic ease out
+
+                currentAngle = startRotation + (targetAngle - startRotation) * easeProgress;
+                drawWheel();
+
+                if (progress < 1) {
+                    animationFrameId = requestAnimationFrame(snapAnimation);
+                }
+            }
+            animationFrameId = requestAnimationFrame(snapAnimation);
+        }
+
+        function selectFlavorDirectly(index) {
+            updateInfoPanel(tastingData[index]);
+            animateToSlice(index);
+        }
+
+        function buildAccessibilityButtons() {
+            const grid = document.getElementById("buttonsGrid");
+            tastingData.forEach((item, index) => {
+                const btn = document.createElement("button");
+                btn.className = "descriptor-btn";
+                btn.innerText = item.name;
+                btn.style.borderLeft = `4px solid ${item.color}`;
+                btn.onclick = () => selectFlavorDirectly(index);
+                grid.appendChild(btn);
+            });
+        }
+
+        canvas.addEventListener("mousedown", handleStart);
+        window.addEventListener("mousemove", handleMove);
+        window.addEventListener("mouseup", handleEnd);
+
+        canvas.addEventListener("touchstart", handleStart, { passive: false });
+        window.addEventListener("touchmove", handleMove, { passive: false });
+        window.addEventListener("touchend", handleEnd);
+
+        buildAccessibilityButtons();
+        drawWheel();
+    </script>
+</body>
+</html>
