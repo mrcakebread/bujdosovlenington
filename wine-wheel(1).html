@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wine Aroma & Flavor Wheel</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Georgia,serif;background:#1a1008;color:#f5e6c8;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+h1{font-size:1.4rem;font-weight:400;letter-spacing:0.15em;text-transform:uppercase;color:#c9a96e;padding:1.2rem 0 0.3rem;text-align:center;}
+.subtitle{font-size:0.75rem;color:#8a6b3a;letter-spacing:0.1em;margin-bottom:0.8rem;text-align:center;}
+.layout{display:flex;gap:0;width:100%;max-width:1600px;align-items:flex-start;padding:0 1rem 2rem;}
+.wheel-wrap{flex:0 0 auto;display:flex;justify-content:center;}
+#wheelSvg{cursor:grab;user-select:none;touch-action:none;}
+#wheelSvg:active{cursor:grabbing;}
+.detail-panel{flex:1;min-width:300px;max-width:440px;background:#231508;border:1px solid #5a3a1a;border-radius:12px;padding:1.6rem 1.8rem;margin-left:2rem;min-height:420px;transition:opacity 0.3s;}
+.detail-panel h2{font-size:1.5rem;color:#e8c97e;margin-bottom:0.3rem;font-weight:400;font-style:italic;}
+.detail-panel h2 a{color:#f0d080;text-decoration:none;border-bottom:1px solid #8a6030;}
+.detail-panel h2 a:hover{color:#ffe8a0;border-bottom-color:#c9a96e;}
+.detail-panel .category-tag{font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:#8a6b3a;margin-bottom:1rem;}
+.detail-panel .body{font-size:0.88rem;line-height:1.75;color:#d4c0a0;}
+.detail-panel .compound{margin-top:1rem;padding-top:0.8rem;border-top:1px solid #3a2510;font-size:0.78rem;color:#a08050;line-height:1.6;}
+.detail-panel .compound strong{color:#c9a96e;font-style:normal;}
+.hint{font-size:0.78rem;color:#5a4020;text-align:center;margin-top:0.5rem;font-style:italic;}
+.spin-hint{font-size:0.72rem;color:#4a3015;text-align:center;margin-bottom:0.5rem;letter-spacing:0.08em;}
+@media(max-width:1180px){
+  .layout{flex-direction:column;align-items:center;}
+  .detail-panel{margin-left:0;margin-top:1rem;width:100%;max-width:95vw;}
+  h1{font-size:1.1rem;}
+  #wheelSvg{width:min(95vw,900px);height:min(95vw,900px);}
+}
+</style>
+</head>
+<body>
+<h1>Wine Aroma &amp; Flavor Finder</h1>
+<div class="subtitle">Spin the wheel · Click any descriptor to explore</div>
+<div class="spin-hint">↺ Click &amp; drag to spin &nbsp;|&nbsp; Tap a segment to learn</div>
+<div class="layout">
+  <div class="wheel-wrap">
+    <svg id="wheelSvg" viewBox="-640 -640 1280 1280" width="1120" height="1120" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+  <div class="detail-panel" id="detailPanel">
+    <div style="color:#5a4020;font-size:0.95rem;margin-top:3rem;text-align:center;font-style:italic;">Select any aroma or flavor<br>from the wheel to learn more.</div>
+  </div>
+</div>
+
+<script>
+const DATA = {
+  categories: [
+    {
+      name:"FLOWER", color:"#b5a8d8", textColor:"#2e1f5e",
+      sub:[
+        {name:"Iris",color:"#cec3e8",descriptors:[{name:"Iris",slug:"iris"}]},
+        {name:"Peony",color:"#d4caec",descriptors:[{name:"Peony",slug:"peony"}]},
+        {name:"Elderflower",color:"#c9bee6",descriptors:[{name:"Elderflower",slug:"elderflower"}]},
+        {name:"Acacia",color:"#bfb4e0",descriptors:[{name:"Acacia",slug:"acacia"}]},
+        {name:"Jasmine",color:"#d4caec",descriptors:[{name:"Jasmine",slug:"jasmine"}]},
+        {name:"Honeysuckle",color:"#c9bee6",descriptors:[{name:"Honeysuckle",slug:"honeysuckle"}]},
+        {name:"Lilac",color:"#bfb4e0",descriptors:[{name:"Lilac",slug:"lilac"}]},
+        {name:"Violet",color:"#b5a8d8",descriptors:[{name:"Violet",slug:"violet"}]},
+        {name:"Lavender",color:"#cec3e8",descriptors:[{name:"Lavender",slug:"lavender"}]},
+        {name:"Rose",color:"#d4caec",descriptors:[{name:"Rose",slug:"rose"}]},
+        {name:"Hibiscus",color:"#c9bee6",descriptors:[{name:"Hibiscus",slug:"hibiscus"}]},
+        {name:"Potpourri",color:"#bfb4e0",descriptors:[{name:"Potpourri",slug:"potpourri"}]},
+      ]
+    },
+    {
+      name:"CITRUS", color:"#f5e070", textColor:"#4a3800",
+      sub:[
+        {name:"Lime",color:"#f7eb8a",descriptors:[{name:"Lime",slug:"lime"}]},
+        {name:"Lemon",color:"#f5e070",descriptors:[{name:"Lemon",slug:"lemon"}]},
+        {name:"Grapefruit",color:"#f3d460",descriptors:[{name:"Grapefruit",slug:"grapefruit"}]},
+        {name:"Orange",color:"#f7c850",descriptors:[{name:"Orange",slug:"orange"}]},
+        {name:"Marmalade",color:"#f5b840",descriptors:[{name:"Marmalade",slug:"marmalade"}]},
+      ]
+    },
+    {
+      name:"TREE FRUIT", color:"#f9c06a", textColor:"#4a2000",
+      sub:[
+        {name:"Quince",color:"#fad080",descriptors:[{name:"Quince",slug:"quince"}]},
+        {name:"Apple",color:"#f9c06a",descriptors:[{name:"Apple",slug:"apple"}]},
+        {name:"Pear",color:"#f8b055",descriptors:[{name:"Pear",slug:"pear"}]},
+        {name:"Nectarine",color:"#f7a040",descriptors:[{name:"Nectarine",slug:"nectarine"}]},
+        {name:"Peach",color:"#f9b060",descriptors:[{name:"Peach",slug:"peach"}]},
+        {name:"Apricot",color:"#f8a050",descriptors:[{name:"Apricot",slug:"apricot"}]},
+        {name:"Persimmon",color:"#f09040",descriptors:[{name:"Persimmon",slug:"persimmon"}]},
+      ]
+    },
+    {
+      name:"TROPICAL FRUIT", color:"#f4c542", textColor:"#3a2000",
+      sub:[
+        {name:"Pineapple",color:"#f9d870",descriptors:[{name:"Pineapple",slug:"pineapple"}]},
+        {name:"Mango",color:"#f7c855",descriptors:[{name:"Mango",slug:"mango"}]},
+        {name:"Guava",color:"#f5b840",descriptors:[{name:"Guava",slug:"guava"}]},
+        {name:"Kiwi",color:"#d4e060",descriptors:[{name:"Kiwi",slug:"kiwi"}]},
+        {name:"Lychee",color:"#f9d870",descriptors:[{name:"Lychee",slug:"lychee"}]},
+        {name:"Bubblegum",color:"#f4a0b8",descriptors:[{name:"Bubblegum",slug:"bubblegum"}]},
+      ]
+    },
+    {
+      name:"RED FRUIT", color:"#e87070", textColor:"#3a0000",
+      sub:[
+        {name:"Cranberry",color:"#e88080",descriptors:[{name:"Cranberry",slug:"cranberry"}]},
+        {name:"Red Plum",color:"#d86060",descriptors:[{name:"Red Plum",slug:"red-plum"}]},
+        {name:"Pomegranate",color:"#e05060",descriptors:[{name:"Pomegranate",slug:"pomegranate"}]},
+        {name:"Sour Cherry",color:"#d84050",descriptors:[{name:"Sour Cherry",slug:"sour-cherry"}]},
+        {name:"Strawberry",color:"#e86878",descriptors:[{name:"Strawberry",slug:"strawberry"}]},
+        {name:"Cherry",color:"#c83040",descriptors:[{name:"Cherry",slug:"cherry"}]},
+        {name:"Raspberry",color:"#e05070",descriptors:[{name:"Raspberry",slug:"raspberry"}]},
+      ]
+    },
+    {
+      name:"BLACK FRUIT", color:"#8060a0", textColor:"#f0e0ff",
+      sub:[
+        {name:"Boysenberry",color:"#9070b0",descriptors:[{name:"Boysenberry",slug:"boysenberry"}]},
+        {name:"Black Currant",color:"#7050a0",descriptors:[{name:"Black Currant",slug:"black-currant"}]},
+        {name:"Black Cherry",color:"#603090",descriptors:[{name:"Black Cherry",slug:"black-cherry"}]},
+        {name:"Plum",color:"#805090",descriptors:[{name:"Plum",slug:"plum"}]},
+        {name:"Blueberry",color:"#7060a8",descriptors:[{name:"Blueberry",slug:"blueberry"}]},
+        {name:"Blackberry",color:"#503080",descriptors:[{name:"Blackberry",slug:"blackberry"}]},
+      ]
+    },
+    {
+      name:"DRIED FRUIT", color:"#9a6030", textColor:"#ffe0b0",
+      sub:[
+        {name:"Olive",color:"#706030",descriptors:[{name:"Olive",slug:"olive"}]},
+        {name:"Raisin",color:"#8a5028",descriptors:[{name:"Raisin",slug:"raisin"}]},
+        {name:"Fig",color:"#9a6038",descriptors:[{name:"Fig",slug:"fig"}]},
+        {name:"Date",color:"#a07040",descriptors:[{name:"Date",slug:"date"}]},
+        {name:"Fruitcake",color:"#8a6030",descriptors:[{name:"Fruitcake",slug:"fruitcake"}]},
+        {name:"Prune",color:"#6a4020",descriptors:[{name:"Prune",slug:"prune"}]},
+        {name:"Saffron",color:"#c09040",descriptors:[{name:"Saffron",slug:"saffron"}]},
+      ]
+    },
+    {
+      name:"NOBLE ROT", color:"#c8a040", textColor:"#3a2000",
+      sub:[
+        {name:"Ginger",color:"#d0a840",descriptors:[{name:"Ginger",slug:"ginger"}]},
+        {name:"Honey",color:"#e0c050",descriptors:[{name:"Honey",slug:"honey"}]},
+        {name:"Beeswax",color:"#d4b840",descriptors:[{name:"Beeswax",slug:"beeswax"}]},
+        {name:"White Pepper",color:"#e8dcc0",descriptors:[{name:"White Pepper",slug:"white-pepper"}]},
+      ]
+    },
+    {
+      name:"SPICE", color:"#a06020", textColor:"#ffe8c0",
+      sub:[
+        {name:"Red Pepper",color:"#c04020",descriptors:[{name:"Red Pepper",slug:"red-pepper"}]},
+        {name:"Black Pepper",color:"#504030",descriptors:[{name:"Black Pepper",slug:"black-pepper"}]},
+        {name:"Cinnamon",color:"#a05020",descriptors:[{name:"Cinnamon",slug:"cinnamon"}]},
+        {name:"Anise",color:"#608040",descriptors:[{name:"Anise",slug:"anise"}]},
+        {name:"Asian 5-Spice",color:"#905030",descriptors:[{name:"Asian 5-Spice",slug:"asian-5-spice"}]},
+        {name:"Fennel",color:"#70a060",descriptors:[{name:"Fennel",slug:"fennel"}]},
+        {name:"Eucalyptus",color:"#60a080",descriptors:[{name:"Eucalyptus",slug:"eucalyptus"}]},
+        {name:"Mint",color:"#70c088",descriptors:[{name:"Mint",slug:"mint"}]},
+        {name:"Thyme",color:"#80a060",descriptors:[{name:"Thyme",slug:"thyme"}]},
+      ]
+    },
+    {
+      name:"VEGETABLE", color:"#60a060", textColor:"#0a2a0a",
+      sub:[
+        {name:"Grass",color:"#80c070",descriptors:[{name:"Grass",slug:"grass"}]},
+        {name:"Tomato Leaf",color:"#70a850",descriptors:[{name:"Tomato Leaf",slug:"tomato-leaf"}]},
+        {name:"Gooseberry",color:"#a0c050",descriptors:[{name:"Gooseberry",slug:"gooseberry"}]},
+        {name:"Bell Pepper",color:"#80a040",descriptors:[{name:"Bell Pepper",slug:"bell-pepper"}]},
+        {name:"Jalapeño",color:"#50a050",descriptors:[{name:"Jalapeño",slug:"jalapeno"}]},
+        {name:"Tomato",color:"#c06050",descriptors:[{name:"Tomato",slug:"tomato"}]},
+        {name:"Sun Dried Tomato",color:"#b05040",descriptors:[{name:"Sun Dried Tomato",slug:"sun-dried-tomato"}]},
+        {name:"Black Tea",color:"#705030",descriptors:[{name:"Black Tea",slug:"black-tea"}]},
+        {name:"Clay Pot",color:"#a08060",descriptors:[{name:"Clay Pot",slug:"clay-pot"}]},
+      ]
+    },
+    {
+      name:"EARTH", color:"#808050", textColor:"#f5f0d0",
+      sub:[
+        {name:"Slate",color:"#7a7868",descriptors:[{name:"Slate",slug:"slate"}]},
+        {name:"Wet Gravel",color:"#909078",descriptors:[{name:"Wet Gravel",slug:"wet-gravel"}]},
+        {name:"Potting Soil",color:"#706040",descriptors:[{name:"Potting Soil",slug:"potting-soil"}]},
+        {name:"Red Beet",color:"#a05060",descriptors:[{name:"Red Beet",slug:"red-beet"}]},
+        {name:"Volcanic Rocks",color:"#806050",descriptors:[{name:"Volcanic Rocks",slug:"volcanic-rocks"}]},
+        {name:"Petroleum",color:"#504838",descriptors:[{name:"Petroleum",slug:"petroleum"}]},
+      ]
+    },
+    {
+      name:"MICROBIAL", color:"#a0a060", textColor:"#f0f0d0",
+      sub:[
+        {name:"Butter",color:"#e0d080",descriptors:[{name:"Butter",slug:"butter"}]},
+        {name:"Cream",color:"#f0e8b0",descriptors:[{name:"Cream",slug:"cream"}]},
+        {name:"Sourdough",color:"#c0a050",descriptors:[{name:"Sourdough",slug:"sourdough"}]},
+        {name:"Lager",color:"#d0b050",descriptors:[{name:"Lager",slug:"lager"}]},
+        {name:"Truffle",color:"#807050",descriptors:[{name:"Truffle",slug:"truffle"}]},
+        {name:"Mushroom",color:"#a09060",descriptors:[{name:"Mushroom",slug:"mushroom"}]},
+      ]
+    },
+    {
+      name:"OAK AGING", color:"#c0904a", textColor:"#fff0d0",
+      sub:[
+        {name:"Vanilla",color:"#f0e080",descriptors:[{name:"Vanilla",slug:"vanilla"}]},
+        {name:"Coconut",color:"#f0d890",descriptors:[{name:"Coconut",slug:"coconut"}]},
+        {name:"Baking Spices",color:"#d09050",descriptors:[{name:"Baking Spices",slug:"baking-spices"}]},
+        {name:"Cigar Box",color:"#906030",descriptors:[{name:"Cigar Box",slug:"cigar-box"}]},
+        {name:"Smoke",color:"#808080",descriptors:[{name:"Smoke",slug:"smoke"}]},
+        {name:"Dill",color:"#90c060",descriptors:[{name:"Dill",slug:"dill"}]},
+        {name:"Dried Fruit",color:"#a07040",descriptors:[{name:"Dried Fruit (oak)",slug:"dried-fruit"}]},
+      ]
+    },
+    {
+      name:"GENERAL AGING", color:"#907860", textColor:"#f5e8d0",
+      sub:[
+        {name:"Nuts",color:"#c0a060",descriptors:[{name:"Nuts",slug:"nuts"}]},
+        {name:"Dried Fruit",color:"#a07040",descriptors:[{name:"Dried Fruit",slug:"dried-fruit"}]},
+        {name:"Tobacco",color:"#808050",descriptors:[{name:"Tobacco",slug:"tobacco"}]},
+        {name:"Coffee",color:"#604030",descriptors:[{name:"Coffee",slug:"coffee"}]},
+        {name:"Cocoa",color:"#7a5038",descriptors:[{name:"Cocoa",slug:"cocoa"}]},
+        {name:"Leather",color:"#9a7050",descriptors:[{name:"Leather",slug:"leather"}]},
+        {name:"Musty Cardboard",color:"#b0a080",descriptors:[{name:"Musty Cardboard",slug:"musty-cardboard"}]},
+      ]
+    },
+    {
+      name:"TCA (CORKED)", color:"#708060", textColor:"#f0f5e0",
+      sub:[
+        {name:"Musty/Cardboard",color:"#a0b080",descriptors:[{name:"Musty/Cardboard",slug:"musty-cardboard"}]},
+        {name:"Wet Dog",color:"#909070",descriptors:[{name:"Wet Dog",slug:"wet-dog"}]},
+        {name:"Cured Meat",color:"#a08060",descriptors:[{name:"Cured Meat",slug:"cured-meat"}]},
+        {name:"Roasted Eggs",color:"#c0b060",descriptors:[{name:"Roasted Eggs",slug:"roasted-eggs"}]},
+        {name:"Burnt Rubber",color:"#606050",descriptors:[{name:"Burnt Rubber",slug:"burnt-rubber"}]},
+        {name:"Nail Box",color:"#808060",descriptors:[{name:"Nail Box",slug:"nail-box"}]},
+        {name:"Match Box",color:"#909060",descriptors:[{name:"Match Box",slug:"match-box"}]},
+        {name:"Onion",color:"#a0a060",descriptors:[{name:"Onion",slug:"onion"}]},
+      ]
+    },
+    {
+      name:"SULFIDE & MERCAPTAN", color:"#808858", textColor:"#f0f5d8",
+      sub:[
+        {name:"Cat Pee",color:"#a0a858",descriptors:[{name:"Cat Pee",slug:"cat-pee"}]},
+        {name:"Band-Aid",color:"#c0b878",descriptors:[{name:"Band-Aid",slug:"band-aid"}]},
+        {name:"Sweaty/Leather",color:"#988860",descriptors:[{name:"Sweaty/Leather",slug:"sweaty-leather"}]},
+        {name:"Horse/Barnyard",color:"#a09060",descriptors:[{name:"Horse/Barnyard",slug:"horse-barnyard"}]},
+        {name:"Toffee",color:"#d0a840",descriptors:[{name:"Toffee",slug:"toffee"}]},
+      ]
+    },
+    {
+      name:"BRETT/MOUSINESS", color:"#a09060", textColor:"#fff8e0",
+      sub:[
+        {name:"Band-Aid",color:"#c0b060",descriptors:[{name:"Band-Aid",slug:"band-aid"}]},
+        {name:"Barnyard",color:"#908060",descriptors:[{name:"Barnyard",slug:"barnyard"}]},
+      ]
+    },
+    {
+      name:"VOLATILE ACIDITY", color:"#d09080", textColor:"#fff0e8",
+      sub:[
+        {name:"Balsamic",color:"#806040",descriptors:[{name:"Balsamic",slug:"balsamic"}]},
+        {name:"Vinegar",color:"#c0a070",descriptors:[{name:"Vinegar",slug:"vinegar"}]},
+        {name:"Stewed Fruit",color:"#d08050",descriptors:[{name:"Stewed Fruit",slug:"stewed-fruit"}]},
+      ]
+    },
+    {
+      name:"COOK / V.A.", color:"#c08060", textColor:"#fff0e0",
+      sub:[
+        {name:"Toffee",color:"#d0a840",descriptors:[{name:"Toffee",slug:"toffee"}]},
+        {name:"Stewed Fruit",color:"#d08050",descriptors:[{name:"Stewed Fruit",slug:"stewed-fruit"}]},
+      ]
+    },
+  ]
+};
+
+const DESCRIPTIONS = {
+  "iris": {cat:"Flower",body:"The scent of iris in wine comes primarily from irones—a family of aroma compounds derived from degraded carotenoids in aged Riesling and old-vine Viognier. Cool-climate whites from Alsace and the Northern Rhône often develop this powdery, violet-like note after extended bottle aging. The compound alpha-irone is also found in orris root and expensive perfumery ingredients.",compound:"Key compounds: alpha-irone, beta-irone (irone family, degraded carotenoids)"},
+  "peony": {cat:"Flower",body:"Peony aromas in wine arise from a blend of linalool, geraniol, and various rose oxide compounds that accumulate in aromatic white varieties. Grüner Veltliner and Pinot Gris from cool climates occasionally show this gentle floral note. The scent is softer and more diffuse than rose, suggesting white or pink petals rather than red.",compound:"Key compounds: linalool, geraniol, rose oxide"},
+  "elderflower": {cat:"Flower",body:"Elderflower is one of the signature notes of Sauvignon Blanc from the Loire Valley and New Zealand, as well as unoaked Grüner Veltliner. The compound responsible is primarily cis-rose oxide alongside nerol and linalool. In German Riesling at Spätlese ripeness, a burst of elderflower marks the point between lean herbaceousness and honeyed fruit.",compound:"Key compounds: cis-rose oxide, nerol, linalool"},
+  "acacia": {cat:"Flower",body:"Acacia blossom gives a creamy, sweet-floral character distinct from more pungent flowers. It appears frequently in young white Burgundy (Chardonnay), Condrieu (Viognier), and Champagne at the disgorgement stage. Linalool and a group of monoterpenes produced during the fermentation of muscat-adjacent varieties contribute to this delicate note.",compound:"Key compounds: linalool, nerol, monoterpene esters"},
+  "jasmine": {cat:"Flower",body:"Jasmine aromas in wine are driven by indole (at very low concentrations), benzyl alcohol, and methyl jasmonate. Viognier is the variety most often cited for jasmine character, particularly wines from Condrieu in the Northern Rhône. High fermentation temperatures or skin contact can amplify these heady, white-flower compounds in varietals naturally rich in terpenoids.",compound:"Key compounds: methyl jasmonate, benzyl alcohol, indole (trace)"},
+  "honeysuckle": {cat:"Flower",body:"Honeysuckle notes in wine suggest a sweet, nectar-like floral quality found in wines from Riesling, Gewürztraminer, and Torrontés. The scent shares terpene compounds with acacia and elderflower—primarily linalool and geraniol—but with a hint of peachy sweetness that bridges the floral and tree-fruit categories.",compound:"Key compounds: linalool, geraniol, nerol oxide"},
+  "lilac": {cat:"Flower",body:"Lilac is a rare and treasured note in wine, appearing sometimes in very ripe, aromatic Gewürztraminers and Muscats. Terpenoids, particularly terpineol and linalool, create this powdery-sweet floral impression. In very warm vintages, the lilac note in Alsatian wine can overpower the more delicate rose oxide profile.",compound:"Key compounds: terpineol, linalool, caryophyllene"},
+  "violet": {cat:"Flower",body:"Violet is one of wine's most celebrated floral descriptors, especially in Nebbiolo (Barolo, Barbaresco), young Malbec from Mendoza, and Syrah from the Northern Rhône. It originates from ionone compounds—particularly beta-ionone—which form from the degradation of carotenoid pigments during grape ripening and continue to evolve during barrel aging.",compound:"Key compounds: beta-ionone, alpha-ionone (carotenoid breakdown products)"},
+  "lavender": {cat:"Flower",body:"Lavender notes in wine signal the presence of linalool and its esters, most prominent in wines made from aromatic varieties like Muscat, Gewürztraminer, and Viognier. In Provence rosé, the wild garrigue landscape—where lavender grows abundantly—imparts a regional character that some attribute to an actual terroir influence on fruit composition.",compound:"Key compounds: linalool, linalyl acetate, camphor (trace)"},
+  "rose": {cat:"Flower",body:"The scent of rose in wine is dominated by geraniol, nerol, and rose oxide—terpene alcohols found in highest concentrations in Gewürztraminer, Muscat à Petits Grains, and Riesling. Rose is also a characteristic note in Nebbiolo wines, where it contrasts dramatically with the grape's fierce tannins. Some skin-contact wines develop rose character from anthocyanin-derived compounds.",compound:"Key compounds: geraniol, nerol, rose oxide (2,2-dimethyl-5-(1-methylpropenyl)tetrahydrofuran)"},
+  "hibiscus": {cat:"Flower",body:"Hibiscus aromas appear in lighter-bodied red wines and some rosés, particularly those made from Grenache, Pinot Noir, and the Beaujolais variety Gamay. Anthocyanin-derived molecules and fruit esters combine to create this tart-floral impression. Hibiscus tea itself has a similar flavour compound profile to Grenache-dominant Châteauneuf-du-Pape rosé.",compound:"Key compounds: citric acid esters, delphinidin (anthocyanin derivative), fruit esters"},
+  "potpourri": {cat:"Flower",body:"Potpourri is a complex floral-spice blend note found in wines with tertiary development—particularly aged Grenache-based wines from the Southern Rhône, old Zinfandel, and Garnacha. The combination of faded floral terpenes, dried herb volatiles, and slight oxidative aldehyde notes creates the impression of dried flowers and mixed spice.",compound:"Key compounds: aged terpene derivatives, benzaldehyde, dried herb phenolics"},
+  "lime": {cat:"Citrus",body:"Lime is a hallmark of cool-climate Riesling, particularly from the Clare and Eden Valleys of South Australia, where the high-altitude sites produce wines with piercing citrus acidity and lime zest character. The primary lime compound, citronellal, alongside limonene and citral, concentrates during slow ripening. With age, Riesling lime morphs into a distinctive petrol/lime marmalade note.",compound:"Key compounds: citral, citronellal, limonene"},
+  "lemon": {cat:"Citrus",body:"Lemon aromas signal bright acidity and light body in wines from Muscadet, Chablis, and Vinho Verde. Citral (a mixture of geranial and neral isomers) is the primary lemon odorant. Lemon zest, with its bitter pith character, can also appear as a finish note in wines made from Albariño and Chenin Blanc from the Loire Valley.",compound:"Key compounds: citral (geranial + neral), limonene, alpha-terpineol"},
+  "grapefruit": {cat:"Citrus",body:"Grapefruit is one of Sauvignon Blanc's defining aromas, particularly from Marlborough, New Zealand, and Bordeaux. The compound nootkatone provides grapefruit's distinctive bitter-peel quality, while thiols such as 4-mercapto-4-methylpentan-2-one (4MMP) contribute a more tropical grapefruit expression. Pink grapefruit notes in Grenache rosé often indicate co-precipitation of fruit esters.",compound:"Key compounds: nootkatone, 4-mercapto-4-methylpentan-2-one (4MMP thiol)"},
+  "orange": {cat:"Citrus",body:"Orange aromas appear in sweeter styles of Riesling and Muscat, as well as in skin-contact orange wines. Limonene and linalool create the fresh orange peel impression, while d-limonene dominates the sweet orange pulp character. In Marsala and some oxidative sherries, orange marmalade notes emerge from the interaction of aldehydes with residual sugar.",compound:"Key compounds: d-limonene, linalool, alpha-pinene"},
+  "marmalade": {cat:"Citrus",body:"Marmalade—cooked, concentrated orange peel—is a classic note in Sauternes, late-harvest Riesling, and aged Chenin Blanc from Vouvray. The cooking process in marmalade (and in botrytized wines) creates furanones and lactones alongside high Brix sugars, yielding that distinctive bittersweet, candied citrus character that sets noble rot wines apart from fresh fruit profiles.",compound:"Key compounds: sotolon (fenugreek/curry lactone), furanones, citral derivatives"},
+  "quince": {cat:"Tree Fruit",body:"Quince is a key aromatic marker for Chenin Blanc, particularly in Vouvray and Savennières, and for Viognier from Condrieu. The quincy aroma comes from high concentrations of ethyl esters (specifically ethyl hexanoate and ethyl butanoate) alongside a characteristic floral-terpene overlay. Quince paste (membrillo) and fresh quince share this ester-dominant profile.",compound:"Key compounds: ethyl hexanoate, ethyl butanoate, linalool"},
+  "apple": {cat:"Tree Fruit",body:"Apple is ubiquitous in white wines, from crisp green apple in Champagne (unripe apple = hexyl acetate) to rich golden apple in oaked Chardonnay (ripe apple = ethyl hexanoate). Malic acid is the natural 'apple acid' found in grapes—low levels remain after malolactic fermentation and contribute to an apple-like freshness. Green apple often signals the ML conversion is incomplete.",compound:"Key compounds: hexyl acetate (green apple), ethyl hexanoate (ripe apple), malic acid"},
+  "pear": {cat:"Tree Fruit",body:"Pear drop aromas are the signature of carbonic maceration (Beaujolais Nouveau), driven by isoamyl acetate—a banana/pear ester produced by yeast under oxygen-free fermentation. In white wines, pear arises from amyl acetates and ethyl esters. Pinot Gris from Alsace and Chardonnay from Macon regularly show ripe pear alongside pastry notes from lees aging.",compound:"Key compounds: isoamyl acetate, amyl acetate, ethyl octanoate"},
+  "nectarine": {cat:"Tree Fruit",body:"Nectarine bridges the peach and plum characters in the aroma wheel—its smooth skin and bright tartness resemble the interplay of gamma-decalactone (peach) and linalool (floral) in wines like Viognier, Roussanne, and Condrieu. White Burgundy in warm vintages also shows nectarine-tinged stone fruit notes where ripeness pushes past green apple.",compound:"Key compounds: gamma-decalactone, linalool, delta-undecalactone"},
+  "peach": {cat:"Tree Fruit",body:"Peach is the defining note of Viognier, Roussanne, and warm-climate Chardonnay. Gamma-decalactone and gamma-undecalactone—stone fruit lactones—are the key compounds, boosted by the high fermentation temperatures typical of aromatic white varieties. Botrytized wines, including Sauternes and German TBA, concentrate these lactones dramatically to produce lush peach preserve intensity.",compound:"Key compounds: gamma-decalactone, gamma-undecalactone, linalool"},
+  "apricot": {cat:"Tree Fruit",body:"Apricot is found in Viognier, Muscat, and Riesling Spätlese through to Trockenbeerenauslese. Apricot aroma is dominated by a blend of gamma-decalactone (peachy), delta-octalactone, and furaneol. Noble rot concentrates these compounds while adding a botrytis-specific ketone (sotolon) that reinforces the dried apricot and honey character common to Sauternes.",compound:"Key compounds: gamma-decalactone, furaneol, beta-damascenone"},
+  "persimmon": {cat:"Tree Fruit",body:"Persimmon character—exotic, sweet-tangy, tropical-meeting-stone-fruit—appears in ripe Grenache, Zinfandel, and Primitivo from hot climates. The compound beta-damascenone (rose ketone), formed from carotenoid oxidation, contributes both a fruity sweetness and a dried-fruit undertone that evokes the jammy, caramelised quality of ripe persimmon.",compound:"Key compounds: beta-damascenone, furaneol, ethyl esters"},
+  "pineapple": {cat:"Tropical Fruit",body:"Pineapple aromas in wine indicate warm-climate ripeness or extended sur lie aging. Ethyl caproate and allyl hexanoate are the primary pineapple esters, produced by yeast during fermentation at higher temperatures. New World Chardonnay, Viognier, and some Grüner Veltliner from warm vintages develop these tropical ester profiles. Champagne with high dosage can also suggest pineapple.",compound:"Key compounds: ethyl caproate, allyl hexanoate, isoamyl acetate"},
+  "mango": {cat:"Tropical Fruit",body:"Mango is associated with warm-climate Viognier, Chardonnay, and the emerging Spanish variety Verdejo at peak ripeness. Myrcene and ocimene (monoterpene hydrocarbons), alongside ethyl butyrate and the thiol 3-mercaptohexanol (3MH), contribute to mango's characteristic tropical profile. Malolactic fermentation can round out the acidity to match the creamy mango impression.",compound:"Key compounds: myrcene, ocimene, ethyl butyrate, 3-mercaptohexanol (3MH)"},
+  "guava": {cat:"Tropical Fruit",body:"Guava is a hallmark of Sauvignon Blanc from Marlborough, New Zealand, where the volatile thiol 3-mercaptohexanol (3MH) builds to tropical concentrations. Guava's flavour bridges white fruit and tropical fruit—it has a creamy, musky quality alongside bright acidity. Wines with this character are typically fermented cool to preserve delicate thiol aromas.",compound:"Key compounds: 3-mercaptohexanol (3MH), ethyl butyrate, cis-3-hexenol"},
+  "kiwi": {cat:"Tropical Fruit",body:"Kiwi fruit aromas appear in crisp, high-acid wines including Sauvignon Blanc, Grüner Veltliner, and Verdicchio. The tart-green-fruit impression of kiwi comes from a combination of hexyl acetate, cis-3-hexenol (fresh cut green), and small quantities of the thiol 3-mercaptohexyl acetate (3MHA) at low concentrations.",compound:"Key compounds: hexyl acetate, cis-3-hexenol, 3-mercaptohexyl acetate (3MHA)"},
+  "lychee": {cat:"Tropical Fruit",body:"Lychee is the signature—almost defining—aroma of Gewürztraminer. The primary odorant is rose oxide, a cyclic ether of the linalool family that provides the characteristic sweet, floral-tropical impression. Concentrated in grape skins, rose oxide survives through fermentation and appears strongly in whole-cluster pressed Gewürztraminer from Alsace and Germany.",compound:"Key compounds: cis-rose oxide, geraniol, linalool"},
+  "bubblegum": {cat:"Tropical Fruit",body:"Bubblegum is primarily associated with carbonic maceration—the fermentation technique used in Beaujolais Nouveau—and with certain yeasts that overproduce isoamyl acetate. In unfiltered rosé, ethyl acetate and other volatile esters can blend to create a candy-like impression. In very cold fermentations, aromatic varieties can also express a bubblegum note from stressed yeast activity.",compound:"Key compounds: isoamyl acetate, ethyl acetate (at low levels), amyl propionate"},
+  "cranberry": {cat:"Red Fruit",body:"Cranberry's tart-fruity profile appears in Pinot Noir, Gamay, and Grenache at the lighter end of ripeness. Benzoic acid esters and malic acid interact with fruit phenolics to create the high-acid, tangy impression of fresh cranberry. Cool-climate Pinot Noir from Burgundy and Oregon frequently shows cranberry alongside forest floor and earth.",compound:"Key compounds: benzoic acid esters, malic acid, anthocyanin derivatives"},
+  "red-plum": {cat:"Red Fruit",body:"Red plum aromas are associated with Tempranillo, Sangiovese, and Merlot at moderate ripeness. Plum aldehydes (benzaldehyde-based compounds) and hexanols create the characteristic stone-fruit/floral skin combination of a ripe but not overripe plum. Chianti Classico and Ribera del Duero wines at five to eight years regularly show red plum alongside leather and dried herb.",compound:"Key compounds: benzaldehyde, hexanol, ethyl hexanoate"},
+  "pomegranate": {cat:"Red Fruit",body:"Pomegranate—tart, jewel-like, and tannic—is found in Grenache, Nebbiolo, and Dolcetto. The pomegranate impression comes from a combination of punicalagin-like ellagitannins, high malic and citric acid, and the anthocyanin cyanidin-3-glucoside which imparts both colour and flavour. Wines with this note tend to have firm acidity and a refreshing, almost juicy finish.",compound:"Key compounds: cyanidin-3-glucoside (anthocyanin), ellagitannin phenolics, malic acid"},
+  "sour-cherry": {cat:"Red Fruit",body:"Sour cherry is the cornerstone of Morello cherry character in Sangiovese-based wines (Chianti, Brunello) and Gamza from Bulgaria. Benzaldehyde (the almond-cherry seed compound) and linalool combine with tartaric acid–derived esters to create the sharp, bright, slightly bitter quality of sour cherries in brine. In Barolo, sour cherry transitions to dried-cherry with age.",compound:"Key compounds: benzaldehyde, tartaric acid esters, ethyl hexanoate"},
+  "strawberry": {cat:"Red Fruit",body:"Strawberry is perhaps the most iconic red wine aroma, dominating young Grenache, Pinot Noir, and Merlot. Furaneol (2,5-dimethyl-4-hydroxy-3[2H]-furanone) is the dominant strawberry compound in both fruit and wine. Methyl anthranilate adds a grape candy dimension in some New World wines, while ethyl methylpropionate contributes a more tart, fresh strawberry character.",compound:"Key compounds: furaneol, methyl anthranilate (trace), ethyl methylpropionate"},
+  "cherry": {cat:"Red Fruit",body:"Cherry—the versatile midpoint between sour and sweet, red and black—is found across Pinot Noir, Barbera, Sangiovese, and Merlot. Benzaldehyde provides the almond-cherry kernel note; ethyl hexanoate and isoamyl acetate give ripe fruit sweetness; and anthocyanins from grape skins reinforce the red-fruit colour intensity. Bing cherry notes in warm-climate Pinot Noir indicate peak ripeness.",compound:"Key compounds: benzaldehyde, ethyl hexanoate, cyanidin-3-glucoside"},
+  "raspberry": {cat:"Red Fruit",body:"Raspberry is the signature of Northern Rhône Syrah, Pinot Noir, and young Nebbiolo. The raspberry ketone (4-(4-hydroxyphenyl)-2-butanone) is ironically rare in wine—instead, the raspberry impression comes from beta-ionone, alpha-terpineol, and a combination of bright red fruit esters including geraniol and 1-octanol. High-elevation Malbec from Luján de Cuyo also shows intense raspberry.",compound:"Key compounds: beta-ionone, 1-octanol, geraniol, ethyl hexanoate"},
+  "boysenberry": {cat:"Black Fruit",body:"Boysenberry—a cross between a blackberry, raspberry, and loganberry—appears as a note in full-bodied reds: Petite Sirah, Zinfandel, and ripe Syrah. The intense dark berry aroma is driven by a combination of ethyl octanoate (waxy-fruity), geraniol, and the anthocyanins malvidin-3-glucoside and cyanidin-3-glucoside at high concentrations. The inky quality some tasters note alongside boysenberry comes from iron-tannin binding.",compound:"Key compounds: ethyl octanoate, malvidin-3-glucoside, cyanidin-3-glucoside"},
+  "black-currant": {cat:"Black Fruit",body:"Black currant (cassis) is the defining note of Cabernet Sauvignon worldwide—from Napa Valley to the Médoc. The key compound is 4-mercapto-4-methylpentan-2-one (4MMP), a sulfur-containing thiol also responsible for cat pee at high concentrations. At optimal levels it creates the characteristic cassis/blackcurrant bud aroma. Pyrazines (from unripe grapes) can add a blackcurrant leaf dimension.",compound:"Key compounds: 4-mercapto-4-methylpentan-2-one (4MMP), isopropyl methoxypyrazine (IPMP), ethyl hexanoate"},
+  "black-cherry": {cat:"Black Fruit",body:"Black cherry is associated with Merlot, Malbec, Nero d'Avola, and Zinfandel at moderate-to-high ripeness. Benzaldehyde and its esters provide the 'black' cherry stone note, while elevated concentrations of malvidin-3-glucoside (the dominant red/black grape anthocyanin) contribute dark colour and fruit depth. Black cherry in wine often indicates a supple, mid-weight tannin structure.",compound:"Key compounds: benzaldehyde, malvidin-3-glucoside, ethyl hexanoate"},
+  "plum": {cat:"Black Fruit",body:"Plum—particularly dark damson or prune-plum—is a primary aromatic note in Merlot, Tempranillo, and Montepulciano. The stone-fruit compounds that create plum character include beta-damascenone (from carotenoid oxidation), hexyl acetate, and hexanol. In riper vintages, plum can shift toward prune as Maillard-like reactions in warm grapes concentrate sugars and drive off fresher esters.",compound:"Key compounds: beta-damascenone, hexyl acetate, hexanol"},
+  "blueberry": {cat:"Black Fruit",body:"Blueberry is characteristic of Malbec from high-altitude Mendoza vineyards, Petite Sirah, and Southern Rhône blends dominated by Mourvèdre. The blueberry aroma combines beta-caryophyllene (woody-spicy), linalool, and malvidin anthocyanins. Volcanic or ferrous soils can amplify blueberry impression by affecting anthocyanin co-pigmentation, making blueberry a potential marker of mineral terroir.",compound:"Key compounds: beta-caryophyllene, linalool, malvidin-3-glucoside"},
+  "blackberry": {cat:"Black Fruit",body:"Blackberry is one of the most expected aromas in full-bodied reds—Cabernet Sauvignon, Syrah/Shiraz, and Monastrell. The key compounds include ethyl octanoate, 1-octanol, and the phenolic furfural from oak interaction. The 'bramble' quality of blackberry, with its combination of tart fruit and dark sweetness, is reinforced by tannins binding to bitter receptor proteins on the palate.",compound:"Key compounds: ethyl octanoate, 1-octanol, furfural (from oak)"},
+  "olive": {cat:"Dried Fruit",body:"Black olive is a characteristic note of Grenache from Châteauneuf-du-Pape, Monastrell, and Mencia. It derives from esters of oleanolic acid and from ethyl phenolates formed during barrel aging. The olive impression signals oxidative development and high phenolic maturity in the grapes. It often accompanies leather and tobacco notes in wines intended for long aging.",compound:"Key compounds: ethyl phenolates, oleanolic acid derivatives, aldehydes"},
+  "raisin": {cat:"Dried Fruit",body:"Raisin aromas arise in wines made from dried grapes (Amarone, Recioto, Passito) or in very overripe harvests. The concentration of volatile compounds—beta-damascenone, furaneol, and Maillard-derived furfurals—combined with reduced water activity in raisined grapes creates intense sweetness and a cooked-fruit character. Raisin also appears as a fault note in wines suffering from excessive oxidation.",compound:"Key compounds: furaneol, beta-damascenone, furfural, 5-hydroxymethylfurfural (5-HMF)"},
+  "fig": {cat:"Dried Fruit",body:"Fig aromas appear in Grenache, Nero d'Avola, and southern Italian reds where warm temperatures concentrate phenolic compounds from fig-like secondary metabolites. Fresh fig contributes a milky, tropical note (from ficin and lactones); dried fig provides a more complex combination of furanones and caramelized sugars. Fig notes in wine often accompany a plush, rich texture from high glycerol.",compound:"Key compounds: delta-decalactone, furaneol, benzyl alcohol"},
+  "date": {cat:"Dried Fruit",body:"Date appears in the sweetest, most oxidative styles of wine—Pedro Ximénez Sherry, Vin Santo, and Australian Rutherglen Muscat. The compound sotolon (3-hydroxy-4,5-dimethyl-2(5H)-furanone) is central to date's distinctive caramelized-sweet aroma, also found in fenugreek and aged Sauternes. This same compound appears in botrytized wines and heavily fortified dessert styles.",compound:"Key compounds: sotolon, 5-HMF, caramel-derived furanones"},
+  "fruitcake": {cat:"Dried Fruit",body:"Fruitcake aromas—dense, spiced dried fruit mixed with alcohol—are classic in vintage Port, Amarone della Valpolicella, and Rutherglen Muscat. The combination of ethyl esters from dried fruit fermentation, oak-derived spice phenolics (eugenol, vanillin), oxidative aldehydes, and Maillard browning products creates this festive, rich aroma. High alcohol amplifies the volatile impression.",compound:"Key compounds: eugenol, vanillin, furaneol, sotolon, branching ethyl esters"},
+  "prune": {cat:"Dried Fruit",body:"Prune signals fully ripe or over-ripe red grapes—particularly in Grenache, Zinfandel, and Tempranillo from hot vintages. Prune character results from the thermal degradation of carotenoids and polyunsaturated fatty acids: beta-damascenone and its derivatives dominate, supported by cooked-fruit lactones and Maillard-derived furfurals. At very high concentrations, prune can become a fault marker.",compound:"Key compounds: beta-damascenone, delta-octalactone, furfural"},
+  "saffron": {cat:"Dried Fruit",body:"Saffron aromas appear in wines made under warm, oxidative conditions—aged Grenache, some Pinot Gris vendange tardive, and Condrieu after bottle aging. The key saffron odorant safranal (2,6,6-trimethylcyclohexa-2,4-diene-1-carbaldehyde) forms from picrocrocin during oxidative aging. At trace concentrations it adds an exotic, honeyed-spice quality that elevates aromatic complexity.",compound:"Key compounds: safranal, picrocrocin derivatives, beta-damascenone"},
+  "ginger": {cat:"Noble Rot",body:"Ginger notes in wine derive from both natural grape compounds and noble rot (Botrytis cinerea) metabolites. In Sauternes, the 'noble rot' fungi produce glycerol and unique ketones that, combined with varietal terpenes from Sémillon and Sauvignon Blanc, create a spiced-honey complexity. Fresh ginger (zingerone, shogaols) is more rarely cited—more often it is a dried ginger note from sotolon.",compound:"Key compounds: sotolon, zingerone trace, glycerol esters"},
+  "honey": {cat:"Noble Rot",body:"Honey is one of the most direct descriptors for wines affected by Botrytis cinerea—the beneficial mould that concentrates flavours in Sauternes, Tokaji, and German Auslesen. Sotolon (described as honey, fenugreek, curry) is the primary botrytis ketone. Phenylacetaldehyde, formed from amino acid degradation, contributes a honey/rose hybrid note. Residual sugars amplify the impression.",compound:"Key compounds: sotolon, phenylacetaldehyde, glycerol"},
+  "beeswax": {cat:"Noble Rot",body:"Beeswax is a tertiary note in aged sweet whites—particularly old Sauternes, late-harvest Chenin Blanc (Quarts de Chaume), and aged Tokaji Aszú. The waxy quality comes from long-chain fatty acid esters and aldehydes that evolve during extended bottle aging. At very high Brix, grape-derived terpenes and lactones blend into a complex, honeyed-wax character indistinguishable from old combs.",compound:"Key compounds: long-chain fatty acid esters, palmitaldehyde, gamma-dodecalactone"},
+  "white-pepper": {cat:"Noble Rot",body:"White pepper is a classic descriptor for botrytized wines (especially German Riesling at Trockenbeerenauslese level) and for Grüner Veltliner—the variety's signature note. The key compound in white pepper is rotundone, but in Grüner Veltliner the compound responsible is more closely related to sesquiterpenes and pepper esters from the grape's own aromatic profile.",compound:"Key compounds: rotundone (sesquiterpene), limonene, terpenyl esters"},
+  "red-pepper": {cat:"Spice",body:"Red/chili pepper aromas in wine are linked to capsaicin analogs and rotundone. In Syrah/Shiraz, particularly from cool climates like the Yarra Valley and Northern Rhône, rotundone—a sesquiterpene—is responsible for the characteristic black and white pepper/red pepper spice. At low thresholds, rotundone is intensely perceived even by tasters without specific anosmia.",compound:"Key compounds: rotundone, capsaicin derivatives (trace)"},
+  "black-pepper": {cat:"Spice",body:"Black pepper is the signature aromatic note of Syrah/Shiraz worldwide—most potently in Northern Rhône Syrah, Grüner Veltliner, and some Mourvèdre-dominant wines. The single compound responsible, rotundone, was identified as recently as 2008. It concentrates in the skins of grapes grown at cooler temperatures or at higher elevations, explaining why Crozes-Hermitage shows more pepper than warm-climate Australian Shiraz.",compound:"Key compounds: rotundone (alpha-guaiene oxidation product)"},
+  "cinnamon": {cat:"Spice",body:"Cinnamon aromas in wine come from oak-derived cinnamaldehyde and trans-cinnamic acid, both of which are naturally present in the wood and released during barrel toast. Wines aged in medium-plus or heavy-toast barrels—whether Cabernet, Rioja Tempranillo, or oaked Chardonnay—develop cinnamon alongside vanilla and baking spice notes that indicate barrel integration.",compound:"Key compounds: cinnamaldehyde, trans-cinnamic acid, eugenol (oak-derived)"},
+  "anise": {cat:"Spice",body:"Anise/licorice aromas appear in Syrah, Tannat, Carménère, and aged Nebbiolo. The primary compounds—trans-anethole and estragole—are present in grape-derived terpene fractions. Carménère from Chile shows a particularly pronounced green anise character from methoxypyrazines and terpene esters. In aged Barolo, dried anise notes develop from the oxidative evolution of its terpene pool.",compound:"Key compounds: trans-anethole, estragole, foeniculin"},
+  "asian-5-spice": {cat:"Spice",body:"Asian 5-spice—cinnamon, star anise, cloves, Szechuan pepper, fennel—is a complex descriptor for wines with multilayered oak and fruit spice. It appears in heavily oaked Syrah, Zinfandel, and Spanish Garnacha blends. The combination of eugenol (cloves, from oak), rotundone (Szechuan pepper), trans-anethole (anise/fennel), and cinnamaldehyde (cinnamon) describes wines with impressive spice complexity.",compound:"Key compounds: eugenol, rotundone, trans-anethole, cinnamaldehyde"},
+  "fennel": {cat:"Spice",body:"Fennel aromas appear in Carménère, Sangiovese, and Vermentino. Like anise, fennel derives its characteristic scent from trans-anethole and fenchone. In Southern French blends containing Grenache and Mourvèdre, wild fennel grows throughout the garrigue, contributing to what some consider a regional aromatic character—though direct garrigue-to-wine compound transfer has not been conclusively proven.",compound:"Key compounds: trans-anethole, fenchone, limonene"},
+  "eucalyptus": {cat:"Spice",body:"Eucalyptus is a defining note of Coonawarra Cabernet Sauvignon and some Napa Valley Cabernets. For years a mystery, the compound 1,8-cineole (eucalyptol) has been confirmed both in eucalyptus leaves growing near vineyards and in the wines from those sites. Leaves can contaminate harvested fruit physically, but terpene volatilization in warm conditions may also contribute to vineyard absorption.",compound:"Key compounds: 1,8-cineole (eucalyptol), alpha-pinene"},
+  "mint": {cat:"Spice",body:"Mint appears in cool-climate Cabernet Sauvignon, Merlot, and Carménère. Menthol and menthenol isomers are the primary mint compounds, often accompanied by herbal methoxypyrazines. High-elevation Napa and Coonawarra Cabernets can show a fresh mint lift that integrates with black currant and cedar in classic claret-style wines. Excessive mint may indicate unripe tannins alongside the herbal notes.",compound:"Key compounds: menthol, neomenthol, methyl salicylate"},
+  "thyme": {cat:"Spice",body:"Thyme belongs to the 'garrigue' family of herbs associated with Southern Rhône wines—Châteauneuf-du-Pape blends, Pic Saint-Loup, and Corbières. Thymol and carvacrol, the dominant phenolic monoterpenes in thyme oil, can be detected in wines from vineyards close to wild thyme scrub. Grenache varieties seem particularly capable of expressing these Mediterranean herb characters.",compound:"Key compounds: thymol, carvacrol, p-cymene"},
+  "grass": {cat:"Vegetable",body:"Freshly cut grass is a primary aroma of young Sauvignon Blanc and unoaked Verdejo. The compound cis-3-hexenol and its acetate (cis-3-hexenyl acetate) are the classic 'green' compounds produced when plant cells are damaged—in wine, they arise from the enzymatic breakdown of polyunsaturated fatty acids in grape skins during crushing. Very high levels indicate underripe grapes or excessive maceration.",compound:"Key compounds: cis-3-hexenol, cis-3-hexenyl acetate, hexanal"},
+  "tomato-leaf": {cat:"Vegetable",body:"Tomato leaf is a descriptor for Loire Sauvignon Blanc, New Zealand Sauvignon, and Grüner Veltliner at below-optimal ripeness. The aromatic compound responsible is 2-isobutyl-3-methoxypyrazine—a methoxypyrazine produced in grape berries and leaves when vines are stressed or harvested underripe. The descriptor is vegetal-aromatic and usually acceptable in small doses; at high concentrations it becomes a fault.",compound:"Key compounds: 2-isobutyl-3-methoxypyrazine (IBMP), cis-3-hexenol"},
+  "gooseberry": {cat:"Vegetable",body:"Gooseberry is one of Sauvignon Blanc's most beloved aromas—crisp, tart, green-tinged, and vibrant. It is primarily produced by the volatile thiol 3-mercaptohexanol (3MH) in combination with methoxypyrazines and cis-3-hexenol. Classic Loire Sancerre and Pouilly-Fumé show sharp gooseberry alongside flint, while Marlborough Sauvignon tilts this toward tropical guava at higher 3MH concentrations.",compound:"Key compounds: 3-mercaptohexanol (3MH), 2-isobutyl-3-methoxypyrazine (IBMP)"},
+  "bell-pepper": {cat:"Vegetable",body:"Green bell pepper (capsicum) is a direct marker for methoxypyrazines—specifically 3-isobutyl-2-methoxypyrazine (IBMP)—produced in Cabernet Sauvignon, Cabernet Franc, Carménère, and Sauvignon Blanc. Some bell pepper character is desirable in classic Médoc reds, lending complexity to blackcurrant fruit. At high concentrations it indicates insufficient ripeness and can overpower varietal fruit expression.",compound:"Key compounds: 3-isobutyl-2-methoxypyrazine (IBMP), 2-isopropyl-3-methoxypyrazine (IPMP)"},
+  "jalapeno": {cat:"Vegetable",body:"Jalapeño—a green-herbaceous, slightly fiery character—is found in Cabernet Franc and Carménère at sub-optimal ripeness, and can appear in Malbec from cooler vineyard sites. Methoxypyrazines drive this descriptor, but the warming sensation is attributed to trace phenolic compounds. Carménère is particularly prone to jalapeño character in partially shaded or poorly drained vineyard blocks.",compound:"Key compounds: 3-isobutyl-2-methoxypyrazine, trace capsaicin analogs"},
+  "tomato": {cat:"Vegetable",body:"Tomato—fresh, tart, and slightly savory—is associated with Sangiovese (Chianti), Dolcetto, and some Grenache. The flavour derives from a combination of hexanal, trans-2-hexenal, and guaiacol, which create a cooked-tomato/bruised-tomato character often described in wines with high acidity and rustic tannins. Sangiovese's natural high-acid, moderate-fruit profile frequently draws this comparison.",compound:"Key compounds: hexanal, trans-2-hexenal, guaiacol"},
+  "sun-dried-tomato": {cat:"Vegetable",body:"Sun-dried tomato aromas—concentrated, sweet-savory, and umami-rich—arise in Sangiovese-based wines at high maturity (Brunello di Montalcino, Rosso di Montalcino). The drying process concentrates glutamic acid (umami) and Maillard products alongside lycopene carotenoid derivatives. In Amarone, partially dried Corvina grapes develop a similar cooked, concentrated tomato quality during the appassimento.",compound:"Key compounds: 2-isobutylthiazole, Maillard-derived furanones, lycopene oxidation products"},
+  "black-tea": {cat:"Vegetable",body:"Black tea aromas in wine signal the presence of tea-polyphenols (theaflavins and thearubigins analogs) derived from oxidized grape tannins after long barrel and bottle aging. Aged Nebbiolo wines like Barolo often evoke damp tea leaves or oolong alongside leather and dried rose. Theanine, the amino acid in green tea, is also found in wine at trace levels and may contribute to savory balance.",compound:"Key compounds: theaflavin analogs (oxidized tannins), theanine (trace), gallic acid"},
+  "clay-pot": {cat:"Vegetable",body:"Clay pot or terra cotta aromas—earthy, mineral, slightly dusty—are associated with wines from regions with clay-heavy soils (Pomerol, Pauillac, parts of Chianti) or wines fermented and aged in amphorae. The mineral character is partly from geosmin and related microbial metabolites absorbed from clay surfaces, giving wines a distinctive cool-earth and fresh-mineral quality.",compound:"Key compounds: geosmin (trace), 2-methylisoborneol, mineral metal ions"},
+  "slate": {cat:"Earth",body:"Slate or 'wet stone' is one of wine's most debated and prized mineral characters—most associated with Riesling from the Mosel, where vineyards are planted on blue and grey Devonian slate. While direct transmission of mineral flavors from soil to wine remains contested, slate-grown Riesling reliably shows a cool, metallic, petrichor-like note that may derive from hydrogen sulfide at sub-threshold concentrations and TDN (petroleum compound).",compound:"Key compounds: hydrogen sulfide (sub-threshold), TDN (trimethyl-dihydronaphthalene), petrichor-related aldehydes"},
+  "wet-gravel": {cat:"Earth",body:"Wet gravel or 'crushed wet stone' is a marker of Graves and Pessac-Léognan Cabernet Sauvignon and is associated with the deep, well-draining gravel terroir of the Left Bank Bordeaux. Mineral characters are likely produced during fermentation when reductive sulfur chemistry and aldehydes from fatty acid oxidation create a cold, fresh stone impression. Iron-chelating tannins may also contribute.",compound:"Key compounds: aldehydes (from lipid oxidation), sub-threshold hydrogen sulfide, iron-tannin complexes"},
+  "potting-soil": {cat:"Earth",body:"Potting soil or 'damp earth' is a characteristic note of Burgundian Pinot Noir and Nebbiolo from the Langhe. Geosmin—the compound responsible for the smell of rain on dry earth (petrichor)—is produced by Streptomyces bacteria present in the vineyard. At sub-threshold concentrations geosmin adds terroir complexity; at higher levels it indicates microbial vine disease or grape rot.",compound:"Key compounds: geosmin, 2-methylisoborneol (MIB), earthy sesquiterpenes"},
+  "red-beet": {cat:"Earth",body:"Red beet aromas in wine—earthy, sweet-rooty, and slightly mineralic—are associated with Pinot Noir, Grenache, and Gamay, especially from volcanic or iron-rich soils. Geosmin and betanin-related compounds contribute to the beet impression. Some tasters detect this note in Chambolle-Musigny Pinot Noir, where it combines with red berry fruit and forest floor in a complex whole.",compound:"Key compounds: geosmin, betanin derivatives (anthocyanin analogs), iron-bound tannins"},
+  "volcanic-rocks": {cat:"Earth",body:"Volcanic or 'lava rock' aromas are associated with wines from volcanic terroirs: Etna Rosso (Sicily), Santorini Assyrtiko, Canary Islands Listán Negro, and Tenerife's indigenous varieties. The mineral-smoky, ashy character may derive from specific organic sulfur compounds formed when roots interact with basaltic mineral compounds, as well as from the low-pH, high-mineral soil chemistry typical of volcanic sites.",compound:"Key compounds: methional (volcano sulfur analog), 3-methylbutanal, volcanic soil mineral ions"},
+  "petroleum": {cat:"Earth",body:"Petrol or petroleum is one of Riesling's most controversial yet prized aromatic notes, appearing with age in wines from the Mosel, Alsace, Clare Valley, and Eden Valley. The compound responsible is TDN (1,1,6-trimethyl-1,2-dihydronaphthalene), formed from the degradation of carotenoids during bottle aging. Warm vintages and high sugar levels at harvest accelerate TDN formation, as does excess exposure to sunlight.",compound:"Key compounds: TDN (1,1,6-trimethyl-1,2-dihydronaphthalene), norisoprenoids"},
+  "butter": {cat:"Microbial",body:"Butter is the quintessential note of malolactic fermentation (MLF) in Chardonnay. Diacetyl—produced by lactic acid bacteria as they convert sharp malic acid to softer lactic acid—is the key compound. At 1–4 mg/L diacetyl creates a creamy richness; above 5 mg/L it becomes an obvious butter fault. Classic California Chardonnay of the 1990s was associated with strong diacetyl character from full, inoculated MLF.",compound:"Key compounds: diacetyl (2,3-butanedione), acetoin"},
+  "cream": {cat:"Microbial",body:"Cream—a softer, richer version of butter—arises in white wines with prolonged lees contact (sur lie aging). Yeast autolysis releases fatty acids, sterols, and mannoproteins that coat the palate and give a creamy texture. Acetoin (the precursor to diacetyl) and ethyl lactate from malolactic fermentation contribute subtle cream character without the directness of full diacetyl production.",compound:"Key compounds: acetoin, ethyl lactate, mannoproteins (lees-derived)"},
+  "sourdough": {cat:"Microbial",body:"Sourdough or 'bready-yeasty' aromas are classic in Champagne and other traditional method sparkling wines after extended lees contact (autolysis). When dead yeast cells break down, they release a suite of amino acids, fatty acids, and nucleotides—including compounds responsible for toasted bread character: acetaldeyhde, isoamyl acetate at trace levels, and thiamine-derived Maillard products.",compound:"Key compounds: acetaldehyde (trace), isoamyl acetate (trace), thiamine Maillard products"},
+  "lager": {cat:"Microbial",body:"Lager or 'beer-like' aromas in wine indicate the presence of volatile sulfur compounds and diethyl sulfide from stressed fermentation, or indicate that DMS (dimethyl sulfide) has been produced during lees aging. DMS at 10–50 μg/L gives a corn/sweet, light-beer character and is found in many wines. At higher concentrations in sparkling wines it is considered a minor flaw but adds complexity in some aged blanc de blancs.",compound:"Key compounds: dimethyl sulfide (DMS), diethyl sulfide, acetaldehyde"},
+  "truffle": {cat:"Microbial",body:"Truffle is one of Burgundy Pinot Noir's most coveted tertiary aromas, appearing in aged Gevrey-Chambertin, Vosne-Romanée, and Chambolle-Musigny. The truffle note comes from 2,4-dithiapentane (bis(methylthio)methane)—a volatile sulfide also found in black Périgord truffles—produced during bottle reduction. Dimethyl sulfide at moderate concentrations also contributes to this earthy, fungal impression.",compound:"Key compounds: 2,4-dithiapentane, dimethyl sulfide (DMS), methional"},
+  "mushroom": {cat:"Microbial",body:"Mushroom or forest floor aromas—damp, earthy, fungal—are associated with aged Pinot Noir, old-vine Grenache, and wines from clay or limestone terroirs. 1-Octen-3-ol (mushroom alcohol), produced by fungi in the vineyard and during reductive winemaking, is the primary compound. Low levels of geosmin and 2-methylisoborneol amplify the fungal-earthy impression. In Barolo, mushroom integrates with tar and roses.",compound:"Key compounds: 1-octen-3-ol, 2-methylisoborneol (MIB), geosmin"},
+  "vanilla": {cat:"Oak Aging",body:"Vanilla is the most universally recognised signature of oak barrel aging, derived from vanillin—a phenolic aldehyde naturally present in oak lignin and released when wood is toasted. American oak (Quercus alba) contains 3–5× more vanillin than French oak (Quercus petraea or sessiliflora), explaining why US-oaked Chardonnay and Rioja aged in American barriques show more prominent vanilla than their French-oaked counterparts.",compound:"Key compounds: vanillin (oak-derived), ethyl vanillin, acetovanillone"},
+  "coconut": {cat:"Oak Aging",body:"Coconut is a hallmark of American oak barrel aging, arising from whiskey-lactone (beta-methyl-gamma-octalactone)—a compound found in much higher concentrations in Quercus alba than in European oak species. American-oaked Rioja Reserva, Napa Chardonnay aged in Missouri oak, and Australian Shiraz in American barrels typically exhibit pronounced coconut alongside vanilla. The lactone is released through the toast process.",compound:"Key compounds: cis-beta-methyl-gamma-octalactone (whiskey lactone), delta-valerolactone"},
+  "baking-spices": {cat:"Oak Aging",body:"Baking spices (cinnamon, nutmeg, clove, allspice) are released from the oak's spice wood compounds during barrel toasting. Medium-plus toast amplifies these notes. Eugenol (cloves), cinnamaldehyde (cinnamon), and beta-methyl-gamma-octalactone (coconut) combine to give the baking-spice complexity typical of full-bodied oaked reds: Rioja Gran Reserva, Napa Cabernet, and Australian Barossa Shiraz.",compound:"Key compounds: eugenol, cinnamaldehyde, vanillin, guaiacol (oak-derived)"},
+  "cigar-box": {cat:"Oak Aging",body:"Cigar box is a classic tertiary note in aged Cabernet Sauvignon, particularly from the Médoc (Pauillac, Saint-Estèphe) and Napa Valley. The aroma combines cedar wood, dried tobacco, leather, and pencil shavings. Cedar lactones, guaiacol, and benzaldehyde from oak aging interact with grape-derived polyphenols to create this dry, aromatic impression that defines 'classic claret' to many tasters.",compound:"Key compounds: alpha-cedrol, cedrene, guaiacol, beta-eudesmol (cedar wood compounds)"},
+  "smoke": {cat:"Oak Aging",body:"Smoke aromas can arise from several sources in wine: barrel toast (guaiacol and 4-methylguaiacol), wildfire smoke during the growing season (smoke taint—syringol, guaiacol derivatives), and reductive aging in bottle. Smoke taint from wildfires is a growing concern in wine regions including California, Oregon, Victoria, and Chile, as smoke compounds bind to glycosides in grape skins and are later liberated during fermentation.",compound:"Key compounds: guaiacol, 4-methylguaiacol, syringol (smoke taint or oak-derived)"},
+  "dill": {cat:"Oak Aging",body:"Dill is a specific note associated with American oak (Quercus alba) aging, caused by the compound 1,8-cineole (eucalyptol) and trans/cis isomers of beta-methyl-gamma-octalactone. White oak grown in Missouri and the Ozarks has particularly high levels of these compounds. Dill can be pleasant in small doses in Zinfandel and American-oaked Rioja, but at high levels can seem out of place in a finely structured wine.",compound:"Key compounds: 1,8-cineole, cis/trans-beta-methyl-gamma-octalactone"},
+  "nuts": {cat:"General Aging",body:"Nuts—walnut, hazelnut, almond—arise in oxidatively aged wines: Oloroso and Amontillado Sherry, aged white Burgundy, and mature Pinot Gris from Alsace. Benzaldehyde provides the almond note; oxidized fatty acids produce walnut and rancio character. Extended lees contact in reductive styles allows glutamic acid to build, adding savory, umami-nut complexity to aged Champagne and quality Chablis.",compound:"Key compounds: benzaldehyde (almond), oxidized fatty acid esters, glutamic acid"},
+  "tobacco": {cat:"General Aging",body:"Tobacco aromas—dried leaf, cured tobacco, latakia—appear in aged Bordeaux, Rioja Gran Reserva, and Amarone after many years in bottle. The compounds include pyrazines from grape skin phenolics, furfural from oak, and complex heterocyclic compounds produced during Maillard reactions in warm cellars. Tobacco often accompanies cedar, leather, and coffee in a classic 'cellar-aged' aromatic profile.",compound:"Key compounds: furfural, methylpyrazines, cured tobacco heterocyclics"},
+  "coffee": {cat:"General Aging",body:"Coffee aromas come from two primary sources in wine: heavy oak toast and extended bottle aging of polyphenol-rich reds. Heavily toasted barrels release furfuryl methyl ketone and guaiacol—direct coffee-roast compounds. In aged Syrah, Amarone, and Sagrantino from Montefalco, the combination of oak-derived and phenolic oxidation products builds toward espresso intensity without sweetness.",compound:"Key compounds: furfuryl methyl ketone, guaiacol, 2-furfuryl alcohol (oak/Maillard)"},
+  "cocoa": {cat:"General Aging",body:"Cocoa or dark chocolate aromas are found in Malbec, Syrah, Zinfandel, and Cabernet with ripe tannins and oak integration. Theobromine-related compounds, methylpyrazines from oak, and high molecular-weight tannins mimic the bittersweet quality of dark chocolate. The cocoa note is most prominent when polyphenols have softened through prolonged aging and the fruit profile has dried toward raisin and dried cherry.",compound:"Key compounds: methylpyrazines, theobromine analogs (trace), oak-derived phenolics"},
+  "leather": {cat:"General Aging",body:"Leather is one of wine's most evocative tertiary aromas—classic in aged Barolo, Rioja, and Bordeaux. The primary source is isobutyric acid and isovaleric acid from microbial activity, combined with phenolic-derived compounds (cresol, guaiacol) from barrel aging. Brett-related leather has a more animal, sweaty quality; purely aged leather is drier and more refined. It signals significant bottle time.",compound:"Key compounds: isobutyric acid, guaiacol, 4-ethylguaiacol, cresol"},
+  "musty-cardboard": {cat:"General Aging",body:"Musty cardboard, sometimes called damp newspaper, is the signature of TCA contamination (cork taint). 2,4,6-Trichloroanisole (TCA) is produced by Penicillium fungi converting chlorinated compounds in cork into their anisole form—a potent aroma suppressor. Even at 4–6 parts per trillion, TCA dulls all aromas and adds a musty, damp basement quality. Natural cork remains TCA's primary vector.",compound:"Key compounds: 2,4,6-trichloroanisole (TCA), 2,3,4,6-tetrachloroanisole (TeCA)"},
+  "wet-dog": {cat:"TCA (Corked)",body:"Wet dog is a classic fault note associated with either TCA cork taint or high levels of 4-ethylphenol from Brettanomyces yeast. It is distinctive and unpleasant, suggesting a poorly maintained wine. At sub-fault threshold levels, some tasters perceive this as part of the 'farmyard' character associated with Burgundy and Châteauneuf-du-Pape, though this remains controversial.",compound:"Key compounds: 4-ethylphenol (Brett), TCA derivatives, skatole (trace)"},
+  "cured-meat": {cat:"TCA (Corked)",body:"Cured meat, salami, or charcuterie notes can arise from Brettanomyces yeast metabolites—particularly 4-ethylphenol and 4-ethylguaiacol—in reds aged under poor cellar hygiene conditions. At sub-fault concentrations, these notes can add savoury complexity appreciated in Rhône blends and old Rioja. A classic Châteauneuf-du-Pape often has a subtle meat character from Brettanomyces contribution.",compound:"Key compounds: 4-ethylphenol, 4-ethylguaiacol (Brettanomyces)"},
+  "burnt-rubber": {cat:"TCA (Corked)",body:"Burnt rubber is a sulfur-based fault aroma from diethyl sulfide and thiophene compounds produced during reductive winemaking. It is more common in screw-capped wines aging in very reducing conditions or in wines made without adequate oxygen management. In very small amounts, reductive sulfur can contribute a flint or gunsmoke character rather than outright rubber.",compound:"Key compounds: diethyl sulfide, dimethyl disulfide (DMDS), thiophene derivatives"},
+  "match-box": {cat:"TCA (Corked)",body:"Match box or struck-match aromas signal reductive winemaking conditions—the presence of free SO₂ or hydrogen sulfide at low concentrations. This note is common in young Sauvignon Blanc from Marlborough stored under screwcap, and in early stages of tasting Champagne. The aroma typically blows off with decanting or swirling as the compound volatilizes in the glass.",compound:"Key compounds: SO₂ (sulfur dioxide), hydrogen sulfide (H₂S), dimethyl sulfide (DMS)"},
+  "onion": {cat:"TCA (Corked)",body:"Onion or garlic fault notes indicate the presence of allyl mercaptans, propanethiol, and diallyl disulfide—sulfur compounds related to poor grape hygiene, winemaking under excessive reduction, or sulfur vineyard spray residues. These aromas are generally considered faults but in trace concentrations in wines like Pouilly-Fumé and Muscadet they contribute to a characteristic 'flinty' reduction.",compound:"Key compounds: allyl mercaptan, propanethiol, diallyl disulfide"},
+  "cat-pee": {cat:"Sulfide & Mercaptan",body:"Cat pee is the high-concentration manifestation of 4-mercapto-4-methylpentan-2-one (4MMP)—the same thiol that at lower levels creates blackcurrant in Sauvignon Blanc. This fault is most common in poorly fermented or poorly maintained Sauvignon Blanc. Temperature abuse, reductive storage failure, and very high skin contact can trigger excessive 4MMP accumulation, tipping the wine past cassis into frank cat box character.",compound:"Key compounds: 4-mercapto-4-methylpentan-2-one (4MMP) at fault concentration"},
+  "band-aid": {cat:"Sulfide & Mercaptan",body:"Band-Aid (adhesive plaster) aroma is a marker of Brettanomyces contamination—specifically 4-ethylphenol and 4-ethylguaiacol produced by Dekkera/Brett yeast feeding on p-coumaric acid and ferulic acid from grape tannins. While some consider trace Brett complexity desirable in old-world reds, a clear band-aid note indicates excessive Brett activity that masks fruit expression.",compound:"Key compounds: 4-ethylphenol, 4-ethylguaiacol (Brettanomyces metabolites)"},
+  "sweaty-leather": {cat:"Sulfide & Mercaptan",body:"Sweaty leather is an evocative description for the combination of isovaleric acid (sweaty feet), 4-ethylphenol (barnyard), and isobutyric acid (rancid butter). This complex of microbial fermentation byproducts—primarily from Brettanomyces—is most frequently found in old-school Burgundy, some Rhône blends, and unfiltered Spanish wines. High-Brett expressions are divisive: prized by some as authentic terroir, condemned by others as spoilage.",compound:"Key compounds: isovaleric acid, isobutyric acid, 4-ethylphenol"},
+  "horse-barnyard": {cat:"Sulfide & Mercaptan",body:"Horse/barnyard is the archetypal Brett descriptor—a combination of 4-ethylphenol (phenolic, horse stable) and 4-ethylguaiacol (smoky, spicy, band-aid). Brettanomyces bruxellensis/Dekkera yeast thrives in the pores of oak barrels and at cellar humidity. Wines most susceptible include those from naturally low-SO₂ winemaking, old barrels, and low-acid, high-pH reds—particularly Grenache and Merlot.",compound:"Key compounds: 4-ethylphenol (4EP), 4-ethylguaiacol (4EG) (Brettanomyces)"},
+  "toffee": {cat:"Sulfide & Mercaptan",body:"Toffee aromas—buttery caramel with a slight bitter edge—appear in wines with volatile acidity elevation, oxidative influences, or in cooked/stewed fruit situations. Acetaldehyde, diacetyl, and furfural combine at elevated concentrations (from poor cellar management or deliberately from appassimento) to yield toffee and caramel notes. In PX Sherry, toffee is considered an intrinsic and welcome feature.",compound:"Key compounds: diacetyl (high concentration), furfural, acetaldehyde"},
+  "barnyard": {cat:"Brett/Mousiness",body:"Barnyard encompasses the classic Brettanomyces character—4-ethylphenol provides the dry horse/phenolic quality; 4-ethylguaiacol adds a spicy-smoky dimension. This combination is most associated with Burgundy, Southern Rhône, and unfiltered Spanish wines aged in poorly maintained oak. The debate about whether 'terroir Brett' is an asset or a flaw remains unresolved in serious wine circles.",compound:"Key compounds: 4-ethylphenol, 4-ethylguaiacol (Brettanomyces/Dekkera)"},
+  "balsamic": {cat:"Volatile Acidity",body:"Balsamic aromas—sweet-sour, aromatic, concentrated—arise in wines with elevated volatile acidity where acetic acid has transformed into ethyl acetate and acetaldehyde, contributing a sweet-sharp complexity. In Italian wine culture, a slight balsamic note in Chianti Classico Riserva or Brunello is traditional and acceptable. Modern production standards have pushed these levels lower in export wines.",compound:"Key compounds: ethyl acetate, acetic acid, acetaldehyde"},
+  "vinegar": {cat:"Volatile Acidity",body:"Vinegar (acetic acid at >1.2 g/L) is the primary volatile acidity fault, produced by acetic acid bacteria (Acetobacter) when oxygen reaches fermented wine. Small amounts of volatile acidity (below 0.7 g/L acetic acid) add complexity; above 1.4 g/L it is considered a legal fault. White wine has a lower tolerance than red—the same level reads as sharper and more disruptive against a less tannic background.",compound:"Key compounds: acetic acid (principal), ethyl acetate (secondary)"},
+  "stewed-fruit": {cat:"Volatile Acidity",body:"Stewed fruit—cooked, jammy, dulled stone or red fruit character—appears in wines that have experienced heat damage, premature oxidation, or excess volatile acidity. The culprit is typically ethyl acetate masking fresh varietal esters, combined with furfural and 5-HMF from Maillard reactions. Stewed fruit can also describe legitimately warm vintages where heat stress concentrates sugars before full flavour development.",compound:"Key compounds: ethyl acetate, furfural, 5-HMF, beta-damascenone (at cooked concentration)"},
+  "nail-box": {cat:"TCA (Corked)",body:"Nail box or 'iron/metallic' aromas in wine suggest the presence of iron ions (Fe²⁺/Fe³⁺) in solution from vineyard equipment contact or old cellar fittings. Iron interacts with tannins and creates inky, ferrous impressions similar to sucking a penny. In very small quantities, ferrous character is associated with the mineral profile of wines from iron-rich terroirs like Pomerol.",compound:"Key compounds: iron ions (Fe²⁺), iron-tannin complexes, phospho-iron compounds"},
+};
+
+const svg = document.getElementById('wheelSvg');
+const detail = document.getElementById('detailPanel');
+const TWO_PI = Math.PI * 2;
+
+let rotation = 0;
+let isDragging = false;
+let lastAngle = 0;
+let velocity = 0;
+let lastTime = 0;
+let animFrame = null;
+
+function polarToCart(cx,cy,r,angle){
+  return [cx + r*Math.cos(angle), cy + r*Math.sin(angle)];
+}
+
+function describeArc(r, startAngle, endAngle){
+  const [sx,sy] = polarToCart(0,0,r,startAngle);
+  const [ex,ey] = polarToCart(0,0,r,endAngle);
+  const large = endAngle - startAngle > Math.PI ? 1 : 0;
+  return `M 0 0 L ${sx} ${sy} A ${r} ${r} 0 ${large} 1 ${ex} ${ey} Z`;
+}
+
+function describeArcRing(r1,r2,startAngle,endAngle){
+  const [sx1,sy1] = polarToCart(0,0,r1,startAngle);
+  const [ex1,ey1] = polarToCart(0,0,r1,endAngle);
+  const [sx2,sy2] = polarToCart(0,0,r2,startAngle);
+  const [ex2,ey2] = polarToCart(0,0,r2,endAngle);
+  const large = endAngle - startAngle > Math.PI ? 1 : 0;
+  return `M ${sx1} ${sy1} A ${r1} ${r1} 0 ${large} 1 ${ex1} ${ey1} L ${ex2} ${ey2} A ${r2} ${r2} 0 ${large} 0 ${sx2} ${sy2} Z`;
+}
+
+function buildWheel(){
+  const catCount = DATA.categories.length;
+  const anglePerCat = TWO_PI / catCount;
+  const R_INNER = 120, R_CAT = 280, R_SUB = 420, R_DESC = 590;
+
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('id','wheelG');
+
+  DATA.categories.forEach((cat, ci) => {
+    const catStart = ci * anglePerCat - Math.PI/2;
+    const catEnd = catStart + anglePerCat;
+
+    const catPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+    catPath.setAttribute('d', describeArcRing(R_INNER, R_CAT, catStart, catEnd));
+    catPath.setAttribute('fill', cat.color);
+    catPath.setAttribute('stroke','#1a1008');
+    catPath.setAttribute('stroke-width','1');
+    g.appendChild(catPath);
+
+    const catMidAngle = catStart + anglePerCat/2;
+    const catLabelR = (R_INNER + R_CAT)/2;
+    const [lx,ly] = polarToCart(0,0,catLabelR,catMidAngle);
+    const catLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+    catLabel.setAttribute('x',lx);
+    catLabel.setAttribute('y',ly);
+    catLabel.setAttribute('text-anchor','middle');
+    catLabel.setAttribute('dominant-baseline','central');
+    catLabel.setAttribute('font-size','12');
+    catLabel.setAttribute('fill', cat.textColor||'#111');
+    catLabel.setAttribute('font-family','Georgia,serif');
+    catLabel.setAttribute('font-weight','bold');
+    catLabel.setAttribute('transform',`rotate(${(catMidAngle*180/Math.PI)},${lx},${ly})`);
+    catLabel.style.pointerEvents='none';
+    const words = cat.name.split(' ');
+    if(words.length>2){
+      const tspan1 = document.createElementNS('http://www.w3.org/2000/svg','tspan');
+      tspan1.setAttribute('x',lx); tspan1.setAttribute('dy','-6');
+      tspan1.textContent = words.slice(0,Math.ceil(words.length/2)).join(' ');
+      const tspan2 = document.createElementNS('http://www.w3.org/2000/svg','tspan');
+      tspan2.setAttribute('x',lx); tspan2.setAttribute('dy','14');
+      tspan2.textContent = words.slice(Math.ceil(words.length/2)).join(' ');
+      catLabel.appendChild(tspan1);
+      catLabel.appendChild(tspan2);
+    } else {
+      catLabel.textContent = cat.name;
+    }
+    g.appendChild(catLabel);
+
+    const totalSubs = cat.sub.length;
+    const anglePerSub = anglePerCat / totalSubs;
+
+    cat.sub.forEach((sub, si) => {
+      const subStart = catStart + si * anglePerSub;
+      const subEnd = subStart + anglePerSub;
+      const subMid = subStart + anglePerSub/2;
+
+      const subPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+      subPath.setAttribute('d', describeArcRing(R_CAT, R_SUB, subStart, subEnd));
+      subPath.setAttribute('fill', sub.color || cat.color);
+      subPath.setAttribute('stroke','#1a1008');
+      subPath.setAttribute('stroke-width','0.8');
+      g.appendChild(subPath);
+
+      const [slx,sly] = polarToCart(0,0,(R_CAT+R_SUB)/2,subMid);
+      const subLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+      subLabel.setAttribute('x',slx);
+      subLabel.setAttribute('y',sly);
+      subLabel.setAttribute('text-anchor','middle');
+      subLabel.setAttribute('dominant-baseline','central');
+      subLabel.setAttribute('font-size','9');
+      subLabel.setAttribute('fill','#111');
+      subLabel.setAttribute('font-family','Georgia,serif');
+      subLabel.setAttribute('transform',`rotate(${(subMid*180/Math.PI)},${slx},${sly})`);
+      subLabel.style.pointerEvents='none';
+      subLabel.textContent = sub.name;
+      g.appendChild(subLabel);
+
+      sub.descriptors.forEach((desc, di) => {
+        const totalDesc = sub.descriptors.length;
+        const anglePerDesc = anglePerSub / totalDesc;
+        const descStart = subStart + di * anglePerDesc;
+        const descEnd = descStart + anglePerDesc;
+        const descMid = descStart + anglePerDesc/2;
+
+        const descPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+        const descColor = lighten(sub.color || cat.color, 30);
+        descPath.setAttribute('d', describeArcRing(R_SUB, R_DESC, descStart, descEnd));
+        descPath.setAttribute('fill', descColor);
+        descPath.setAttribute('stroke','#1a1008');
+        descPath.setAttribute('stroke-width','0.7');
+        descPath.setAttribute('class','desc-seg');
+        descPath.setAttribute('data-slug', desc.slug);
+        descPath.setAttribute('data-name', desc.name);
+        descPath.setAttribute('cursor','pointer');
+        descPath.style.transition='fill 0.15s';
+        descPath.addEventListener('click', ()=>showDetail(desc.slug, desc.name));
+        descPath.addEventListener('mouseenter', ()=>{ descPath.setAttribute('fill', lighten(sub.color||cat.color, 55)); });
+        descPath.addEventListener('mouseleave', ()=>{ descPath.setAttribute('fill', descColor); });
+        g.appendChild(descPath);
+
+        const [dlx,dly] = polarToCart(0,0,(R_SUB+R_DESC)/2,descMid);
+        const descLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+        descLabel.setAttribute('x',dlx);
+        descLabel.setAttribute('y',dly);
+        descLabel.setAttribute('text-anchor','middle');
+        descLabel.setAttribute('dominant-baseline','central');
+        descLabel.setAttribute('font-size','10');
+        descLabel.setAttribute('fill','#2a1800');
+        descLabel.setAttribute('font-family','Georgia,serif');
+        descLabel.setAttribute('transform',`rotate(${(descMid*180/Math.PI)},${dlx},${dly})`);
+        descLabel.style.pointerEvents='none';
+        const dwords = desc.name.split(' ');
+        if(dwords.length>2){
+          const t1=document.createElementNS('http://www.w3.org/2000/svg','tspan');
+          t1.setAttribute('x',dlx);t1.setAttribute('dy','-7');
+          t1.textContent=dwords.slice(0,Math.ceil(dwords.length/2)).join(' ');
+          const t2=document.createElementNS('http://www.w3.org/2000/svg','tspan');
+          t2.setAttribute('x',dlx);t2.setAttribute('dy','12');
+          t2.textContent=dwords.slice(Math.ceil(dwords.length/2)).join(' ');
+          descLabel.appendChild(t1);descLabel.appendChild(t2);
+        } else {
+          descLabel.textContent = desc.name;
+        }
+        g.appendChild(descLabel);
+      });
+    });
+  });
+
+  const center = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  center.setAttribute('cx','0');center.setAttribute('cy','0');
+  center.setAttribute('r',R_INNER);
+  center.setAttribute('fill','#2a1205');
+  center.setAttribute('stroke','#c9a96e');
+  center.setAttribute('stroke-width','1.5');
+  g.appendChild(center);
+
+  const ct = document.createElementNS('http://www.w3.org/2000/svg','text');
+  ct.setAttribute('text-anchor','middle');ct.setAttribute('dominant-baseline','central');
+  ct.setAttribute('y','-20');ct.setAttribute('font-size','18');
+  ct.setAttribute('fill','#e8c97e');ct.setAttribute('font-family','Georgia,serif');
+  ct.setAttribute('font-style','italic');ct.textContent='Wine';
+  const ct2 = document.createElementNS('http://www.w3.org/2000/svg','text');
+  ct2.setAttribute('text-anchor','middle');ct2.setAttribute('dominant-baseline','central');
+  ct2.setAttribute('y','6');ct2.setAttribute('font-size','18');
+  ct2.setAttribute('fill','#e8c97e');ct2.setAttribute('font-family','Georgia,serif');
+  ct2.setAttribute('font-weight','bold');ct2.textContent='Aroma';
+  const ct3 = document.createElementNS('http://www.w3.org/2000/svg','text');
+  ct3.setAttribute('text-anchor','middle');ct3.setAttribute('dominant-baseline','central');
+  ct3.setAttribute('y','30');ct3.setAttribute('font-size','12');
+  ct3.setAttribute('fill','#c9a96e');ct3.setAttribute('font-family','Georgia,serif');
+  ct3.textContent='Wheel';
+  g.appendChild(ct);g.appendChild(ct2);g.appendChild(ct3);
+
+  svg.appendChild(g);
+}
+
+function lighten(hex, amount){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  r=Math.min(255,r+amount);g=Math.min(255,g+amount);b=Math.min(255,b+amount);
+  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+const WIKI = {
+  "iris":"Iris_(plant)","peony":"Peony","elderflower":"Elderflower","acacia":"Acacia","jasmine":"Jasmine",
+  "honeysuckle":"Honeysuckle","lilac":"Lilac","violet":"Violet_(plant)","lavender":"Lavender","rose":"Rose",
+  "hibiscus":"Hibiscus","potpourri":"Potpourri","lime":"Lime_(fruit)","lemon":"Lemon","grapefruit":"Grapefruit",
+  "orange":"Orange_(fruit)","marmalade":"Marmalade","quince":"Quince","apple":"Apple","pear":"Pear",
+  "nectarine":"Nectarine","peach":"Peach","apricot":"Apricot","persimmon":"Persimmon","pineapple":"Pineapple",
+  "mango":"Mango","guava":"Guava","kiwi":"Kiwifruit","lychee":"Lychee","bubblegum":"Bubble_gum",
+  "cranberry":"Cranberry","red-plum":"Plum","pomegranate":"Pomegranate","sour-cherry":"Prunus_cerasus",
+  "strawberry":"Strawberry","cherry":"Cherry","raspberry":"Raspberry","boysenberry":"Boysenberry",
+  "black-currant":"Blackcurrant","black-cherry":"Black_cherry","plum":"Plum","blueberry":"Blueberry",
+  "blackberry":"Blackberry","olive":"Olive","raisin":"Raisin","fig":"Common_fig","date":"Date_palm",
+  "fruitcake":"Fruitcake","prune":"Prune","saffron":"Saffron","ginger":"Ginger","honey":"Honey",
+  "beeswax":"Beeswax","white-pepper":"White_pepper","red-pepper":"Chili_pepper","black-pepper":"Black_pepper",
+  "cinnamon":"Cinnamon","anise":"Anise","asian-5-spice":"Five-spice_powder","fennel":"Fennel",
+  "eucalyptus":"Eucalyptus","mint":"Mentha","thyme":"Thyme","grass":"Poaceae","tomato-leaf":"Tomato",
+  "gooseberry":"Gooseberry","bell-pepper":"Bell_pepper","jalapeno":"Jalapeño","tomato":"Tomato",
+  "sun-dried-tomato":"Sun-dried_tomato","black-tea":"Black_tea","clay-pot":"Clay_pot",
+  "slate":"Slate","wet-gravel":"Gravel","potting-soil":"Potting_soil","red-beet":"Beetroot",
+  "volcanic-rocks":"Volcanic_rock","petroleum":"Petroleum","butter":"Butter","cream":"Cream",
+  "sourdough":"Sourdough","lager":"Lager","truffle":"Truffle","mushroom":"Mushroom",
+  "vanilla":"Vanilla","coconut":"Coconut","baking-spices":"Spice","cigar-box":"Cigar",
+  "smoke":"Smoke","dill":"Dill","dried-fruit":"Dried_fruit","nuts":"Nut_(fruit)","tobacco":"Tobacco",
+  "coffee":"Coffee","cocoa":"Cocoa_bean","leather":"Leather","musty-cardboard":"Cork_taint",
+  "wet-dog":"Cork_taint","cured-meat":"Curing_(food_preservation)","roasted-eggs":"Egg_(food)",
+  "burnt-rubber":"Rubber","nail-box":"Iron","match-box":"Safety_match","onion":"Onion",
+  "cat-pee":"4-Mercapto-4-methylpentan-2-one","band-aid":"Brettanomyces","sweaty-leather":"Brettanomyces",
+  "horse-barnyard":"Brettanomyces","toffee":"Toffee","barnyard":"Brettanomyces",
+  "balsamic":"Balsamic_vinegar","vinegar":"Vinegar","stewed-fruit":"Stewed_fruit",
+};
+
+function showDetail(slug, name){
+  const data = DESCRIPTIONS[slug];
+  const wikiSlug = WIKI[slug];
+  const wikiUrl = wikiSlug ? `https://en.wikipedia.org/wiki/${wikiSlug}` : `https://en.wikipedia.org/wiki/${encodeURIComponent(name.replace(/ /g,'_'))}`;
+  const titleHtml = `<a href="${wikiUrl}" target="_blank" title="Wikipedia: ${name}">${name} ↗</a>`;
+  if(!data){
+    detail.innerHTML=`<h2>${titleHtml}</h2><div class="category-tag">Descriptor</div><div class="body">Detailed information for <em>${name}</em> is being added. Click any descriptor on the wheel to explore its origin in wine.</div>`;
+    return;
+  }
+  detail.innerHTML=`
+    <h2>${titleHtml}</h2>
+    <div class="category-tag">${data.cat}</div>
+    <div class="body">${data.body}</div>
+    <div class="compound"><strong>Chemistry:</strong> ${data.compound}</div>
+  `;
+}
+
+function getAngle(e, rect){
+  const cx=rect.left+rect.width/2;
+  const cy=rect.top+rect.height/2;
+  const clientX = e.touches?e.touches[0].clientX:e.clientX;
+  const clientY = e.touches?e.touches[0].clientY:e.clientY;
+  return Math.atan2(clientY-cy, clientX-cx);
+}
+
+function applyRotation(){
+  const g = document.getElementById('wheelG');
+  if(g) g.setAttribute('transform',`rotate(${rotation * 180/Math.PI})`);
+}
+
+function momentum(){
+  if(!isDragging && Math.abs(velocity)>0.001){
+    rotation += velocity;
+    velocity *= 0.96;
+    applyRotation();
+    animFrame = requestAnimationFrame(momentum);
+  }
+}
+
+svg.addEventListener('mousedown', e=>{
+  if(e.target.classList.contains('desc-seg')) return;
+  isDragging=true;
+  const rect=svg.getBoundingClientRect();
+  lastAngle=getAngle(e,rect);
+  lastTime=Date.now();
+  velocity=0;
+  if(animFrame) cancelAnimationFrame(animFrame);
+  svg.style.cursor='grabbing';
+});
+
+window.addEventListener('mousemove',e=>{
+  if(!isDragging) return;
+  const rect=svg.getBoundingClientRect();
+  const angle=getAngle(e,rect);
+  const delta=angle-lastAngle;
+  const now=Date.now();
+  velocity=delta/(Math.max(1,now-lastTime))*16;
+  rotation+=delta;
+  lastAngle=angle;
+  lastTime=now;
+  applyRotation();
+});
+
+window.addEventListener('mouseup',()=>{
+  if(!isDragging) return;
+  isDragging=false;
+  svg.style.cursor='grab';
+  animFrame=requestAnimationFrame(momentum);
+});
+
+svg.addEventListener('touchstart',e=>{
+  const isDesc=e.target.classList.contains('desc-seg');
+  if(isDesc) return;
+  e.preventDefault();
+  isDragging=true;
+  const rect=svg.getBoundingClientRect();
+  lastAngle=getAngle(e,rect);
+  lastTime=Date.now();
+  velocity=0;
+  if(animFrame)cancelAnimationFrame(animFrame);
+},{passive:false});
+
+svg.addEventListener('touchmove',e=>{
+  if(!isDragging)return;
+  e.preventDefault();
+  const rect=svg.getBoundingClientRect();
+  const angle=getAngle(e,rect);
+  const delta=angle-lastAngle;
+  const now=Date.now();
+  velocity=delta/(Math.max(1,now-lastTime))*16;
+  rotation+=delta;
+  lastAngle=angle;
+  lastTime=now;
+  applyRotation();
+},{passive:false});
+
+svg.addEventListener('touchend',e=>{
+  isDragging=false;
+  animFrame=requestAnimationFrame(momentum);
+});
+
+buildWheel();
+</script>
+</body>
+</html>
