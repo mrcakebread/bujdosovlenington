@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Beer Flavor Wheel Study Tool</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --primary-bg: #ffffff;
+            --panel-bg: #f8f9fa;
+            --text-main: #212529;
+            --border-color: #dee2e6;
+            --somm-color: #721c24;
+            --somm-bg: #f8d7da;
+            --consumer-color: #0f5132;
+            --consumer-bg: #d1e7dd;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--primary-bg);
+            color: var(--text-main);
+        }
+
+        #wheel-container {
+            flex: 1.2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background-color: #fafafa;
+        }
+
+        /* Update cursors to indicate the spinnable feature */
+        svg {
+            cursor: grab;
+            filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.05));
+        }
+
+        svg:active {
+            cursor: grabbing;
+        }
+
+        path {
+            cursor: pointer;
+        }
+
+        #info-panel {
+            flex: 0.8;
+            min-width: 400px;
+            max-width: 500px;
+            background-color: var(--panel-bg);
+            border-left: 1px solid var(--border-color);
+            padding: 40px 30px;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.03);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .level-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .badge-somm { background-color: var(--somm-bg); color: var(--somm-color); border: 1px solid #f5c6cb; }
+        .badge-consumer { background-color: var(--consumer-bg); color: var(--consumer-color); border: 1px solid #badbcc; }
+
+        h1 { margin: 0 0 5px 0; font-size: 2.2em; color: #111; }
+        .category-subtitle { font-size: 1em; color: #6c757d; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid var(--border-color); text-transform: uppercase; letter-spacing: 1px; }
+        h2 { font-size: 1.2em; margin: 0 0 10px 0; color: #333; }
+        p { line-height: 1.6; margin-top: 0; color: #495057; font-size: 0.95em; }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            border: 1px solid #edf2f7;
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
+
+        .placeholder {
+            text-align: center;
+            color: #adb5bd;
+            margin-top: 40%;
+            transform: translateY(-50%);
+        }
+        
+        .placeholder h2 { color: #6c757d; }
+        .placeholder p { color: #868e96; }
+    </style>
+</head>
+<body>
+
+    <div id="wheel-container"></div>
+    <div id="info-panel">
+        <div id="content-area">
+            <div class="placeholder">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 20px; color: #dee2e6;"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                <h2>Select a Descriptor</h2>
+                <p><strong>Spin the wheel</strong> to explore, and click on any outer slice to view detailed chemical breakdowns for exams and accessible translations for guests.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const wheelData = {
+            name: "Beer",
+            color: "#ffffff",
+            children: [
+                {
+                    name: "Aromatic, Fruity, Floral", color: "#feca40",
+                    children: [
+                        { name: "Alcoholic", color: "#ffda66", children: [
+                            { name: "Spicy", color: "#ffe699", sommInfo: "Derived from higher (fusel) alcohols like isoamyl alcohol or propanol. Formed during fermentation at higher temps or under yeast stress.", consumerInfo: "A sharp, peppery alcohol bite that warms the throat, typical in strong ales." },
+                            { name: "Vinous", color: "#ffe699", sommInfo: "Complex ester and higher alcohol interactions reminiscent of wine. Often a feature of barleywines or barrel-aged beers undergoing micro-oxidation.", consumerInfo: "Rich, wine-like flavors that remind you of sherry, port, or dark fermented fruits." }
+                        ]},
+                        { name: "Solvent-like", color: "#ffda66", children: [
+                            { name: "Plastics", color: "#ffe699", sommInfo: "Often indicates contamination or packaging issues (leaching). Chemically linked to styrene or specific rogue phenolic compounds.", consumerInfo: "An unpleasant chemical taste similar to chewing on a plastic bottle cap." },
+                            { name: "Can-liner", color: "#ffe699", sommInfo: "Associated with BPA-epoxy or acrylic liners in aluminum cans breaking down or reacting with the beer due to high heat or improper pH.", consumerInfo: "A metallic, synthetic flavor suggesting the beer absorbed notes from its packaging." },
+                            { name: "Laquer-like", color: "#ffe699", sommInfo: "Extreme manifestation of ethyl acetate at high concentrations (>30 ppm). Indicates severe yeast stress, wild yeast, or high-temp fermentation.", consumerInfo: "A harsh, chemical smell reminiscent of nail polish remover or paint thinner." }
+                        ]},
+                        { name: "Estery", color: "#ffda66", children: [
+                            { name: "Isoamyl acetate", color: "#ffe699", sommInfo: "The signature ester of German Weissbiers. Produced by yeast esterification of isoamyl alcohol with acetyl-CoA. Prominent in POF+ strains.", consumerInfo: "A distinct, sweet candy-banana flavor." },
+                            { name: "Ethyl hexanoate", color: "#ffe699", sommInfo: "An ester produced during fermentation contributing to red apple, anise, and subtle pineapple notes.", consumerInfo: "A soft, fruity sweetness that tastes a bit like tropical fruit or sweet red apples." },
+                            { name: "Ethyl acetate", color: "#ffe699", sommInfo: "The most common ester in beer. At threshold (10-20 ppm) it imparts pear/peach notes. At high levels, it becomes solvent-like (nail polish).", consumerInfo: "A bright, fruity aroma that smells like fresh pears." }
+                        ]},
+                        { name: "Fruity", color: "#ffda66", children: [
+                            { name: "Citrus", color: "#ffe699", sommInfo: "Driven by hop terpenes like linalool, geraniol, and citronellol. Also created via biotransformation by active yeast during dry-hopping.", consumerInfo: "Zesty, refreshing notes of grapefruit, lemon, or orange peel, very common in IPAs." },
+                            { name: "Apple", color: "#ffe699", sommInfo: "Often acetaldehyde (green apple), an intermediate in ethanol production. Indicates young beer. Can also be pleasant red apple esters in certain English ales.", consumerInfo: "A crisp fruitiness. If it tastes like green apple, the beer might be quite young." },
+                            { name: "Banana", color: "#ffe699", sommInfo: "See Isoamyl acetate. Modulated by pitching rate, oxygenation, and fermenter geometry.", consumerInfo: "Sweet, ripe banana flavor, typical of wheat beers." },
+                            { name: "Black currant", color: "#ffe699", sommInfo: "Associated with certain hops (Bramling Cross). Can border on 'catty' (p-mentha-8-thiol-3-one) if heavily oxidized.", consumerInfo: "A dark, tart berry flavor similar to blackberry." },
+                            { name: "Melony", color: "#ffe699", sommInfo: "Derived from hop compounds and specific yeast esters. Commonly found in hops like Huell Melon or El Dorado.", consumerInfo: "A sweet, refreshing flavor reminiscent of honeydew or cantaloupe." },
+                            { name: "Pear", color: "#ffe699", sommInfo: "Low-level expression of ethyl acetate. Common in English and Belgian pale ales.", consumerInfo: "A mild, sweet orchard fruit flavor." },
+                            { name: "Raspberry", color: "#ffe699", sommInfo: "Can be an actual fruit addition, or an ester/ketone profile (like raspberry ketone/frambinone) produced by specific yeasts and wild fermentations.", consumerInfo: "A tart, vibrant red berry flavor." },
+                            { name: "Strawberry", color: "#ffe699", sommInfo: "Often derived from ethyl butanoate or naturally present in certain hops (like Strata or Belma).", consumerInfo: "A sweet, jammy red fruit flavor." }
+                        ]},
+                        { name: "Floral", color: "#ffda66", children: [
+                            { name: "Acetaldehyde", color: "#ffe699", sommInfo: "Strictly speaking, it is the direct precursor to ethanol. Displays as green apple, emulsion paint, or cut grass. Categorized curiously under floral in older ASBC wheels.", consumerInfo: "A sharp, slightly tart flavor like bruised green apples." },
+                            { name: "2-Phenylethanol", color: "#ffe699", sommInfo: "A higher alcohol that imparts a distinct rose-like aroma. Common in some lagers and Belgian ales.", consumerInfo: "A delicate, perfumey aroma that smells remarkably like fresh roses." },
+                            { name: "Geraniol", color: "#ffe699", sommInfo: "A monoterpenoid alcohol found in hop essential oils (Centennial, Chinook, Citra). Biotransforms into citronellol.", consumerInfo: "A bright, floral aroma similar to geranium flowers." },
+                            { name: "Perfumy", color: "#ffe699", sommInfo: "A general descriptor for a blend of high-end floral terpenes and esters (linalool, geraniol).", consumerInfo: "An aromatic, heavily floral scent, almost like a botanical soap or perfume." }
+                        ]},
+                        { name: "Hoppy", color: "#ffda66", children: [
+                            { name: "Kettle-hop", color: "#ffe699", sommInfo: "Aromas resulting from hops boiled in the wort. Often more muted, woody, or spicy due to the volatilization of delicate essential oils.", consumerInfo: "A traditional, earthy bitterness and aroma from hops cooked into the beer." },
+                            { name: "Dry-hop", color: "#ffe699", sommInfo: "Aromas from hops added post-boil/during fermentation. Retains highly volatile myrcene, linalool, and terpenes for bright, pungent aromatics.", consumerInfo: "A massive, fresh, and raw hop aroma without added bitterness." },
+                            { name: "Hop oil", color: "#ffe699", sommInfo: "The concentrated essential oils of the hop cone (lupulin glands). Imparts intense resinous, floral, or citrus notes depending on varietal.", consumerInfo: "A potent, slick, and heavy hop character." }
+                        ]},
+                        { name: "Resinous", color: "#ffda66", children: [
+                            { name: "Piney", color: "#ffe699", sommInfo: "Driven by the terpene pinene. A hallmark of classic American 'C-hops' (Cascade, Centennial, Chinook).", consumerInfo: "A sharp, evergreen flavor that tastes like walking through a pine forest." },
+                            { name: "Woody", color: "#ffe699", sommInfo: "Can derive from traditional English hops (Fuggles), barrel-aging (oak lactones), or humulene oxidation.", consumerInfo: "An earthy, rustic flavor reminiscent of cedar or oak bark." }
+                        ]}
+                    ]
+                },
+                {
+                    name: "Vegetal", color: "#85e085",
+                    children: [
+                        { name: "Nutty", color: "#a3f0a3", children: [
+                            { name: "Walnut", color: "#c2f5c2", sommInfo: "Often derived from certain specialty malts (Brown malt, Victory) or yeast autolysis in older ales.", consumerInfo: "A slightly bitter, earthy nuttiness similar to walnut skins." },
+                            { name: "Coconut", color: "#c2f5c2", sommInfo: "Driven by oak lactones (specifically in American Oak) or specialty hops like Sabro. Can also come from actual adjunct additions.", consumerInfo: "A sweet, creamy tropical nuttiness." },
+                            { name: "Beany", color: "#c2f5c2", sommInfo: "An off-flavor associated with poor wort boiling or raw adjuncts. Linked to certain aldehydes.", consumerInfo: "A raw, starchy flavor like raw green beans or unroasted soy." },
+                            { name: "Almond", color: "#c2f5c2", sommInfo: "Often benzaldehyde. Can be derived from cherry pits in fruit beers, oxidation, or specific specialty malts.", consumerInfo: "A sweet, marzipan-like nuttiness." }
+                        ]},
+                        { name: "Grassy", color: "#a3f0a3", children: [
+                            { name: "Freshly cut grass", color: "#c2f5c2", sommInfo: "Derived from hexanal and other aldehydes. Often results from poorly stored hops or heavily dry-hopped beers with excessive vegetative matter.", consumerInfo: "A raw, green flavor exactly like a freshly mowed lawn." },
+                            { name: "Straw-like", color: "#c2f5c2", sommInfo: "Mild oxidation of malt compounds or derived from very pale pilsner malts.", consumerInfo: "A dry, rustic flavor reminiscent of a barn or dried hay." }
+                        ]}
+                    ]
+                },
+                {
+                    name: "Cereal", color: "#5cd65c",
+                    children: [
+                        { name: "Grainy", color: "#85e085", children: [
+                            { name: "Husky", color: "#a3f0a3", sommInfo: "Astringent note extracted from malt husks due to over-sparging, sparging with water too hot (>170°F), or high pH.", consumerInfo: "A dry, slightly harsh grain flavor, like chewing on raw grain shells." },
+                            { name: "Corn grits", color: "#a3f0a3", sommInfo: "Often DMS (Dimethyl Sulfide) at low levels, or directly from the use of flaked maize adjuncts in American lagers.", consumerInfo: "A sweet, starchy flavor similar to corn flakes or polenta." },
+                            { name: "Mealy", color: "#a3f0a3", sommInfo: "Associated with under-modified malt or unconverted starches left in the beer.", consumerInfo: "A heavy, flour-like taste." },
+                            { name: "Malty", color: "#a3f0a3", sommInfo: "The foundational flavor of base malts (Pilsner, Pale, Munich). Offers fermentable sugars and backbone.", consumerInfo: "A pleasant, sweet backbone that tastes like fresh baked crackers or biscuits." },
+                            { name: "Worty", color: "#a3f0a3", sommInfo: "Tastes of unfermented wort. Indicates poor attenuation, yeast stalling, or an intentional low-alcohol brewing process.", consumerInfo: "A very sweet, syrupy, raw-grain flavor like sugary cereal milk." }
+                        ]}
+                    ]
+                },
+                {
+                    name: "Maillard", color: "#2eb82e",
+                    children: [
+                        { name: "Caramel", color: "#47d147", children: [
+                            { name: "Molasses", color: "#70db70", sommInfo: "Created by high-temperature caramelization. Common in dark candi syrups used in Belgian dark strong ales.", consumerInfo: "A dark, rich, and slightly bitter sweetness like dark brown sugar or treacle." },
+                            { name: "Licorice", color: "#70db70", sommInfo: "Can come from specific roasted malts, star anise additions, or advanced Maillard reactions in high-gravity boiling.", consumerInfo: "A sharp, sweet, earthy flavor reminiscent of black licorice candy." }
+                        ]},
+                        { name: "Burnt", color: "#47d147", children: [
+                            { name: "Bread crust", color: "#70db70", sommInfo: "Classic Maillard product, highly associated with Munich and Vienna malts kilned at moderate temperatures.", consumerInfo: "A warm, toasted flavor exactly like the crust of a hearty loaf of bread." },
+                            { name: "Roast barley", color: "#70db70", sommInfo: "Unmalted, highly roasted barley. Imparts deep color and sharp, coffee-like bitterness without sweetness. Essential for Dry Irish Stout.", consumerInfo: "A sharp, dry, dark coffee flavor." },
+                            { name: "Smoky", color: "#70db70", sommInfo: "Phenolic. Derived from malts smoked over wood (beechwood for Rauchbier, peat for some Scotch ales).", consumerInfo: "A distinct campfire or smoked-meat flavor." }
+                        ]}
+                    ]
+                },
+                {
+                    name: "Phenolic", color: "#00cccc",
+                    children: [
+                        { name: "Phenolic", color: "#33d6d6", children: [
+                            { name: "Tarry", color: "#66e0e0", sommInfo: "Extreme manifestation of phenols, often from heavy peat-smoked malt or severe infections.", consumerInfo: "An acrid, heavy flavor similar to fresh asphalt or pitch." },
+                            { name: "Bakelite", color: "#66e0e0", sommInfo: "An industrial phenolic off-flavor. Suggests a combination of wild yeast infection and oxidation.", consumerInfo: "A synthetic, retro-plastic flavor." },
+                            { name: "Carbolic", color: "#66e0e0", sommInfo: "Phenol itself. An off-flavor usually derived from wild yeast (Brettanomyces/Saccharomyces diastaticus) or poor sanitization.", consumerInfo: "A harsh, medicinal flavor reminiscent of throat lozenges." },
+                            { name: "Chlorophenol", color: "#66e0e0", sommInfo: "Formed when chlorine/chloramine in brewing water reacts with naturally occurring phenols. Uncorrectable off-flavor.", consumerInfo: "A strong, unpleasant taste exactly like mouthwash or hospital band-aids." },
+                            { name: "Isodoform", color: "#66e0e0", sommInfo: "Derived from iodine-based sanitizers (iodophor) left in high concentrations in equipment.", consumerInfo: "A medicinal, iodine-like metallic taste." }
+                        ]}
+                    ]
+                },
+                {
+                    name: "Fatty", color: "#33adff",
+                    children: [
+                        { name: "Fatty acid", color: "#66c2ff", children: [
+                            { name: "Caprylic", color: "#99d6ff", sommInfo: "Octanoic acid. Excreted by yeast during fermentation. Can be pleasant at low levels, but goaty/soapy at high levels.", consumerInfo: "A waxy, slightly goaty or soapy flavor." },
+                            { name: "Cheesy", color: "#99d6ff", sommInfo: "Usually Isovaleric acid. Associated with the use of highly oxidized, old hops (often used intentionally in lambics where the aroma ferments out).", consumerInfo: "A pungent aroma of old, hard cheese." },
+                            { name: "Isovaleric", color: "#99d6ff", sommInfo: "Oxidation product of hop alpha acids. A major off-flavor in standard beer styles, indicating degraded hops.", consumerInfo: "Smells like sweaty socks or aged cheese." },
+                            { name: "Butyric", color: "#99d6ff", sommInfo: "Butyric acid. Created by bacterial infection (Clostridium or Pediococcus) during wort chilling or sour mashing.", consumerInfo: "A sharply unpleasant aroma of rancid butter or baby vomit." },
+                            { name: "Diacetyl", color: "#99d6ff", sommInfo: "2,3-butanedione. A vicinal diketone (VDK) formed outside the yeast cell and reabsorbed. If present, indicates yeast stress, mutation, or rushed fermentation (lack of diacetyl rest).", consumerInfo: "A slick, artificial butter flavor, like movie theater popcorn." }
+                        ]},
+                        { name: "Oily", color: "#66c2ff", children: [
+                            { name: "Rancid", color: "#99d6ff", sommInfo: "Oxidation of lipids (fats) from malt or adjuncts (like oats/nuts).", consumerInfo: "A stale, foul oil flavor, like old forgotten nuts in a pantry." },
+                            { name: "Vegetable oil", color: "#99d6ff", sommInfo: "Lipid carryover into the beer. Kills head retention immediately.", consumerInfo: "A slick, greasy mouthfeel without much flavor." },
+                            { name: "Mineral oil", color: "#99d6ff", sommInfo: "Machinery lubricant contamination during the brewing or canning process.", consumerInfo: "A petroleum-like, highly synthetic grease flavor." }
+                        ]}
+                    ]
+                },
+                {
+                    name: "Sulfury", color: "#3366ff",
+                    children: [
+                        { name: "Sulfitic", color: "#668cff", children: [
+                            { name: "Striking match", color: "#99b3ff", sommInfo: "Sulfur dioxide (SO2). Produced by yeast or added as a preservative (rare in modern beer, common in wine).", consumerInfo: "A sharp, burning aroma just like a newly lit match." }
+                        ]},
+                        { name: "Sulfidic", color: "#668cff", children: [
+                            { name: "Meaty", color: "#99b3ff", sommInfo: "Can occur from autolysis (yeast death/decay) yielding complex sulfuric amino acids.", consumerInfo: "A heavy, savory broth or soy-sauce flavor." },
+                            { name: "Hydrogen sulfide", color: "#99b3ff", sommInfo: "H2S. A byproduct of all yeast fermentation, usually scrubbed out by CO2 during a vigorous boil/fermentation. Common in young lagers.", consumerInfo: "A distinct aroma of rotten eggs." },
+                            { name: "Mercaptan", color: "#99b3ff", sommInfo: "Ethanethiol. Caused by yeast autolysis or severe bacterial infections.", consumerInfo: "Smells like natural gas or raw sewage." },
+                            { name: "Garlic", color: "#99b3ff", sommInfo: "Often from specific hop varieties (Summit, Mosaic) high in certain sulfur compounds, especially if harvested late.", consumerInfo: "A pungent, savory garlic or onion aroma." },
+                            { name: "Lightstruck", color: "#99b3ff", sommInfo: "3-methyl-2-butene-1-thiol (MBT). Formed when UV/blue light cleaves iso-alpha acids, which then bind with sulfur proteins. Happens in minutes in clear/green glass.", consumerInfo: "A classic 'skunky' aroma. Common in imported beers in green bottles." },
+                            { name: "Autolysed", color: "#99b3ff", sommInfo: "Result of yeast cell death and rupturing, spilling internal enzymes and amino acids into the beer. Often happens when left on the yeast cake too long.", consumerInfo: "A sharp, muddy, Vegemite or soy sauce-like flavor." },
+                            { name: "Burnt rubber", color: "#99b3ff", sommInfo: "A severe mercaptan/sulfur off-flavor, often from highly stressed yeast or specific infections.", consumerInfo: "A harsh, acrid smell of burning tires." },
+                            { name: "Shrimp-like", color: "#99b3ff", sommInfo: "Extreme manifestation of sulfur compounds, occasionally linked to specific marine-like bacterial contamination.", consumerInfo: "An unsettling, fishy or briny sulfur smell." }
+                        ]},
+                        { name: "Cooked vegetable", color: "#668cff", children: [
+                            { name: "Parsnip/celery", color: "#99b3ff", sommInfo: "Aldehydic or sulfuric compounds from aged hops or malt oxidation.", consumerInfo: "An earthy, root-vegetable flavor." },
+                            { name: "Dimethyl sulfide", color: "#99b3ff", sommInfo: "DMS. Originates from SMM in pale malts. Usually driven off by a vigorous 60+ minute boil. A known, acceptable background note in some German Lagers.", consumerInfo: "Tastes like creamed corn or canned cooked vegetables." },
+                            { name: "Cooked cabbage", color: "#99b3ff", sommInfo: "A variation of DMS or other sulfur compounds, indicating a poor boil or slow wort chilling.", consumerInfo: "A heavy, sulfurous boiled vegetable aroma." },
+                            { name: "Cooked sweet corn", color: "#99b3ff", sommInfo: "The textbook descriptor for classic Dimethyl Sulfide (DMS).", consumerInfo: "Tastes exactly like the water from a can of sweet corn." },
+                            { name: "Cooked tomato", color: "#99b3ff", sommInfo: "Another DMS/sulfur variant, sometimes interacting with oxidation.", consumerInfo: "A savory, slightly acidic cooked vegetable note." },
+                            { name: "Cooked onion", color: "#99b3ff", sommInfo: "Dimethyl trisulfide (DMTS) or derived from specific hop varieties (like Summit).", consumerInfo: "A savory, cooked onion or shallot flavor." },
+                            { name: "Yeasty", color: "#99b3ff", sommInfo: "Suspended yeast in the beer. Intentional in Hefeweizens and hazy IPAs; a flaw in filtered lagers. Contributes b-vitamins and a doughy profile.", consumerInfo: "A bready, doughy flavor, like raw bread dough or yeast nutrient." }
+                        ]}
+                    ]
+                },
+                {
+                    name: "Stale", color: "#9966cc",
+                    children: [
+                        { name: "Stale", color: "#b280cc", children: [
+                            { name: "Catty", color: "#cc99ff", sommInfo: "p-mentha-8-thiol-3-one. Found in certain hops (Simcoe, Citra) but can become pronounced and off-putting as the beer ages and oxidizes.", consumerInfo: "A sharp aroma that strongly resembles cat urine or a blackcurrant bush." },
+                            { name: "Papery", color: "#cc99ff", sommInfo: "Trans-2-nonenal. The classic hallmark of beer oxidation. Formed by the oxidation of malt lipids.", consumerInfo: "Tastes like chewing on wet cardboard or old newspaper." },
+                            { name: "Leathery", color: "#cc99ff", sommInfo: "Oxidation in dark beers. Often a combination of oxidized melanoidins and esters.", consumerInfo: "A dry, earthy flavor reminiscent of an old leather armchair. Can be pleasant in aged stouts." }
+                        ]},
+                        { name: "Moldy", color: "#b280cc", children: [
+                            { name: "Earthy", color: "#cc99ff", sommInfo: "Geosmin. Can come from damp storage conditions, contaminated brewing water, or specific traditional English hops (Fuggles).", consumerInfo: "Tastes like damp soil or a freshly dug garden." },
+                            { name: "Musty", color: "#cc99ff", sommInfo: "TCA (Trichloroanisole) or mold in the brewery environment (e.g., damp malt storage or old barrels).", consumerInfo: "A dank, old basement or wet dog smell." }
+                        ]}
+                    ]
+                },
+                {
+                    name: "Acidic", color: "#cc33ff",
+                    children: [
+                        { name: "Acidic", color: "#d966ff", children: [
+                            { name: "Acetic", color: "#e699ff", sommInfo: "Acetic acid. Produced by Acetobacter in the presence of oxygen. A severe fault in most beers, but essential in Flanders Red Ales.", consumerInfo: "A sharp, harsh sourness exactly like white vinegar." },
+                            { name: "Sour", color: "#e699ff", sommInfo: "Lactic acid. Produced by Lactobacillus or Pediococcus. Provides clean sourness in Berliner Weisse, Gose, and Lambics.", consumerInfo: "A clean, tangy tartness similar to plain yogurt or lemon juice." }
+                        ]}
+                    ]
+                },
+                {
+                    name: "Sweet", color: "#ff00ff",
+                    children: [
+                        { name: "Sweet", color: "#ff4dff", children: [
+                            { name: "Honey", color: "#ff80ff", sommInfo: "Can be an adjunct, or a sign of oxidation (specifically in lighter beers like Pilsners) where aldehydes mimic honey notes.", consumerInfo: "A floral, rich sweetness like raw honey." },
+                            { name: "Jam-like", color: "#ff80ff", sommInfo: "Complex, concentrated fruit esters interacting with sweet malts or actual fruit purees in modern sours.", consumerInfo: "A thick, cooked-fruit sweetness like strawberry or raspberry preserves." },
+                            { name: "Vanilla", color: "#ff80ff", sommInfo: "Vanillin. Derived from oak barrel aging (especially American Oak) or specific wild yeast phenolic reactions.", consumerInfo: "A smooth, creamy dessert-like sweetness." },
+                            { name: "Primings", color: "#ff80ff", sommInfo: "The taste of unfermented bottling sugar (dextrose/sucrose) if a bottle-conditioned beer hasn't carbonated properly.", consumerInfo: "A simple, flat sugar-water taste." },
+                            { name: "Syrupy", color: "#ff80ff", sommInfo: "High residual sugar (high terminal gravity) often from unfermentable dextrins or stalled fermentation.", consumerInfo: "A heavy, cloying sweetness that coats the mouth like pancake syrup." },
+                            { name: "Oversweet", color: "#ff80ff", sommInfo: "A lack of balancing hop bitterness (IBUs) relative to the malt backbone (Original Gravity).", consumerInfo: "A saccharine, unbalanced sweetness that becomes tiring to drink." }
+                        ]}
+                    ]
+                },
+                {
+                    name: "Mouthfeel", color: "#ff66b2",
+                    children: [
+                        { name: "Bitter", color: "#ff99cc", sommInfo: "Iso-alpha acids isomerized during the boil. Measured in IBUs. Provides critical balance to malt sweetness.", consumerInfo: "The sharp, dry sensation on the back of the tongue, similar to black coffee or bitter greens." },
+                        { name: "Salty", color: "#ff99cc", sommInfo: "Sodium chloride. Rare in most beer styles. A stylistic requirement for the historical Gose style from Leipzig.", consumerInfo: "A slight saline, briny quality that makes the beer very thirst-quenching." },
+                        { name: "Alkaline", color: "#ff99cc", sommInfo: "High pH in brewing water or excessive extraction of silicates from grain husks.", consumerInfo: "A soapy, slippery, or chalky mouthfeel." },
+                        { name: "Mouthcoating", color: "#ff99cc", sommInfo: "High levels of beta-glucans, proteins, or dextrins. Often desired in Oatmeal Stouts or Hazy IPAs.", consumerInfo: "A dense, creamy texture that leaves a lingering film in the mouth." },
+                        { name: "Metallic", color: "#ff99cc", sommInfo: "Ferrous sulfate. Leaching from poor-quality equipment, bad water, or malt issues. Noticeable on the skin (rub some on your hand and smell).", consumerInfo: "Tastes exactly like licking a copper penny or biting your lip." },
+                        { name: "Drying", color: "#ff99cc", sommInfo: "High attenuation (low final gravity), high carbonation, or high sulfate-to-chloride water ratios (Burtonization).", consumerInfo: "A crisp finish that actively makes your mouth feel dry and ready for the next sip." },
+                        { name: "Tart", color: "#ff99cc", sommInfo: "Mild lactic or malic acid presence. Lowers the pH of the beer creating a bright finish.", consumerInfo: "A gentle, fruity acidity, like a slightly underripe green grape." },
+                        { name: "Puckering", color: "#ff99cc", sommInfo: "High Titratable Acidity (TA) combined with extremely low pH (under 3.2), common in intense mixed-fermentation sours.", consumerInfo: "An intense, face-scrunching sourness." },
+                        { name: "Powdery", color: "#ff99cc", sommInfo: "Suspended particles (yeast, hop matter, or proteins) creating a physical, particulate sensation.", consumerInfo: "A dusty or chalky feeling on the tongue, like crushed aspirin." },
+                        { name: "Flat", color: "#ff99cc", sommInfo: "Lack of dissolved CO2. Indicates poor packaging, failed bottle-conditioning, or simply an authentic British Cask Ale.", consumerInfo: "Little to no bubbles. Can feel lifeless, but is traditional for some English pub ales." },
+                        { name: "Gassy", color: "#ff99cc", sommInfo: "Over-carbonation. Can be a packaging flaw, an infection (diastaticus), or a stylistic trait (Belgian Tripels).", consumerInfo: "Aggressively bubbly, almost prickly, filling the stomach quickly." },
+                        { name: "Piquant", color: "#ff99cc", sommInfo: "A spicy/prickly physical sensation. Can derive from high carbonation interacting with alcohol and phenols.", consumerInfo: "A sharp, lively, and slightly spicy tingle on the tongue." }
+                    ]
+                },
+                {
+                    name: "Fullness", color: "#ff4d4d",
+                    children: [
+                        { name: "Body", color: "#ff6666", children: [
+                            { name: "Watery", color: "#ff9999", sommInfo: "Extremely low terminal gravity and lack of proteins/dextrins. A flaw in robust styles, intentional in light lagers.", consumerInfo: "Thin and flavorless, lacking any weight on the palate." },
+                            { name: "Characterless", color: "#ff9999", sommInfo: "A total lack of malt complexity, ester profile, or hop presence. Blandness.", consumerInfo: "Completely neutral, tasting more like water than beer." },
+                            { name: "Satiating", color: "#ff9999", sommInfo: "A balanced, full mouthfeel providing caloric and sensory satisfaction without being overly cloying.", consumerInfo: "A deeply satisfying, bready fullness that feels like a 'meal in a glass'." },
+                            { name: "Thick", color: "#ff9999", sommInfo: "Massive malt bill, high unfermentable sugars, and elevated protein content (oats, wheat). Common in Imperial Stouts.", consumerInfo: "Extremely heavy and viscous, drinking almost like motor oil or syrup." }
+                        ]}
+                    ]
+                }
+            ]
+        };
+
+        const width = 850;
+        const radius = width / 2;
+
+        const svg = d3.select("#wheel-container")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", width)
+            .attr("viewBox", `0 0 ${width} ${width}`);
+
+        // We wrap the wheel in a distinct group so we can rotate the entire group easily
+        const wheelGroup = svg.append("g")
+            .attr("transform", `translate(${width / 2},${width / 2})`);
+
+        const partition = d3.partition()
+            .size([2 * Math.PI, radius - 40]);
+
+        const root = d3.hierarchy(wheelData)
+            .sum(d => d.children ? 0 : 1);
+
+        partition(root);
+
+        const arc = d3.arc()
+            .startAngle(d => d.x0)
+            .endAngle(d => d.x1)
+            .innerRadius(d => d.y0)
+            .outerRadius(d => d.y1)
+            .padAngle(0.003);
+
+        const paths = wheelGroup.selectAll("path")
+            .data(root.descendants().filter(d => d.depth > 0))
+            .enter().append("path")
+            .attr("d", arc)
+            .style("fill", d => d.data.color)
+            .style("stroke", "#fff")
+            .style("stroke-width", "1px")
+            .on("click", handleClick)
+            .on("mouseover", function(event, d) {
+                d3.select(this).style("opacity", 0.7).style("stroke", "#333").style("stroke-width", "2px");
+            })
+            .on("mouseout", function(event, d) {
+                d3.select(this).style("opacity", 1).style("stroke", "#fff").style("stroke-width", "1px");
+            });
+
+        // Add text labels
+        const texts = wheelGroup.selectAll("text")
+            .data(root.descendants().filter(d => d.depth > 0))
+            .enter().append("text")
+            .attr("transform", function(d) {
+                const x0 = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+                const y = (d.y0 + d.y1) / 2;
+                return `rotate(${x0 - 90}) translate(${y},0) rotate(${x0 < 180 ? 0 : 180})`;
+            })
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .style("font-size", d => d.depth === 1 ? "11px" : "10px")
+            .style("font-weight", d => d.depth === 1 ? "bold" : "normal")
+            .style("fill", "#111")
+            .style("pointer-events", "none")
+            .text(d => {
+                if (d.x1 - d.x0 < 0.03) return "";
+                return d.data.name;
+            });
+
+        // --- NEW DRAG/SPIN LOGIC ---
+        let currentAngle = 0;
+        let startAngle = 0;
+
+        const drag = d3.drag()
+            .on("start", function(event) {
+                // Determine the starting touch/mouse coordinate relative to the center
+                const [x, y] = d3.pointer(event, svg.node());
+                const dx = x - width / 2;
+                const dy = y - width / 2;
+                startAngle = Math.atan2(dy, dx) * 180 / Math.PI - currentAngle;
+            })
+            .on("drag", function(event) {
+                const [x, y] = d3.pointer(event, svg.node());
+                const dx = x - width / 2;
+                const dy = y - width / 2;
+                const newAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+                
+                currentAngle = newAngle - startAngle;
+                
+                // Spin the entire wheel group
+                wheelGroup.attr("transform", `translate(${width / 2},${width / 2}) rotate(${currentAngle})`);
+                
+                // Dynamically flip the text nodes so they are always right-side up
+                texts.attr("transform", function(d) {
+                    const x0 = (d.x0 + d.x1) / 2 * 180 / Math.PI; // Original angle on the wheel
+                    const y = (d.y0 + d.y1) / 2;
+                    
+                    // Calculate absolute position on the screen based on the spin
+                    let absoluteAngle = (x0 + currentAngle) % 360;
+                    if (absoluteAngle < 0) absoluteAngle += 360;
+                    
+                    // If the text makes it to the left side of the screen, flip it 180 degrees
+                    return `rotate(${x0 - 90}) translate(${y},0) rotate(${absoluteAngle < 180 ? 0 : 180})`;
+                });
+            });
+
+        svg.call(drag);
+
+        function handleClick(event, d) {
+            // Ignore the click event if the user was just dragging/spinning the wheel
+            if (event.defaultPrevented) return;
+
+            const contentArea = document.getElementById("content-area");
+            
+            // Build breadcrumbs for category subtitle
+            let breadcrumbs = [];
+            let current = d;
+            while(current.parent) {
+                breadcrumbs.unshift(current.data.name);
+                current = current.parent;
+            }
+            const subtitle = breadcrumbs.join(" > ");
+
+            if (!d.data.sommInfo) {
+                contentArea.innerHTML = `
+                    <div class="placeholder" style="margin-top: 20%;">
+                        <h2>${d.data.name}</h2>
+                        <p class="category-subtitle">${subtitle}</p>
+                        <p>This is a broader category ring. <br><br>Click on a specific descriptor on the <b>outer edge</b> of this slice to view the detailed study data.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            contentArea.innerHTML = `
+                <h1>${d.data.name}</h1>
+                <div class="category-subtitle">${subtitle}</div>
+                
+                <div class="card">
+                    <span class="level-badge badge-somm">Sommelier / Cicerone Exam</span>
+                    <h2>Technical & Chemical Origin</h2>
+                    <p>${d.data.sommInfo}</p>
+                </div>
+
+                <div class="card">
+                    <span class="level-badge badge-consumer">Guest / Floor Translation</span>
+                    <h2>Tasting Room Description</h2>
+                    <p>${d.data.consumerInfo}</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
