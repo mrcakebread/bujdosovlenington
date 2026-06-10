@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Scotch Flavor Wheel Study Tool</title>
+    <style>
+        :root {
+            --bg-color: #f7f5ee;
+            --text-dark: #222;
+            --c-fruity: #00b08a;
+            --c-floral: #e63956;
+            --c-peaty: #713a8c;
+            --c-cereal: #f2a122;
+            --c-woody: #612130;
+            --c-feinty: #006eb7;
+            --c-spicy: #f05a22;
+            --c-sulphury: #79a43b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            color: #666;
+        }
+
+        .tool-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            gap: 40px;
+        }
+
+        /* Wheel Container holding the SVG */
+        .wheel-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 520px;
+            aspect-ratio: 1 / 1;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .wheel-wrapper:active {
+            cursor: grabbing;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        /* SVG Inner Styling */
+        .segment {
+            cursor: pointer;
+            transition: opacity 0.2s, stroke 0.2s;
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+
+        .segment:hover {
+            opacity: 0.9;
+            stroke: #222;
+            stroke-width: 2px;
+        }
+
+        .segment.active {
+            stroke: #000;
+            stroke-width: 3px;
+            opacity: 1;
+        }
+
+        .wheel-text {
+            font-weight: 800;
+            fill: #fff;
+            pointer-events: none;
+            letter-spacing: 0.8px;
+            font-size: 9px;
+            text-transform: uppercase;
+        }
+
+        .inner-tier-text {
+            font-size: 8.5px;
+            letter-spacing: 1px;
+        }
+
+        .center-pin {
+            fill: #fff;
+            stroke: #ccc;
+            stroke-width: 1px;
+        }
+
+        /* Info Display Panel */
+        .info-panel {
+            width: 100%;
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-left: 8px solid #ccc;
+            transition: border-color 0.3s ease;
+        }
+
+        .info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .info-category {
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: #fff;
+        }
+
+        .info-section {
+            margin-bottom: 15px;
+        }
+
+        .info-section h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: #777;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .info-section p {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        @media (min-width: 768px) {
+            .tool-container {
+                flex-direction: row;
+                align-items: flex-start;
+                justify-content: center;
+            }
+            .info-panel {
+                flex: 1;
+                min-height: 520px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Interactive Scotch Flavor Wheel</h1>
+        <p>Click & drag to spin. Text has been pushed outward and engineered to dynamically face upright on the right side of the wheel for seamless left-to-right reading.</p>
+    </header>
+
+    <div class="tool-container">
+        <div class="wheel-wrapper" id="wheelWrapper">
+            <svg id="wheelSvg" viewBox="-220 -220 440 440">
+                <g id="rotatingGroup"></g>
+                <circle cx="0" cy="0" r="5" class="center-pin"></circle>
+            </svg>
+        </div>
+
+        <div class="info-panel" id="infoPanel">
+            <div id="defaultPrompt">
+                <h2 style="margin-bottom:10px; color:#555;">Select a Flavor Segment</h2>
+                <p style="color:#777; line-height: 1.4;">Click or tap any descriptor on the outer rim of the wheel to populate specialized technical data, chemical origins, and mixology structures designed for spirits professionals.</p>
+            </div>
+            <div id="panelContent" style="display: none;">
+                <div class="info-header">
+                    <div class="info-title" id="pTitle">Descriptor</div>
+                    <div class="info-category" id="pCategory">Category</div>
+                </div>
+                <div class="info-section">
+                    <h3>Chemical Origin & Production Cause</h3>
+                    <p id="pOrigin">Details regarding malting, fermentation, or distillation cuts.</p>
+                </div>
+                <div class="info-section">
+                    <h3>Palate & Mixology Application</h3>
+                    <p id="pMixology">How to balance it in cocktail builds or present it to guests.</p>
+                </div>
+                <div class="info-section">
+                    <h3>Classic Benchmark Examples</h3>
+                    <p id="pExamples">Notable distilleries or expressions defined by this trait.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA OBJECT ---
+        const wheelData = [
+            {
+                category: "Fruity", color: "var(--c-fruity)",
+                subcategories: [
+                    { name: "Fresh Fruit", origin: "High presence of short-to-medium chain fatty acid esters (e.g., Isoamyl acetate). Enhanced by long, clear fermentations (50+ hours), light peating, and high copper contact in tall pot stills which strip heavier elements away.", mixology: "Brightens cocktails; works flawlessly in Scotch-based highballs with expressive citrus twists or club soda. Cuts through rich, heavy food pairings.", examples: "Glenfiddich 12, Glenmorangie Original, Speyside region standards." },
+                    { name: "Estery", origin: "Direct result of yeast metabolism during fermentation combining alcohols and organic acids. Promoted by slow, cold fermentations and minimal structural stress on yeast.", mixology: "Presents as solventy, pear drops, or nail polish remover when over-concentrated, but adds ethereal lightness when balanced. Use in stirred, delicate cocktails like an elegant Rob Roy.", examples: "AnCnoc 12, Linkwood independent bottlings." },
+                    { name: "Citrus", origin: "Often linked to dynamic, narrow cut points during distillation focusing on the 'foreshots-to-hearts' transition. Frequently emphasized by aging in first-fill ex-bourbon barrels.", mixology: "Provides superb lift in sour variations. Complements drinks featuring lemon, orange oils, or herbal liqueurs like Chartreuse.", examples: "Ardbeg (underneath the heavy peat), Dalwhinnie 15." },
+                    { name: "Fruity Sweets", origin: "Concentration of heavy esters interacting with caramelized wood sugars (hemicellulose) from toasted cask interiors during early maturation.", mixology: "Imparts a perception of sweetness without sugar. Excellent choice for introducing vodka/rum drinkers to Single Malts.", examples: "Aberlour 12, Cardhu 12." }
+                ]
+            },
+            {
+                category: "Floral", color: "var(--c-floral)",
+                subcategories: [
+                    { name: "Fresh Flowers", origin: "Derived from specific terpenes and aromatic compounds surviving distillation, typically highlighted by boiling ball or lantern-shaped stills that permit strong reflux.", mixology: "Delicate and volatile. Avoid masking with heavy syrups or bold bitters. Pair with light vermouths or serve neat with a drop of water.", examples: "Lowland region malts, Bladnoch, Glenkinchie 12." },
+                    { name: "Perfumed", origin: "Driven by compounds like linalool or geraniol. Often develops when spirits undergo gentle, prolonged maturation in inert or multi-refill casks where oak does not dominate.", mixology: "Highly aromatic asset. Mist over a cocktail glass as an ambient atomizer feature for premium cocktail service.", examples: "Clynelish 14 (waxy-floral), Rosebank." },
+                    { name: "Leafy", origin: "Presence of hexenal or similar green aldehydes. Occurs due to rapid processing of mash or low-temperature, highly aerated wort clarification.", mixology: "Brings a crisp, botanical edge reminiscent of gin. Spectacular in modified Collins or served with premium tonic water.", examples: "Glenlossie, Teaninich." },
+                    { name: "Plant House", origin: "Complex organic plant-matter interactions. Can emerge when condenser water temperatures are run high, slightly lowering copper interaction.", mixology: "Provides a savory, complex undercurrent that pairs excellently with vermouths featuring heavy botanical backbones like Punt e Mes.", examples: "Royal Brackla, certain older Craigellachie runs." }
+                ]
+            },
+            {
+                category: "Peaty", color: "var(--c-peaty)",
+                subcategories: [
+                    { name: "Smoky", origin: "Phenolic compounds (guaiacol) absorbed by the damp barley during the peat-firing kilning process before mashing.", mixology: "The ultimate split-base modifier. A quarter-ounce float completely transforms classic drinks like the Penicillin or a smoky Mezcal/Scotch Negroni.", examples: "Laphroiag 10, Lagavulin 16, Caol Ila 12." },
+                    { name: "Medicinal", origin: "High concentration of cresols and xylenols. This profile is distinctively tied to coastal Islay peat bogs filled with decomposed marine life, seaweed, and salt spray.", mixology: "Polarizing but highly sought after. Use deliberately in avant-garde savory cocktails or serve neat alongside oysters.", examples: "Laphroaig Select, Ardbeg Ten." },
+                    { name: "Burnt", origin: "High-temperature kilning or scorching of proteins/sugars in the pot still base when direct-fired methods are employed instead of steam coils.", mixology: "Pairs spectacularly with rich coffee liqueurs, dark chocolate bitters, or black walnut modifiers.", examples: "Springbank (direct-fired wash still), Glenfarclas." },
+                    { name: "Tar", origin: "Heavy, high-boiling-point phenols collected at the very tail-end of the spirit cut (near the feints cut-off point).", mixology: "Highly dominant flavor profile. Needs pairing with robust structural elements like rich, aged sweet vermouths or heavy demersara syrup.", examples: "Port Charlotte, Octomore, Talisker 10." }
+                ]
+            },
+            {
+                category: "Cereal", color: "var(--c-cereal)",
+                subcategories: [
+                    { name: "Dry Cereal", origin: "Pyrazines and furans. Generated from thermal reactions during roasting and boiling the grist, emphasizing a high husk-to-flour ratio in the mash tun.", mixology: "Provides a rustic, dry base that tames overly sweet modifiers. Perfect for classic minimalist presentations.", examples: "Bruichladdich Classic Laddie, Bunnahabhain 12." },
+                    { name: "Wet Cereal", origin: "Lipids and proteins extracted from the barley malt during mashing, often coming through due to cloudy, rapid wort runoff.", mixology: "Brings a velvety mouthfeel and textural weight to cocktails. Helps soften the bitter edge of amaros.", examples: "Ben Nevis, Deanston 12." },
+                    { name: "Malty", origin: "Highly linked to the compound maltol. Derived directly from uncompromised barley sugars that survive fermentation and pass through low-reflux distillation.", mixology: "The baseline DNA of Single Malt. Excellent for standard Old Fashioneds where the grain structure is meant to be showcased.", examples: "Aberfeldy 12, Balvenie DoubleWood." },
+                    { name: "Yeasty", origin: "Autolysis of yeast cells. Happens when spent lees remain in the pot still during continuous distillation batches, or from excessive yeast sediment.", mixology: "Provides a bready, savory complexity that pairs nicely with beer-cocktail conversions or cider-based serves.", examples: "Inchgower, various young Highland single malts." }
+                ]
+            },
+            {
+                category: "Woody", color: "var(--c-woody)",
+                subcategories: [
+                    { name: "Vanilla", origin: "Breakdown of lignin in oak wood casks into vanillin during thermal charring/toasting. Highly prevalent in first-fill American ex-bourbon white oak.", mixology: "A friendly, widely appealing profile. Combines effortlessly with ginger ale, sweet vermouth, or orchard fruit liqueurs.", examples: "Auchentoshan American Oak, Glenmorangie 10." },
+                    { name: "Nutty", origin: "Formed via long-term oxidation inside European oak sherry casks (Oloroso/Amontillado), which transforms oak lactones and fatty acids.", mixology: "Stunning when paired with nutty modifiers like Amaretto, Orgeat, or sherry-based vermouths in a Manhattan variation.", examples: "Macallan Sherry Oak, GlenDronach 12." },
+                    { name: "Coconut", origin: "High concentration of beta-methyl-gamma-octalactone (oak lactones), standard in American white oak (Quercus alba).", mixology: "Pairs elegantly with tropical profiles, tiki-style adjustments, or pineapple bitters without abandoning the Scotch identity.", examples: "Cambus or Carsebridge (aged Single Grain Whiskies), Balvenie 14 Caribbean Cask." },
+                    { name: "Oaky", origin: "Heavy extraction of wood tannins and ellagitannins due to long maturation cycles or over-active virgin oak storage.", mixology: "Creates a dry, highly structured finish. Balance this tannin structure out with rich, sweet syrups or sweet liqueurs.", examples: "Any 25+ Year Old expression, Glen Garioch Virgin Oak." }
+                ]
+            },
+            {
+                category: "Feinty", color: "var(--c-feinty)",
+                subcategories: [
+                    { name: "Plastic", origin: "Complex synthetic-leaning phenols or chemical interactions from specific low-pressure or high-temperature condenser setups.", mixology: "An esoteric, quirky profile. Appeals heavily to collectors and nerds. Highlight its industrial vibe in a minimal spirit-forward build.", examples: "Certain expressions from Campbeltown or specific Jura bottlings." },
+                    { name: "Sweaty", origin: "Short-chain fatty acids (e.g., butyric or isovaleric acids) formed during prolonged, secondary wild-bacterial fermentations after yeast slows.", mixology: "Brings funk and weight akin to Jamaican rum. Adds depth to complex modern cocktails using herbal liqueurs.", examples: "Loch Lomond styles, certain funkier Springbank batches." },
+                    { name: "Tobacco", origin: "Deep oxidative reactions taking place over decades inside porous wood, combining slow air exchange with tannins.", mixology: "The ultimate premium cigar-pairing spirit. Serve neat in a crystal glass; do not dilute heavily.", examples: "High-age statement Highland Park, Mortlach, or old Bowmore." },
+                    { name: "Leathery", origin: "Formed through interactions of spirit with heavily active European oak casks previously seasoned with dense, oxidative wines.", mixology: "Provides a deeply dry, sophisticated bassline. Fantastic for late-night slow-sipping cocktails like a high-end Boulevardier variation.", examples: "Highland Park 18, Mortlach 16, Talisker Distillers Edition." }
+                ]
+            },
+            {
+                category: "Spicy", color: "var(--c-spicy)",
+                subcategories: [
+                    { name: "Sherried", origin: "Direct seasoning extraction from the residual fortified wine (Oloroso or PX) trapped deep inside the porous wood grain of the cask staves.", mixology: "Rich, dried-fruit heavy. Complements sweet vermouth, chocolate, bitters, and orange garnishes flawlessly.", examples: "The Macallan, Tamdhu, Glenfarclas 105." },
+                    { name: "Ginger", origin: "Interaction of eugenol from oak with warm spices created during the wood charring process, magnified by high bottling proofs.", mixology: "Amplifies ginger beer or ginger syrups in cocktails like the Mamie Taylor (Scotch, lime, ginger ale).", examples: "Taliskers, Glenmorangie Lasanta." },
+                    { name: "Peppery", origin: "Presence of 4-vinyl guaiacol or compound extractions driven by rapid distillation with minimal copper contact or minimal wash reflux.", mixology: "Brings structural pop to drinks. Cuts neatly through honey, agave, or heavy citrus components.", examples: "Talisker 10 (famous for its black pepper finish)." },
+                    { name: "Dried Spices", origin: "Cinnamon, clove, and nutmeg notes caused by the degradation of wood elements over extensive maturation cycles in toasted European oak.", mixology: "Incredible choice for autumn/winter menu builds. Mix with apple brandies or aromatic baking bitters.", examples: "Aberlour A'Bunadh, Glendronach 18." }
+                ]
+            },
+            {
+                category: "Sulphury", color: "var(--c-sulphury)",
+                subcategories: [
+                    { name: "Cooked Vegetables", origin: "Dimethyl sulphide (DMS) compounds surviving distillation. This happens when condensation setups use worm tubs instead of modern shell-and-tube configurations, minimizing copper contact.", mixology: "Adds meaty, savory heft. Captivating when utilized in complex, contemporary culinary cocktails.", examples: "Mortlach (uses worm tubs and 2.81 times distillation), Craigellachie." },
+                    { name: "Meaty", origin: "Heavy organic sulphur compounds. Promoted by rapid, hot distillations that don't allow copper to cleanse the volatile vapors.", mixology: "Creates a robust, chewy mouthfeel. Ideal for savory variations of classic spirit-forward drinks.", examples: "Benrinnes, Dailuaine, Mortlach 12." },
+                    { name: "Struck Match", origin: "Often happens during maturation inside casks that were sterilized using burned sulfur sticks, or from high-active sulfur compounds in heavy sherry oak.", mixology: "Polarizing trait. Some tasters love the savory edge, others find it flawed. Best served neat or balanced with high-sugar modifiers.", examples: "Specific single-cask sherry expressions, Craigellachie 13." },
+                    { name: "Rubbery", origin: "Disulphides forming due to low-oxygen environments during long maturations or specific rubber-heavy sulfur interactions in heavy distillates.", mixology: "Highly specific trait. Use sparingly in menus; balance with bright acids or high-effervescence mixers.", examples: "Certain heavily charred refill casks, specific old-school island malts." }
+                ]
+            }
+        ];
+
+        // --- RENDER WHEEL IN SVG ---
+        const rotatingGroup = document.getElementById('rotatingGroup');
+        const TOTAL_SEGMENTS = wheelData.reduce((acc, cat) => acc + cat.subcategories.length, 0); 
+        
+        let segmentIndex = 0;
+        
+        // Cask/Wheel Radii Dimensions (Pushed text outward)
+        const innerRadius = 45;
+        const middleRadius = 95;
+        const outerRadius = 200;
+
+        function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+            const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+            return {
+                x: centerX + (radius * Math.cos(angleInRadians)),
+                y: centerY + (radius * Math.sin(angleInRadians))
+            };
+        }
+
+        function makeSegmentPath(innerR, outerR, startAngle, endAngle) {
+            const sInner = polarToCartesian(0, 0, innerR, startAngle);
+            const eInner = polarToCartesian(0, 0, innerR, endAngle);
+            const sOuter = polarToCartesian(0, 0, outerR, startAngle);
+            const eOuter = polarToCartesian(0, 0, outerR, endAngle);
+            const largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
+            
+            return `M ${sInner.x} ${sInner.y} 
+                    L ${sOuter.x} ${sOuter.y} 
+                    A ${outerR} ${outerR} 0 ${largeArc} 1 ${eOuter.x} ${eOuter.y} 
+                    L ${eInner.x} ${eInner.y} 
+                    A ${innerR} ${innerR} 0 ${largeArc} 0 ${sInner.x} ${sInner.y} Z`;
+        }
+
+        wheelData.forEach((cat) => {
+            const catSegmentsCount = cat.subcategories.length;
+            const catStartAngle = (segmentIndex / TOTAL_SEGMENTS) * 360;
+            const catEndAngle = ((segmentIndex + catSegmentsCount) / TOTAL_SEGMENTS) * 360;
+            
+            // 1. Draw Middle-Tier Category Block
+            const midPathData = makeSegmentPath(innerRadius, middleRadius, catStartAngle, catEndAngle);
+            const midSeg = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            midSeg.setAttribute("d", midPathData);
+            midSeg.setAttribute("fill", cat.color);
+            midSeg.setAttribute("class", "segment");
+            midSeg.style.pointerEvents = "none";
+            rotatingGroup.appendChild(midSeg);
+
+            // Category Text Base Setup
+            const midAngle = catStartAngle + (catEndAngle - catStartAngle) / 2;
+            const midText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            midText.setAttribute("class", "wheel-text inner-tier-text");
+            midText.setAttribute("data-base-angle", midAngle);
+            midText.setAttribute("data-tier", "inner");
+            midText.textContent = cat.category;
+            rotatingGroup.appendChild(midText);
+
+            // 2. Draw Outer-Tier Subcategory Descriptor Blocks
+            cat.subcategories.forEach((sub) => {
+                const startAngle = (segmentIndex / TOTAL_SEGMENTS) * 360;
+                const endAngle = ((segmentIndex + 1) / TOTAL_SEGMENTS) * 360;
+                
+                const outPathData = makeSegmentPath(middleRadius, outerRadius, startAngle, endAngle);
+                const outSeg = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                outSeg.setAttribute("d", outPathData);
+                outSeg.setAttribute("fill", cat.color);
+                outSeg.setAttribute("class", "segment outer-segment");
+                
+                outSeg.addEventListener('click', (e) => {
+                    document.querySelectorAll('.outer-segment').forEach(s => s.classList.remove('active'));
+                    outSeg.classList.add('active');
+                    showDetails(sub, cat);
+                    e.stopPropagation();
+                });
+                
+                rotatingGroup.appendChild(outSeg);
+
+                // Outer Text Placement Base Setup
+                const subAngle = startAngle + (endAngle - startAngle) / 2;
+                const outText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                outText.setAttribute("class", "wheel-text outer-tier-text");
+                outText.setAttribute("data-base-angle", subAngle);
+                outText.setAttribute("data-tier", "outer");
+                outText.textContent = sub.name;
+                rotatingGroup.appendChild(outText);
+
+                segmentIndex++;
+            });
+        });
+
+        // --- STUDY PANEL LOGIC ---
+        const defaultPrompt = document.getElementById('defaultPrompt');
+        const panelContent = document.getElementById('panelContent');
+        const infoPanel = document.getElementById('infoPanel');
+        
+        const pTitle = document.getElementById('pTitle');
+        const pCategory = document.getElementById('pCategory');
+        const pOrigin = document.getElementById('pOrigin');
+        const pMixology = document.getElementById('pMixology');
+        const pExamples = document.getElementById('pExamples');
+
+        function showDetails(sub, cat) {
+            defaultPrompt.style.display = 'none';
+            panelContent.style.display = 'block';
+            
+            infoPanel.style.borderLeftColor = cat.color;
+            pTitle.textContent = sub.name;
+            pCategory.textContent = cat.category;
+            pCategory.style.backgroundColor = cat.color;
+            
+            pOrigin.textContent = sub.origin;
+            pMixology.textContent = sub.mixology;
+            pExamples.textContent = sub.examples;
+        }
+
+        // --- DRAG, SPIN, & RADIAL ORIENTATION LOGIC ---
+        const wrapper = document.getElementById('wheelWrapper');
+        let currentRotation = 0;
+        let isDragging = false;
+        let startAngle = 0;
+
+        function getAngle(clientX, clientY) {
+            const rect = wrapper.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            return Math.atan2(clientY - centerY, clientX - centerX) * 180 / Math.PI;
+        }
+
+        // Dynamically forces all elements on the right half of the wheel to face upside down/rightside up properly
+        function adjustTextOrientation() {
+            const texts = document.querySelectorAll('.wheel-text');
+            texts.forEach(text => {
+                const baseAngle = parseFloat(text.getAttribute('data-base-angle'));
+                const tier = text.getAttribute('data-tier');
+                
+                // Track global viewport workspace angle
+                let viewAngle = (baseAngle + currentRotation) % 360;
+                if (viewAngle < 0) viewAngle += 360;
+
+                // Check if segment is currently positioned on the left hemisphere of the viewport
+                const isLeftHemisphere = (viewAngle > 90 && viewAngle < 270);
+                
+                // Radii pushed out an extra "inch" equivalent for text spacing
+                const textRadius = (tier === 'inner') ? 74 : 188; 
+                
+                // Calculate anchor coordinates
+                const pos = polarToCartesian(0, 0, textRadius, baseAngle);
+                text.setAttribute('x', pos.x);
+                text.setAttribute('y', pos.y);
+
+                if (isLeftHemisphere) {
+                    // Left Side: Text reads outward toward rim (flipped 180 to stay upright on left)
+                    text.setAttribute('transform', `rotate(${baseAngle - 90}, ${pos.x}, ${pos.y})`);
+                    text.setAttribute('text-anchor', 'end');
+                    text.setAttribute('dx', tier === 'inner' ? '0' : '-4');
+                } else {
+                    // Right Side: Text reads outward toward rim, perfectly upright left-to-right
+                    text.setAttribute('transform', `rotate(${baseAngle + 90}, ${pos.x}, ${pos.y})`);
+                    text.setAttribute('text-anchor', 'start');
+                    text.setAttribute('dx', tier === 'inner' ? '0' : '4');
+                }
+                text.style.dominantBaseline = 'middle';
+            });
+        }
+
+        adjustTextOrientation();
+
+        // Mouse/Touch Interface
+        function startSpin(e) {
+            isDragging = true;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            startAngle = getAngle(clientX, clientY) - currentRotation;
+        }
+
+        function doSpin(e) {
+            if (!isDragging) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            currentRotation = getAngle(clientX, clientY) - startAngle;
+            
+            rotatingGroup.style.transform = `rotate(${currentRotation}deg)`;
+            adjustTextOrientation();
+        }
+
+        function stopSpin() {
+            isDragging = false;
+        }
+
+        wrapper.addEventListener('mousedown', startSpin);
+        document.addEventListener('mousemove', doSpin);
+        document.addEventListener('mouseup', stopSpin);
+
+        wrapper.addEventListener('touchstart', startSpin, { passive: true });
+        document.addEventListener('touchmove', doSpin, { passive: false });
+        document.addEventListener('touchend', stopSpin);
+    </script>
+</body>
+</html>
