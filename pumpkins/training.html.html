@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mark Lenington | Beverage Training</title>
+<style>
+  body { font-family: Georgia, serif; background: #1a1008; color: #f5e6c8; }
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+  .card { background: #231508; border: 1px solid #5a3a1a; padding: 2rem; margin-bottom: 2rem; border-radius: 12px; }
+  .trial-container { height: 600px; border: 2px solid #3a2510; position: relative; }
+  #trialOverlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(26,16,8,0.95); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
+  .btn { display: inline-block; padding: 1rem 2rem; background: #c9a96e; color: #1a1008; text-decoration: none; border-radius: 6px; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>Mark Lenington</h1>
+    <p>19-year Sommelier. Elevating hospitality through precision training. I’ve built these interactive tools to strip away the gatekeeping of fine dining.</p>
+  </div>
+
+  <div class="trial-container" id="wheelTrial">
+    <iframe src="wine-aroma-wheel-v7.html" width="100%" height="100%" frameborder="0"></iframe>
+    <div id="trialOverlay">
+      <h2>Trial Limit Reached</h2>
+      <p>Purchase the Vault for full access and bilingual tools.</p>
+      <a href="https://gumroad.com/l/vault" class="btn">Get Full Vault - $49.99</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Complete Sommelier Vault</h3>
+    <p>Includes every bilingual wheel, cheat sheet, and the BOGO "Player 2" key.</p>
+    <a href="https://gumroad.com/l/vault" class="btn">Get Vault</a>
+  </div>
+</div>
+
+<script>
+  // Listen for the trial limit trigger from the iframe
+  window.addEventListener('message', (event) => {
+    if (event.data === 'trigger_trial_overlay') {
+      document.getElementById('trialOverlay').style.display = 'flex';
+    }
+  });
+</script>
+</body>
+</html>
