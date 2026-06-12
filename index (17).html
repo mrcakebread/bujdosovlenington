@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Lenington | Wine & Spirits Training Hub</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: Georgia, 'Times New Roman', serif;
+            /* Disable text selection globally */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* ── BACKGROUND VIDEO — shifted up 1.5 inches (≈ 144px) ── */
+        #bg-video {
+            position: fixed;
+            top: -144px;
+            left: 0;
+            width: 100vw;
+            height: calc(100vh + 144px);
+            object-fit: cover;
+            z-index: 0;
+        }
+
+        /* Cinematic vignette + bottom fade to black */
+        #cinematic-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.72) 100%),
+                linear-gradient(180deg,
+                    rgba(0,0,0,0.35) 0%,
+                    transparent 28%,
+                    transparent 52%,
+                    rgba(0,0,0,0.80) 76%,
+                    rgba(0,0,0,0.97) 88%,
+                    #000 100%
+                );
+        }
+
+        /* ── SPLASH SCREEN ── */
+        #start-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            background: rgba(0,0,0,0.62);
+            transition: opacity 0.8s ease;
+        }
+        #start-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        /* Single centered button on the splash — no title text */
+        .enter-btn {
+            padding: 1.2rem 3.4rem;
+            background: transparent;
+            color: #d4b276;
+            border: 1.5px solid #a87f3d;
+            font-family: Georgia, serif;
+            font-size: 1.1rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+        .enter-btn:hover {
+            background: rgba(168,127,61,0.18);
+            border-color: #d4b276;
+            color: #fff;
+        }
+
+        /* ── HUB SCREEN ── */
+        #hub-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease 0.4s;
+        }
+        #hub-screen.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* ── TOP TITLE — hugging the top with tight gap ── */
+        .hub-name {
+            position: absolute;
+            top: 2vh;           /* close to top, not smashed */
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            white-space: nowrap;
+            line-height: 1;
+        }
+
+        /* "Welcome to" */
+        .hub-name-label {
+            display: block;
+            color: #d4b276;
+            font-size: clamp(0.55rem, 1.1vw, 0.7rem);
+            letter-spacing: 0.32em;
+            text-transform: uppercase;
+            opacity: 0.72;
+            margin-bottom: 0.35rem;
+        }
+
+        /* "Mark Lenington's" — script, glowing, slowly growing */
+        .hub-name-mark {
+            display: block;
+            font-family: 'Brush Script MT', 'Segoe Script', 'Palatino Linotype', cursive;
+            color: #fff;
+            font-size: clamp(2rem, 5vw, 3.6rem);
+            font-weight: normal;
+            font-style: italic;
+            letter-spacing: 0.04em;
+            text-shadow:
+                0 0 12px rgba(212,178,118,0.9),
+                0 0 28px rgba(212,178,118,0.55),
+                0 0 56px rgba(168,127,61,0.35),
+                0 2px 20px rgba(0,0,0,0.8);
+            animation: nameGrow 8s ease-in-out infinite alternate;
+            transform-origin: center;
+            margin-bottom: 0.25rem;
+        }
+        @keyframes nameGrow {
+            0%   { transform: scale(1);    text-shadow: 0 0 10px rgba(212,178,118,0.7),  0 0 22px rgba(212,178,118,0.4),  0 0 44px rgba(168,127,61,0.25), 0 2px 18px rgba(0,0,0,0.8); }
+            100% { transform: scale(1.08); text-shadow: 0 0 16px rgba(212,178,118,1.0),  0 0 36px rgba(212,178,118,0.7),  0 0 72px rgba(168,127,61,0.5),  0 2px 24px rgba(0,0,0,0.9); }
+        }
+
+        /* "Wine & Spirits Training Hub" */
+        .hub-name-sub {
+            display: block;
+            font-size: clamp(0.75rem, 1.6vw, 1.1rem);
+            letter-spacing: 0.18em;
+            text-shadow: 0 2px 18px rgba(0,0,0,0.9);
+            white-space: nowrap;
+        }
+        .title-wine {
+            color: #d94060;
+            animation: titleWineGlow 4s ease-in-out infinite alternate;
+        }
+        @keyframes titleWineGlow {
+            0%   { text-shadow: 0 0 6px #c02040, 0 0 16px #800020; }
+            100% { text-shadow: 0 0 10px #e03060, 0 0 28px #c02040, 0 0 52px rgba(200,20,50,0.55); }
+        }
+        .title-amp { color: #d4b276; margin: 0 0.08em; }
+        .title-spirits {
+            color: #e8b040;
+            animation: titleSpiritsGlow 3.5s ease-in-out infinite alternate;
+            animation-delay: 0.7s;
+        }
+        @keyframes titleSpiritsGlow {
+            0%   { text-shadow: 0 0 6px #c08010, 0 0 16px #805000; }
+            100% { text-shadow: 0 0 10px #e8c040, 0 0 28px #c08020, 0 0 52px rgba(220,160,20,0.5); }
+        }
+        .title-rest { color: rgba(255,255,255,0.88); }
+
+        /* ── AMBASSADOR LOGIN — top right, no label ── */
+        .ambassador-login-wrap {
+            position: absolute;
+            top: 2vh;
+            right: clamp(1.2rem, 4vw, 3.5rem);
+        }
+        .ambassador-btn-img {
+            cursor: pointer;
+            display: block;
+            width: clamp(110px, 13vw, 190px);
+            height: auto;
+            filter: drop-shadow(0 3px 12px rgba(0,0,0,0.7));
+            transition: transform 0.22s ease, filter 0.22s ease;
+            border-radius: 3px;
+        }
+        .ambassador-btn-img:hover {
+            transform: translateY(-3px) scale(1.04);
+            filter: drop-shadow(0 6px 20px rgba(168,127,61,0.45)) drop-shadow(0 0 10px rgba(168,127,61,0.3));
+        }
+        .ambassador-btn-fallback {
+            padding: 0.55rem 1rem;
+            background: transparent;
+            color: rgba(212,178,118,0.85);
+            border: 1px solid rgba(168,127,61,0.45);
+            font-family: Georgia, serif;
+            font-size: 0.72rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+        .ambassador-btn-fallback:hover {
+            background: rgba(168,127,61,0.14);
+            border-color: #d4b276;
+            color: #fff;
+        }
+
+        /* ── BOTTOM ZONE ── */
+        .bottom-zone {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ── SPIRITS GLOW ROW — now clickable links ── */
+        .spirits-row {
+            width: 100%;
+            padding: 0.5rem 1rem 0.7rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: clamp(0.9rem, 2.8vw, 2.8rem);
+            flex-wrap: wrap;
+        }
+
+        /* Each spirit is an <a> tag with tooltip */
+        .spirit-link {
+            position: relative;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .spirit {
+            font-family: Georgia, serif;
+            font-size: clamp(0.7rem, 1.4vw, 1rem);
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            font-weight: 400;
+            animation: spiritPulse var(--dur, 3.2s) ease-in-out infinite alternate;
+            animation-delay: var(--delay, 0s);
+            transform-origin: center;
+            display: inline-block;
+            cursor: pointer;
+            transition: filter 0.2s;
+        }
+        .spirit:hover { filter: brightness(1.3); }
+
+        @keyframes spiritPulse {
+            0%   { text-shadow: 0 0 6px var(--glow), 0 0 14px var(--glow); opacity: 0.7; transform: scale(1); }
+            60%  { opacity: 1; }
+            100% { text-shadow: 0 0 10px var(--glow), 0 0 28px var(--glow), 0 0 50px var(--glow2); opacity: 1; transform: scale(1.07); }
+        }
+
+        .spirit-wine    { color: #d94060; --glow: #c02040; --glow2: #800020; --dur: 3.8s; --delay: 0s;    }
+        .spirit-beer    { color: #e8a020; --glow: #e8a020; --glow2: #a86010; --dur: 4.1s; --delay: 0.4s;  }
+        .spirit-vodka   { color: #c8ddf5; --glow: #a0c4f0; --glow2: #5090d0; --dur: 3.5s; --delay: 0.9s;  }
+        .spirit-gin     { color: #7fc8a0; --glow: #5aaa78; --glow2: #1a7040; --dur: 4.4s; --delay: 1.3s;  }
+        .spirit-tequila { color: #e8d850; --glow: #d4c020; --glow2: #907000; --dur: 3.2s; --delay: 0.2s;  }
+        .spirit-rum     { color: #d4824a; --glow: #c06820; --glow2: #7a3000; --dur: 4.7s; --delay: 0.7s;  }
+        .spirit-bourbon { color: #e8b040; --glow: #c08820; --glow2: #7a5000; --dur: 3.6s; --delay: 1.1s;  }
+        .spirit-scotch  { color: #c8b890; --glow: #b09868; --glow2: #705830; --dur: 4.2s; --delay: 0.5s;  }
+        .spirit-brandy  { color: #c04060; --glow: #a02040; --glow2: #600020; --dur: 3.9s; --delay: 1.5s;  }
+        .spirit-coffee  { color: #c89070; --glow: #a06840; --glow2: #603818; --dur: 4.5s; --delay: 0.8s;  }
+        .spirit-tea     { color: #98c870; --glow: #70a848; --glow2: #386018; --dur: 3.3s; --delay: 1.7s;  }
+
+        /* Spirit hover tooltip */
+        .spirit-tooltip {
+            position: absolute;
+            bottom: calc(100% + 0.9rem);
+            left: 50%;
+            transform: translateX(-50%) translateY(6px);
+            width: 210px;
+            background: rgba(8,5,2,0.93);
+            border: 1px solid rgba(168,127,61,0.4);
+            padding: 0.85rem 1rem;
+            color: #e9dfc8;
+            font-size: 0.76rem;
+            line-height: 1.55;
+            text-align: left;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.22s ease;
+            white-space: normal;
+            z-index: 60;
+        }
+        .spirit-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%; left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(168,127,61,0.4);
+        }
+        .spirit-tooltip strong {
+            display: block;
+            font-size: 0.82rem;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.3rem;
+        }
+        .spirit-link:hover .spirit-tooltip,
+        .spirit-link:focus-within .spirit-tooltip {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── IMAGE BUTTON ROW ── */
+        .button-row {
+            display: flex;
+            gap: clamp(1.5rem, 5vw, 5rem);
+            align-items: flex-end;
+            justify-content: center;
+            padding: 0.6rem 1rem 3.5vh;
+            flex-wrap: wrap;
+        }
+        .hub-item {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .hub-tooltip {
+            position: absolute;
+            bottom: calc(100% + 1.4rem);
+            left: 50%;
+            width: 240px;
+            background: rgba(10,7,4,0.92);
+            border: 1px solid rgba(168,127,61,0.5);
+            padding: 1.1rem 1.3rem;
+            color: #e9dfc8;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            text-align: left;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(8px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            z-index: 50;
+        }
+        .hub-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%; left: 50%;
+            transform: translateX(-50%);
+            border: 7px solid transparent;
+            border-top-color: rgba(168,127,61,0.5);
+        }
+        .hub-tooltip strong {
+            display: block;
+            color: #d4b276;
+            font-size: 0.9rem;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.4rem;
+        }
+        .hub-item:hover .hub-tooltip,
+        .hub-item:focus-within .hub-tooltip {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── PNG IMAGE BUTTON ── */
+        .img-btn-wrap {
+            position: relative;
+            cursor: pointer;
+            display: block;
+            width: clamp(200px, 28vw, 360px);
+        }
+        .img-btn-wrap img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 4px;
+            transition: transform 0.25s ease, filter 0.25s ease;
+            filter: drop-shadow(0 4px 18px rgba(0,0,0,0.7));
+        }
+        .img-btn-wrap:hover img {
+            transform: translateY(-5px) scale(1.03);
+            filter: drop-shadow(0 8px 28px rgba(168,127,61,0.45))
+                    drop-shadow(0 0 16px rgba(168,127,61,0.3));
+        }
+        .img-btn-wrap:active img { transform: translateY(0) scale(1); }
+        .img-btn-wrap button {
+            position: absolute;
+            inset: 0;
+            width: 100%; height: 100%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .img-btn-wrap button:focus-visible {
+            outline: 2px solid #d4b276;
+            outline-offset: 3px;
+        }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            .hub-name { white-space: normal; width: 90vw; top: 1.5vh; }
+            .hub-name-sub { white-space: normal; }
+            .button-row { gap: 1.2rem; }
+            .img-btn-wrap { width: clamp(140px, 42vw, 220px); }
+            .hub-tooltip { width: 190px; font-size: 0.76rem; }
+            .ambassador-login-wrap { top: 1.5vh; right: 0.8rem; }
+            .ambassador-btn-img { width: clamp(80px, 20vw, 130px); }
+            .spirits-row { gap: 0.7rem; }
+            .spirit-tooltip { width: 170px; font-size: 0.7rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #start-overlay, #hub-screen, .hub-tooltip, .spirit,
+            .spirit-tooltip, .hub-name-mark, .title-wine, .title-spirits
+            { transition: none; animation: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <video id="bg-video" autoplay muted playsinline preload="auto">
+        <source src="trainingwheels.mp4" type="video/mp4">
+    </video>
+    <div id="cinematic-overlay"></div>
+
+    <!-- ── SPLASH SCREEN — just the button ── -->
+    <div id="start-overlay">
+        <button class="enter-btn" onclick="enterHub()">Training Hub</button>
+    </div>
+
+    <!-- ── HUB SCREEN ── -->
+    <div id="hub-screen">
+
+        <!-- AMBASSADOR LOGIN — top right, image only -->
+        <div class="ambassador-login-wrap">
+            <img
+                class="ambassador-btn-img"
+                src="ambassador-btn.png"
+                alt="Ambassador Log In"
+                onclick="goToAmbassadorLogin()"
+                onerror="this.style.display='none'; document.getElementById('ambassador-fallback').style.display='block';"
+            >
+            <button
+                id="ambassador-fallback"
+                class="ambassador-btn-fallback"
+                style="display:none;"
+                onclick="goToAmbassadorLogin()"
+            >Ambassador Log In</button>
+        </div>
+
+        <!-- TOP TITLE — three lines, tight to top -->
+        <div class="hub-name">
+            <span class="hub-name-label">Welcome to</span>
+            <span class="hub-name-mark">Mark Lenington's</span>
+            <span class="hub-name-sub">
+                <span class="title-wine">Wine</span>
+                <span class="title-amp">&amp;</span>
+                <span class="title-spirits">Spirits</span>
+                <span class="title-rest"> Training Hub</span>
+            </span>
+        </div>
+
+        <div class="bottom-zone">
+
+            <!-- SPIRITS GLOW ROW — each word is a live Gumroad link -->
+            <div class="spirits-row">
+
+                <a class="spirit-link" href="https://marklenington.gumroad.com/l/wine" target="_blank" rel="noopener">
+                    <span class="spirit spirit-wine">Wine</span>
+                    <div class="spirit-tooltip">
+                        <strong style="color:#d94060;">Wine Bundle</strong>
+                        Training Wheels, Aroma &amp; Flavor Cheat Sheets, Food Pairing Guide, Tasting Note Templates, and Cocktail &amp; Sommelier Recommendations.
+                    </div>
+                </a>
+
+                <a class="spirit-link" href="https://marklenington.gumroad.com/l/beer" target="_blank" rel="noopener">
+                    <span class="spirit spirit-beer">Beer</span>
+                    <div class="spirit-tooltip">
+                        <strong style="color:#e8a020;">Beer Bundle</strong>
+                        Style Training Wheels, Flavor Profile Cheat Sheets, Food Pairing Cards, Brewery Tasting Notes, and Craft Cocktail Recommendations.
+                    </div>
+                </a>
+
+                <a class="spirit-link" href="https://marklenington.gumroad.com/l/vodka" target="_blank" rel="noopener">
+                    <span class="spirit spirit-vodka">Vodka</span>
+                    <div class="spirit-tooltip">
+                        <strong style="color:#c8ddf5;">Vodka Bundle</strong>
+                        Distillation Training Wheels, Flavor Cheat Sheets, Classic &amp; Modern Cocktail Recipes, Mixology Tips, and Brand Comparison Guides.
+                    </div>
+                </a>
+
+                <a class="spirit-link" href="https://marklenington.gumroad.com/l/gin" target="_blank" rel="noopener">
+                    <span class="spirit spirit-gin">Gin</span>
+                    <div class="spirit-tooltip">
+                        <strong style="color:#7fc8a0;">Gin Bundle</strong>
+                        Botanical Training Wheels, Style Cheat Sheets, Signature Cocktail Recipes, Tonic Pairing Guide, and Tasting Note Cards.
+                    </div>
+                </a>
+
+                <a class="spirit-link" href="https://marklenington.gumroad.com/l/tequila" target="_blank" rel="noopener">
+                    <span class="spirit spirit-tequila">Tequila</span>
+                    <div class="spirit-tooltip">
+                        <strong style="color:#e8d850;">Tequila Bundle</strong>
+                        Agave Training Wheels, Blanco–Añejo Cheat Sheets, Cocktail Recipes, Mezcal Comparison Guide, and Tasting Note Templates.
+                    </div>
+                </a>
+
+                <a class="spirit-link" href="https://marklenington.gumroad.com/l/rum" target="_blank" rel="noopener">
+                    <span class="spirit spirit-rum">Rum</span>
+                    <div class="spirit-tooltip">
+                        <strong style="color:#d4824a;">Rum Bundle</strong>
+                        Regional Training Wheels, Style Cheat Sheets, Classic Tropical Cocktail Recipes, Aging Guide, and Tasting Note Templates.
+                    </div>
+                </a>
+
+                <a class="spirit-link" href="https://marklenington.gumroad.com/l/bourbon" target="_blank" rel="noopener">
+                    <span class="spirit spirit-bourbon">Bourbon</span>
+                    <div class="spirit-tooltip">
+                        <strong style="color:#e8b040;">Bourbon Bundle</strong>
+                        Mash Bill Training Wheels, Flavor Cheat Sheets, Whiskey Cocktail Recipes, Distillery Comparison Guide, and Tasting Note Cards.
+                    </div>
+                </a>
+
+                <a class="spirit-link" href="https://marklenington.gumroad.com/l/scotch" target="_blank" rel="noopener">
+                    <span class="spirit spirit-scotch">Scotch</span>
+                    <div class="spirit-tooltip">
+                        <strong style="color:#c8b890;">Scotch Bundle</strong>
+                        Regional Training Wheels, Single Malt Cheat Sheets, Food &amp; Cigar Pairing Guide, Classic Cocktail Recipes, and Tasting Note Templates.
+                    </div>
+                </a>
+
+                <a class="spirit-link" href="https://marklenington.gumroad.com/l/brandy" target="_blank" rel="noopener">
+                    <span class="spirit spirit-brandy">Brandy</span>
+                    <div class="spirit-tooltip">
+                        <strong style="color:#c04060;">Brandy Bundle</strong>
+                        Cognac &amp; Armagnac Training Wheels, Aging Classification Cheat Sheets, Cocktail Recipes, Food Pairing Cards, and Tasting Note Templates.
+                    </div>
+                </a>
+
+                <a class="spirit-link" href="https://marklenington.gumroad.com/l/coffee" target="_blank" rel="noopener">
+                    <span class="spirit spirit-coffee">Coffee</span>
+                    <div class="spirit-tooltip">
+                        <strong style="color:#c89070;">Coffee Bundle</strong>
+                        Origin Training Wheels, Roast &amp; Flavor Cheat Sheets, Brew Method Guide, Coffee Cocktail Recipes, and Tasting Note Cards.
+                    </div>
+                </a>
+
+                <a class="spirit-link" href="https://marklenington.gumroad.com/l/tea" target="_blank" rel="noopener">
+                    <span class="spirit spirit-tea">Tea</span>
+                    <div class="spirit-tooltip">
+                        <strong style="color:#98c870;">Tea Bundle</strong>
+                        Varietal Training Wheels, Steeping &amp; Terroir Cheat Sheets, Tea Cocktail &amp; Mocktail Recipes, Food Pairing Guide, and Tasting Note Templates.
+                    </div>
+                </a>
+
+            </div>
+
+            <!-- PNG IMAGE BUTTONS -->
+            <div class="button-row">
+
+                <div class="hub-item">
+                    <div class="hub-tooltip">
+                        <strong>Wine Aroma Wheel</strong>
+                        Explore the full sensory spectrum — from fruit and floral to earth and oak. An interactive tool for training your palate and expanding your tasting vocabulary.
+                    </div>
+                    <div class="img-btn-wrap">
+                        <img src="wheel-btn.png" alt="Wine Aroma Wheel">
+                        <button onclick="goToWheel()" aria-label="Open Wine Aroma Wheel"></button>
+                    </div>
+                </div>
+
+                <div class="hub-item">
+                    <div class="hub-tooltip">
+                        <strong>The Vault</strong>
+                        Your library of curated training resources, tasting notes, and exclusive content. Reserved for members with access credentials.
+                    </div>
+                    <div class="img-btn-wrap">
+                        <img src="vault-btn.png" alt="The Vault">
+                        <button onclick="goToVault()" aria-label="Enter The Vault"></button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const video = document.getElementById('bg-video');
+        const startOverlay = document.getElementById('start-overlay');
+        const hubScreen = document.getElementById('hub-screen');
+
+        // Loop 0–8s
+        video.addEventListener('timeupdate', () => {
+            if (video.currentTime >= 8) video.currentTime = 0;
+        });
+
+        document.addEventListener('pointerdown', () => {
+            if (video.paused) video.play().catch(() => {});
+        }, { once: true });
+
+        function enterHub() {
+            startOverlay.classList.add('fade-out');
+            video.muted = false;
+            video.volume = 0.55;
+            video.play().catch(() => { video.muted = true; });
+            setTimeout(() => {
+                startOverlay.style.display = 'none';
+                hubScreen.classList.add('visible');
+            }, 800);
+        }
+
+        function goToWheel()           { window.location.href = 'training.html'; }
+        function goToVault()           { window.location.href = 'vault.html'; }
+        function goToAmbassadorLogin() { window.location.href = 'training.html'; }
+
+        /* ── SECURITY ── */
+        // No right-click
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        // No view-source / dev tools keyboard shortcuts
+        document.addEventListener('keydown', e => {
+            const k = (e.key || '').toUpperCase();
+            if (
+                e.key === 'F12' ||
+                ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C','K'].includes(k)) ||
+                ((e.ctrlKey || e.metaKey) && ['U','S','A','P'].includes(k))
+            ) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+
+        // No drag-to-copy
+        document.addEventListener('dragstart', e => e.preventDefault());
+
+        // No select / copy / paste (text already blocked via CSS; belt-and-suspenders)
+        document.addEventListener('copy',  e => e.preventDefault());
+        document.addEventListener('cut',   e => e.preventDefault());
+        document.addEventListener('paste', e => e.preventDefault());
+        document.addEventListener('selectstart', e => {
+            // Allow inputs if any are ever added
+            if (e.target.matches('input, textarea')) return;
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
