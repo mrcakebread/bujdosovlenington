@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark's Training Portal</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: Georgia, 'Times New Roman', serif;
+        }
+
+        /* ── BACKGROUND VIDEO — always behind everything ── */
+        #bg-video {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            object-fit: cover;
+            z-index: 0;
+            /* starts muted/invisible behind the wheel; revealed on lock */
+        }
+
+        /* Cinematic vignette — always on */
+        #cinematic-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.9s ease;
+            background:
+                radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.72) 100%),
+                linear-gradient(180deg,
+                    rgba(0,0,0,0.35) 0%,
+                    transparent 28%,
+                    transparent 52%,
+                    rgba(0,0,0,0.88) 80%,
+                    #000 100%
+                );
+        }
+        #cinematic-overlay.visible { opacity: 1; }
+
+        /* ── WHEEL IFRAME — full screen, z-index above video ── */
+        #wheel-frame {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100vh;
+            border: none;
+            z-index: 10;
+            transition: height 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.7s ease,
+                        background 0.7s ease;
+            background: transparent;
+        }
+
+        /*
+         * CONDENSED STATE — triggered when the wheel fires its lock.
+         * The iframe shrinks to a slim strip at the top, showing only
+         * the lock-overlay content that lives inside the wheel.
+         * The video breathes through the remaining space below.
+         */
+        #wheel-frame.condensed {
+            height: 52vh;          /* enough to show the lock message */
+            opacity: 0.82;         /* 80-ish % — video bleeds through behind */
+            background: rgba(0,0,0,0.0);
+        }
+
+        /* ── LOCK CARD — shown in the space below the condensed iframe ── */
+        #lock-card {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 2.5vh 1.5rem 4vh;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.1rem;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease 0.5s, transform 0.6s ease 0.5s;
+        }
+        #lock-card.visible {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateY(0);
+        }
+
+        .lock-card-title {
+            color: #d4b276;
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            letter-spacing: 0.12em;
+            text-align: center;
+            text-shadow: 0 0 18px rgba(212,178,118,0.6);
+        }
+        .lock-card-text {
+            color: rgba(255,255,255,0.78);
+            font-size: clamp(0.78rem, 1.5vw, 0.95rem);
+            text-align: center;
+            max-width: 480px;
+            line-height: 1.65;
+            letter-spacing: 0.02em;
+        }
+        .lock-card-btns {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 0.3rem;
+        }
+        .lock-btn {
+            padding: 0.75rem 1.8rem;
+            background: transparent;
+            font-family: Georgia, serif;
+            font-size: 0.82rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+            border-radius: 2px;
+        }
+        .lock-btn-primary {
+            background: rgba(168,127,61,0.18);
+            color: #e8c878;
+            border: 1.5px solid #d4b276;
+        }
+        .lock-btn-primary:hover {
+            background: rgba(168,127,61,0.38);
+            color: #fff;
+        }
+        .lock-btn-secondary {
+            color: rgba(212,178,118,0.7);
+            border: 1px solid rgba(168,127,61,0.35);
+        }
+        .lock-btn-secondary:hover {
+            background: rgba(168,127,61,0.1);
+            color: #d4b276;
+            border-color: rgba(168,127,61,0.6);
+        }
+
+        /* spirits glow strip above buttons — subtle, cinematic */
+        .lock-spirits {
+            display: flex;
+            gap: clamp(0.6rem, 2vw, 1.8rem);
+            flex-wrap: wrap;
+            justify-content: center;
+            opacity: 0.55;
+        }
+        .lock-spirit {
+            font-size: clamp(0.58rem, 1.1vw, 0.78rem);
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            animation: spiritPulse var(--dur, 3.2s) ease-in-out infinite alternate;
+            animation-delay: var(--delay, 0s);
+        }
+        @keyframes spiritPulse {
+            0%   { text-shadow: 0 0 5px var(--glow); opacity: 0.55; }
+            100% { text-shadow: 0 0 10px var(--glow), 0 0 22px var(--glow2); opacity: 0.85; }
+        }
+        .ls-wine    { color: #d94060; --glow: #c02040; --glow2: #800020; --dur: 3.8s; --delay: 0s;   }
+        .ls-beer    { color: #e8a020; --glow: #e8a020; --glow2: #a86010; --dur: 4.1s; --delay: 0.4s; }
+        .ls-vodka   { color: #c8ddf5; --glow: #a0c4f0; --glow2: #5090d0; --dur: 3.5s; --delay: 0.9s; }
+        .ls-gin     { color: #7fc8a0; --glow: #5aaa78; --glow2: #1a7040; --dur: 4.4s; --delay: 1.3s; }
+        .ls-tequila { color: #e8d850; --glow: #d4c020; --glow2: #907000; --dur: 3.2s; --delay: 0.2s; }
+        .ls-rum     { color: #d4824a; --glow: #c06820; --glow2: #7a3000; --dur: 4.7s; --delay: 0.7s; }
+        .ls-bourbon { color: #e8b040; --glow: #c08820; --glow2: #7a5000; --dur: 3.6s; --delay: 1.1s; }
+        .ls-scotch  { color: #c8b890; --glow: #b09868; --glow2: #705830; --dur: 4.2s; --delay: 0.5s; }
+        .ls-brandy  { color: #c04060; --glow: #a02040; --glow2: #600020; --dur: 3.9s; --delay: 1.5s; }
+        .ls-coffee  { color: #c89070; --glow: #a06840; --glow2: #603818; --dur: 4.5s; --delay: 0.8s; }
+        .ls-tea     { color: #98c870; --glow: #70a848; --glow2: #386018; --dur: 3.3s; --delay: 1.7s; }
+
+        /* mobile */
+        @media (max-width: 600px) {
+            #wheel-frame.condensed { height: 48vh; }
+            .lock-card-btns { flex-direction: column; align-items: center; }
+        }
+
+        /* Disable right-click and dev-tool shortcuts */
+    </style>
+</head>
+<body>
+
+    <!-- Background video — loops the same cinematic clip -->
+    <video id="bg-video" autoplay muted loop playsinline preload="auto">
+        <source src="trainingwheels.mp4" type="video/mp4">
+    </video>
+    <div id="cinematic-overlay"></div>
+
+    <!-- The wheel, full-screen -->
+    <iframe
+        id="wheel-frame"
+        src="wine-aroma-wheel-v7.html"
+        title="Mark's Wine Training Wheel"
+        allowfullscreen
+    ></iframe>
+
+    <!--
+        LOCK CARD — hidden by default, slides up when wheel fires its lock event.
+        The text here mirrors what the wheel shows inside its own overlay,
+        but is rendered in the cinematic style of the hub.
+    -->
+    <div id="lock-card">
+        <div class="lock-card-title" id="lock-card-title">Ambassador Log In Required</div>
+        <div class="lock-card-text" id="lock-card-text">
+            You've used your free guest previews. Join the Ambassador Program to unlock more spins instantly, or sign in to access your account.
+        </div>
+        <div class="lock-spirits">
+            <span class="lock-spirit ls-wine">Wine</span>
+            <span class="lock-spirit ls-beer">Beer</span>
+            <span class="lock-spirit ls-vodka">Vodka</span>
+            <span class="lock-spirit ls-gin">Gin</span>
+            <span class="lock-spirit ls-tequila">Tequila</span>
+            <span class="lock-spirit ls-rum">Rum</span>
+            <span class="lock-spirit ls-bourbon">Bourbon</span>
+            <span class="lock-spirit ls-scotch">Scotch</span>
+            <span class="lock-spirit ls-brandy">Brandy</span>
+            <span class="lock-spirit ls-coffee">Coffee</span>
+            <span class="lock-spirit ls-tea">Tea</span>
+        </div>
+        <div class="lock-card-btns">
+            <button class="lock-btn lock-btn-primary" onclick="scrollToSignIn()">
+                Ambassador Sign In
+            </button>
+            <button class="lock-btn lock-btn-secondary" onclick="goHome()">
+                ← Return to Hub
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const frame      = document.getElementById('wheel-frame');
+        const lockCard   = document.getElementById('lock-card');
+        const cinOverlay = document.getElementById('cinematic-overlay');
+        const video      = document.getElementById('bg-video');
+
+        // Video loop: same 0–8s cinematic clip
+        video.addEventListener('timeupdate', () => {
+            if (video.currentTime >= 8) video.currentTime = 0;
+        });
+
+        /* ─────────────────────────────────────────────────
+           LOCK DETECTION
+           The wheel's lockWheel() function sets
+           document.body.classList.add('locked') inside the
+           iframe. We poll for this because cross-origin
+           postMessage isn't wired in the wheel yet.
+
+           We also listen for any postMessage the wheel
+           might send (forward-compat).
+        ───────────────────────────────────────────────── */
+        let locked = false;
+
+        function condensePage() {
+            if (locked) return;
+            locked = true;
+
+            // Shrink iframe — video breathes through below
+            frame.classList.add('condensed');
+
+            // Reveal cinematic overlay + lock card
+            cinOverlay.classList.add('visible');
+            lockCard.classList.add('visible');
+
+            // Unmute video softly for atmosphere
+            video.muted = false;
+            video.volume = 0.3;
+            video.play().catch(() => { video.muted = true; });
+        }
+
+        // Poll the iframe body for the 'locked' class (same-origin only)
+        function pollForLock() {
+            try {
+                const iDoc = frame.contentDocument || frame.contentWindow.document;
+                if (iDoc && iDoc.body && iDoc.body.classList.contains('locked')) {
+                    condensePage();
+                    return; // stop polling
+                }
+            } catch (e) {
+                // cross-origin — can't read; rely on postMessage below
+            }
+            if (!locked) setTimeout(pollForLock, 600);
+        }
+
+        frame.addEventListener('load', () => {
+            // Give the wheel JS a moment to initialise before polling
+            setTimeout(pollForLock, 1200);
+        });
+
+        // postMessage listener — forward-compat for if the wheel ever sends one
+        window.addEventListener('message', (event) => {
+            if (event.data && (
+                event.data.type === 'WHEEL_LOCKED' ||
+                event.data.type === 'LOCK_OVERLAY' ||
+                event.data.locked === true
+            )) {
+                condensePage();
+            }
+
+            // Pass referral codes through to the wheel
+            if (event.data && event.data.type === 'SET_REF') {
+                try {
+                    frame.contentWindow.postMessage(event.data, '*');
+                } catch(e) {}
+            }
+        });
+
+        /* ── ACTIONS ── */
+
+        // Scroll the iframe so the sign-in button inside the wheel is visible
+        function scrollToSignIn() {
+            try {
+                const iDoc = frame.contentDocument || frame.contentWindow.document;
+                const btn = iDoc.getElementById('googleLoginBtn');
+                if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch(e) {}
+            // Also ensure iframe is tall enough to show it
+            frame.style.height = '60vh';
+        }
+
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+
+        /* ── SECURITY: disable right-click + dev shortcuts ── */
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            const k = (e.key || '').toUpperCase();
+            if (
+                e.key === 'F12' ||
+                ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(k)) ||
+                ((e.ctrlKey || e.metaKey) && k === 'U') ||
+                ((e.ctrlKey || e.metaKey) && k === 'S')
+            ) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>
